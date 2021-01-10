@@ -1,0 +1,11 @@
+# Monitor folder or files in windows/unix syntax.
+monitor: 
+  - C:\tmp\test.txt
+  - C:\tmp\dir
+
+# Path to output and events files:
+# output to write app log.
+# events to write monitorized folder/files events.
+log: 
+  output: fim.log
+  events: syslog.log

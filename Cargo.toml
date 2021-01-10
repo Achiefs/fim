@@ -1,0 +1,14 @@
+[package]
+name = "fim"
+version = "0.0.1"
+authors = ["¨José <´pylott@gmail.com´>"]
+edition = "2020"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+yaml-rust = "0.4"
+rust-crypto = "0.2.36"
+notify = "4.0.15"
+log = "0.4.11"
+simplelog = "0.9.0"
