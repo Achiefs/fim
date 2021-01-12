@@ -13,7 +13,7 @@ cargo build --release
 ```
 
 ## How to use
-You need to modify the `src/config.yml` file to adjust to your needs.
+You need to modify the `config.yml` file to adjust to your needs.
 This file has to be on the same path as the binary file.
 Run fim with:
 Linux
