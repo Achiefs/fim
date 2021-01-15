@@ -7,6 +7,9 @@ monitor:
 # output to write app log.
 # events to write monitorized folder/files events.
 log: 
-  level: debug
-  output: fim.log
-  events: syslog.log
+  output: 
+    file: fim.log
+    level: debug
+  events: 
+    file: syslog.log
+    format: syslog
