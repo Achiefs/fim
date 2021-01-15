@@ -1,6 +1,6 @@
 // To handle files
 use std::fs::OpenOptions;
-use std::io::{Write, ErrorKind};
+use std::io::{Write, Error, ErrorKind};
 // To get Date and Time
 use chrono::Utc;
 // To get own process ID
@@ -10,15 +10,35 @@ use notify::op::Op;
 // To log the program process
 use log::*;
 use notify::RawEvent;
+// To handle JSON objects
+use json::JsonValue;
+// To retry open files error
+use retry::*;
 
 // To load hashing functions
 mod hash;
 
 // To get Syslog format "Jan 01 01:01:01 HOSTNAME APPNAME[PID]:"
-fn get_syslog_format() -> String {
-    let datetime = Utc::now().format("%b %d %H:%M:%S");
+fn get_common_message(format: &str) -> JsonValue {
     let hostname = gethostname::gethostname().into_string().unwrap();
-    format!("{} {} FIM[{}]: ", datetime, hostname, process::id())
+    match format {
+        "JSON" => {
+            json::object![
+                timestamp: format!("{}", Utc::now().format("%s")),
+                hostname: hostname,
+                app: "FIM",
+                pid: process::id()
+            ]
+        },
+        "SYSLOG" | _ => {
+            json::object![
+                timestamp: format!("{}", Utc::now().format("%b %d %H:%M:%S")),
+                hostname: hostname,
+                app: "FIM",
+                pid: process::id()
+            ]
+        },
+    }
 }
 
 // Function to write the received events to file
@@ -31,24 +51,45 @@ pub fn log_event(file: &str, event: RawEvent, format: &str){
         .expect("Unable to open events log file.");
 
     let path = event.path.expect("Error getting event path");
-    let msg;
+    let clean_format: &str;
     match format {
-        "json" | "JSON" | "j" | "J" | "Json" => msg = "JSON".to_string(),
-        "syslog" | "s" | "SYSLOG" | "S" | "Syslog" | _ => msg = get_syslog_format(),
-    };
+        "json" | "JSON" | "j" | "J" | "Json" => clean_format = "JSON",
+        "syslog" | "s" | "SYSLOG" | "S" | "Syslog" | _ => clean_format = "SYSLOG",
+    }
+    let mut obj = get_common_message(clean_format);
+    let message = format!("{} {} {}[{}]:",
+            obj["timestamp"], obj["hostname"], obj["app"], obj["pid"]);
+
     match event.op.unwrap() {
         Op::CREATE => {
-            let checksum = hash::get_checksum(path.to_str().unwrap()).unwrap();
+            let checksum = retry(delay::Fixed::from_millis(100), || {
+                hash::get_checksum(path.to_str().unwrap())
+            }).ok().expect("Error generating checksum.");
 
-            writeln!(log, "{}File '{}' created, checksum {}",
-                msg, path.to_str().unwrap(), checksum
-            ).expect("Error writing event");
+            if clean_format == "JSON" {
+                obj["kind"] = "CREATE".into();
+                obj["file"] = path.to_str().unwrap().into();
+                obj["checksum"] = checksum.into();
+                writeln!(log, "{}", json::stringify(obj))
+            } else {
+                writeln!(log, "{} File '{}' created, checksum {}", message,
+                    path.to_str().unwrap(), checksum)
+            }
         }
         Op::WRITE => {
-            let checksum = hash::get_checksum(path.to_str().unwrap()).unwrap();
-            writeln!(log, "{}File '{}' written, new checksum {}",
-                msg, path.to_str().unwrap(), checksum
-            ).expect("Error writing event");
+            let checksum = retry(delay::Fixed::from_millis(100), || {
+                hash::get_checksum(path.to_str().unwrap())
+            }).ok().expect("Error generating checksum.");
+
+            if clean_format == "JSON" {
+                obj["kind"] = "WRITE".into();
+                obj["file"] = path.to_str().unwrap().into();
+                obj["checksum"] = checksum.into();
+                writeln!(log, "{}", json::stringify(obj))
+            } else {
+                writeln!(log, "{} File '{}' written, new checksum {}", message,
+                    path.to_str().unwrap(), checksum)
+            }
         }
         Op::RENAME => {
             let checksum = match hash::get_checksum(path.to_str().unwrap()) {
@@ -61,17 +102,61 @@ pub fn log_event(file: &str, event: RawEvent, format: &str){
                     String::from("IGNORED")
                 }
             };
-            writeln!(log, "{}File '{}' renamed, checksum {}", msg,
-                path.to_str().unwrap(), checksum).expect("Error writing event");
+            
+            if clean_format == "JSON" {
+                obj["kind"] = "RENAME".into();
+                obj["file"] = path.to_str().unwrap().into();
+                obj["checksum"] = checksum.into();
+                writeln!(log, "{}", json::stringify(obj))
+            } else {
+                writeln!(log, "{} File '{}' renamed, checksum {}", message,
+                    path.to_str().unwrap(), checksum)
+            }
         }
-        Op::REMOVE => writeln!(log, "{}File '{}' removed", msg,
-            path.to_str().unwrap()).expect("Error writing event"),
-        Op::CHMOD => writeln!(log, "{}File '{}' permissions modified", msg,
-            path.to_str().unwrap()).expect("Error writing event"),
-        Op::CLOSE_WRITE => writeln!(log, "{}File '{}' closed", msg,
-            path.to_str().unwrap()).expect("Error writing event"),
-        Op::RESCAN => writeln!(log, "{}Directory '{}' need to be rescaned", msg,
-            path.to_str().unwrap()).expect("Error writing event"),
-        _ => error!("Event Op not Handled"),
-    }
+        Op::REMOVE => {
+            if clean_format == "JSON" {
+                obj["kind"] = "REMOVE".into();
+                obj["file"] = path.to_str().unwrap().into();
+                writeln!(log, "{}", json::stringify(obj))
+            } else {
+                writeln!(log, "{} File '{}' removed", message,
+                    path.to_str().unwrap())
+            }
+        },
+        Op::CHMOD => {
+            if clean_format == "JSON" {
+                obj["kind"] = "CHMOD".into();
+                obj["file"] = path.to_str().unwrap().into();
+                writeln!(log, "{}", json::stringify(obj))
+            } else {
+                writeln!(log, "{} File '{}' permissions modified", message,
+                    path.to_str().unwrap())
+            }
+        },
+        Op::CLOSE_WRITE => {
+            if clean_format == "JSON" {
+                obj["kind"] = "CLOSE_WRITE".into();
+                obj["file"] = path.to_str().unwrap().into();
+                writeln!(log, "{}", json::stringify(obj))
+            } else {
+                writeln!(log, "{} File '{}' closed", message,
+                    path.to_str().unwrap())
+            }
+        },
+        Op::RESCAN => {
+            if clean_format == "JSON" {
+                obj["kind"] = "RESCAN".into();
+                obj["file"] = path.to_str().unwrap().into();
+                writeln!(log, "{}", json::stringify(obj))
+            } else {
+                writeln!(log, "{} Directory '{}' need to be rescaned", message,
+                    path.to_str().unwrap())
+            }
+        },
+        _ => {
+            let error_msg = "Event Op not Handled or do not exists";
+            error!("{}", error_msg);
+            Err(Error::new(ErrorKind::InvalidInput, error_msg))
+        },
+    }.expect("Error writing event")
 }

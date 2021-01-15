@@ -9,7 +9,9 @@ monitor:
 log: 
   output: 
     file: fim.log
+    # Possible levels debug, info, error, warning
     level: debug
-  events: 
-    file: syslog.log
-    format: syslog
+  events:
+    file: events.log
+    # Format of output events options json/syslog
+    format: json
