@@ -12,6 +12,15 @@ Steps:
 cargo build --release
 ```
 
+## Set up environment
+Linux
+- Install git
+- Install gcc
+- Run `curl https://sh.rustup.rs -sSf | sh` to install rust (install at default location).
+- run `git clone https://github.com/Achiefs/fim.git`
+- run `cargo run` to download crates, build and run Fim.
+- Edit `config.yml` to adjust your needs.
+
 ## How to use
 You need to modify the `config.yml` file to adjust to your needs.
 This file has to be on the same path as the binary file.
