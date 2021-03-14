@@ -65,8 +65,9 @@ pub fn log_event(file: &str, event: RawEvent, format: &str){
             let md = metadata(&path).unwrap();
             let checksum = match md.is_file() {
                 true => {
-                    hash::get_checksum(&path.to_str().unwrap())
-                        .ok().expect("Error generating checksum.")
+                    retry(delay::Fixed::from_millis(100), || {
+                        hash::get_checksum(&path.to_str().unwrap())
+                    }).ok().expect("Error generating checksum.")
                 },
                 false => String::from("IGNORED")
             };
