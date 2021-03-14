@@ -1,6 +1,15 @@
+version: 0.1.0
+
 # Monitor folder or files in windows/unix syntax.
 monitor: 
-  - C:\tmp\
+# Possible monitored folders (Windows examples)
+#  - C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup
+#  - C:\Program Files
+# Possible monitored folders (Linux examples)
+#  - /etc/
+#  - /usr/bin/
+#  - /bin/
+
 
 # Path to output and events files:
 # output to write app log.
