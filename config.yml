@@ -1,7 +1,6 @@
 # Monitor folder or files in windows/unix syntax.
 monitor: 
-  - C:\tmp\test.txt
-  - C:\tmp\dir
+  - C:\tmp\
 
 # Path to output and events files:
 # output to write app log.
@@ -12,6 +11,6 @@ log:
     # Possible levels debug, info, error, warning
     level: debug
   events:
-    file: events.log
+    file: events.json
     # Format of output events options json/syslog
     format: json

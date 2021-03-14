@@ -1,5 +1,5 @@
 // To handle files
-use std::fs::OpenOptions;
+use std::fs::{OpenOptions, metadata};
 use std::io::{Write, Error, ErrorKind};
 // To get Date and Time
 use chrono::Utc;
@@ -18,7 +18,7 @@ use retry::*;
 // To load hashing functions
 mod hash;
 
-// To get Syslog format "Jan 01 01:01:01 HOSTNAME APPNAME[PID]:"
+// To get JSON object of common data.
 fn get_common_message(format: &str) -> JsonValue {
     let hostname = gethostname::gethostname().into_string().unwrap();
     match format {
@@ -62,9 +62,14 @@ pub fn log_event(file: &str, event: RawEvent, format: &str){
 
     match event.op.unwrap() {
         Op::CREATE => {
-            let checksum = retry(delay::Fixed::from_millis(100), || {
-                hash::get_checksum(path.to_str().unwrap())
-            }).ok().expect("Error generating checksum.");
+            let md = metadata(&path).unwrap();
+            let checksum = match md.is_file() {
+                true => {
+                    hash::get_checksum(&path.to_str().unwrap())
+                        .ok().expect("Error generating checksum.")
+                },
+                false => String::from("IGNORED")
+            };
 
             if clean_format == "JSON" {
                 obj["kind"] = "CREATE".into();
@@ -92,7 +97,29 @@ pub fn log_event(file: &str, event: RawEvent, format: &str){
             }
         }
         Op::RENAME => {
-            let checksum = match hash::get_checksum(path.to_str().unwrap()) {
+            let checksum = match metadata(&path) {
+                Ok(md) => {
+                    match md.is_file() {
+                        true => {
+                            match hash::get_checksum(&path.to_str().unwrap()) {
+                                Ok(data) => data,
+                                Err(e) => {
+                                    match e.kind() {
+                                        ErrorKind::NotFound => println!("File Not found error ignoring..."),
+                                        _ => panic!("Not handled error on get_checksum function."),
+                                    };
+                                    String::from("IGNORED")
+                                }
+                            }
+                        },
+                        false => String::from("IGNORED")
+                    }
+                },
+                Err(_e) => String::from("IGNORED")
+            };
+
+
+/*            let checksum = match hash::get_checksum(path.to_str().unwrap()) {
                 Ok(data) => data,
                 Err(e) => {
                     match e.kind() {
@@ -102,7 +129,7 @@ pub fn log_event(file: &str, event: RawEvent, format: &str){
                     String::from("IGNORED")
                 }
             };
-            
+            */
             if clean_format == "JSON" {
                 obj["kind"] = "RENAME".into();
                 obj["file"] = path.to_str().unwrap().into();
