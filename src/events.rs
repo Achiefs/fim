@@ -43,6 +43,7 @@ fn get_common_message(format: &str) -> JsonValue {
 
 // Function to write the received events to file
 pub fn log_event(file: &str, event: RawEvent, format: &str){
+    let retries = 5;
     let mut log = OpenOptions::new()
         .create(true)
         .write(true)
@@ -65,7 +66,7 @@ pub fn log_event(file: &str, event: RawEvent, format: &str){
             let md = metadata(&path).unwrap();
             let checksum = match md.is_file() {
                 true => {
-                    retry(delay::Fixed::from_millis(100), || {
+                    retry(delay::Fixed::from_millis(100).take(retries), || {
                         hash::get_checksum(&path.to_str().unwrap())
                     }).ok().expect("Error generating checksum.")
                 },
@@ -83,7 +84,7 @@ pub fn log_event(file: &str, event: RawEvent, format: &str){
             }
         }
         Op::WRITE => {
-            let checksum = retry(delay::Fixed::from_millis(100), || {
+            let checksum = retry(delay::Fixed::from_millis(100).take(retries), || {
                 hash::get_checksum(path.to_str().unwrap())
             }).ok().expect("Error generating checksum.");
 
