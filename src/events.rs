@@ -117,19 +117,6 @@ pub fn log_event(file: &str, event: RawEvent, format: &str){
                 },
                 Err(_e) => String::from("IGNORED")
             };
-
-
-/*            let checksum = match hash::get_checksum(path.to_str().unwrap()) {
-                Ok(data) => data,
-                Err(e) => {
-                    match e.kind() {
-                        ErrorKind::NotFound => println!("File Not found error ignoring..."),
-                        _ => panic!("Not handled error on get_checksum function."),
-                    };
-                    String::from("IGNORED")
-                }
-            };
-            */
             if clean_format == "JSON" {
                 obj["kind"] = "RENAME".into();
                 obj["file"] = path.to_str().unwrap().into();
