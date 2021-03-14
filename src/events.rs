@@ -12,8 +12,6 @@ use log::*;
 use notify::RawEvent;
 // To handle JSON objects
 use json::JsonValue;
-// To retry open files error
-use retry::*;
 
 // To load hashing functions
 mod hash;
@@ -43,7 +41,6 @@ fn get_common_message(format: &str) -> JsonValue {
 
 // Function to write the received events to file
 pub fn log_event(file: &str, event: RawEvent, format: &str){
-    let retries = 5;
     let mut log = OpenOptions::new()
         .create(true)
         .write(true)
@@ -66,9 +63,10 @@ pub fn log_event(file: &str, event: RawEvent, format: &str){
             let md = metadata(&path).unwrap();
             let checksum = match md.is_file() {
                 true => {
-                    retry(delay::Fixed::from_millis(100).take(retries), || {
-                        hash::get_checksum(&path.to_str().unwrap())
-                    }).ok().expect("Error generating checksum.")
+                    match hash::get_checksum(&path.to_str().unwrap()) {
+                        Ok(data) => data,
+                        Err(_e) => String::from("IGNORED")
+                    }
                 },
                 false => String::from("IGNORED")
             };
@@ -84,9 +82,10 @@ pub fn log_event(file: &str, event: RawEvent, format: &str){
             }
         }
         Op::WRITE => {
-            let checksum = retry(delay::Fixed::from_millis(100).take(retries), || {
-                hash::get_checksum(path.to_str().unwrap())
-            }).ok().expect("Error generating checksum.");
+            let checksum = match hash::get_checksum(&path.to_str().unwrap()) {
+                Ok(data) => data,
+                Err(_e) => String::from("IGNORED")
+            };
 
             if clean_format == "JSON" {
                 obj["kind"] = "WRITE".into();
