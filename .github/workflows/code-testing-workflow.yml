@@ -4,7 +4,7 @@ jobs:
   Compilation-test-linux:
     runs-on: ubuntu-20.04
     steps:
-      - name: Check out repository code, branch='{{ github.ref }}'
+      - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
       - name: Building the rust code
         run: cargo build
@@ -12,7 +12,7 @@ jobs:
   Compilation-test-windows:
     runs-on: windows-2019
     steps:
-      - name: Check out repository code, branch='{{ github.ref }}'
+      - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
       - name: Building the rust code
         run: cargo build
