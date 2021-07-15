@@ -1,0 +1,19 @@
+name: Code testing
+on: [push]
+jobs:
+  Compilation-test-linux:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+      - name: Building the rust code
+        run: cargo build
+      - run: echo "Job's status is ${{ job.status }}."
+  Compilation-test-windows:
+    runs-on: windows-2019
+    steps:
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+      - name: Building the rust code
+        run: cargo build
+      - run: echo "Job's status is ${{ job.status }}."
