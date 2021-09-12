@@ -1,15 +1,18 @@
-version: 0.1.0
+version: 0.2.0
 
 # Monitor folder or files in windows/unix syntax.
 monitor: 
 # Possible monitored folders (Windows examples)
-#  - C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup
-#  - C:\Program Files
+#  - path: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup
+#   ignore: .log
+#  - path: C:\Program Files
 # Possible monitored folders (Linux examples)
-#  - /etc/
-#  - /usr/bin/
-#  - /bin/
-
+#  - path: /etc/
+#      ignore: .cfg
+#  - path: /usr/bin/
+#  - path: /bin/
+  - path: C:\
+    ignore: .log
 
 # Path to output and events files:
 # output to write app log.
