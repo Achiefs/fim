@@ -77,7 +77,6 @@ fn main() {
                 let event_filename = event_data.file_name().unwrap();
 
                 let monitor_vector = monitor.as_vec().unwrap().to_vec();
-                //if path1_str.ends_with('/'){ pop(path1_str); }
                 if monitor_vector.iter().any(|it| {
                     let path = it["path"].as_str().unwrap();
                     let value = if path.ends_with('/') || path.ends_with("\\"){ pop(path) }else{ path };
