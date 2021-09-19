@@ -17,9 +17,11 @@ Linux
 - Install git
 - Install gcc
 - Run `curl https://sh.rustup.rs -sSf | sh` to install rust (install at default location).
-- run `git clone https://github.com/Achiefs/fim.git`
-- run `cargo run` to download crates, build and run Fim.
-- Edit `config.yml` to adjust your needs.
+- Reload PATH variable in your terminal.
+- Run `git clone https://github.com/Achiefs/fim.git`
+- Run `cd fim` to go inside cloned folder.
+- Edit `config.yml` to adjust your needs, add paths or ignore files.
+- Run `cargo run` to download crates, build and run Fim software.
 
 ## How to use
 You need to modify the `config.yml` file to adjust to your needs.
@@ -39,8 +41,12 @@ Windows
 To customize your installation and monitor all required files, you may want to edit the `config.yml` file. Such file is pretty straightforward below you have its structure:
 ```
 monitor: 
-  - C:\tmp\test.txt
-  - C:\tmp\dir
+  # Windows version
+  - path: C:\tmp\test.txt
+    ignore: .log
+  # Linux version
+  - path: /tmp/dir
+    ignore: .txt
 
 log: 
   output: 
