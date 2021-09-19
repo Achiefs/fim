@@ -14,6 +14,12 @@ mod config;
 // To load events handling
 mod events;
 
+fn pop(value: &str) -> &str {
+    let mut chars = value.chars();
+    chars.next_back();
+    chars.as_str()
+}
+
 // Main function where the magic happens
 fn main() {
     println!("Reading config...");
@@ -71,14 +77,19 @@ fn main() {
                 let event_filename = event_data.file_name().unwrap();
 
                 let monitor_vector = monitor.as_vec().unwrap().to_vec();
+                //if path1_str.ends_with('/'){ pop(path1_str); }
                 if monitor_vector.iter().any(|it| {
-                    it["path"].as_str().unwrap()==event_parent_path &&
+                    let path = it["path"].as_str().unwrap();
+                    let value = if path.ends_with('/'){ pop(path) }else{ path };
+                    event_parent_path.contains(value) &&
                     !event_filename.to_str().unwrap().contains(match it["ignore"].as_str(){
                         Some(ig) => ig,
                         None => "?"
                     })
                 }){
                     events::log_event(events_file, event, events_format)
+                }else{
+                    debug!("Event ignored not stored in alerts");
                 }
             },
             Err(e) => error!("Watch error: {:?}", e),
