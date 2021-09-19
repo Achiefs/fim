@@ -80,7 +80,7 @@ fn main() {
                 //if path1_str.ends_with('/'){ pop(path1_str); }
                 if monitor_vector.iter().any(|it| {
                     let path = it["path"].as_str().unwrap();
-                    let value = if path.ends_with('/'){ pop(path) }else{ path };
+                    let value = if path.ends_with('/') || path.ends_with("\\"){ pop(path) }else{ path };
                     event_parent_path.contains(value) &&
                     !event_filename.to_str().unwrap().contains(match it["ignore"].as_str(){
                         Some(ig) => ig,
