@@ -24,8 +24,14 @@ fn pop(value: &str) -> &str {
 fn main() {
     println!("Reading config...");
 
-    let config_path = "config.yml";
-    let config = config::read_config(config_path);
+    let b = Path::new("./config.yml").exists();
+    let selected_path = match b {
+        true => "./config.yml",
+        false => "/usr/share/fim/config.yml"
+    };
+
+    println!("Loaded config from: {}", selected_path);
+    let config = config::read_config(selected_path); 
     let monitor = &config[0]["monitor"];
     //println!("{}", monitor.as_str().unwrap());
     let log_file = &config[0]["log"]["output"]["file"].as_str().unwrap();
@@ -33,7 +39,7 @@ fn main() {
     let events_file = &config[0]["log"]["events"]["file"].as_str().unwrap();
     let events_format = &config[0]["log"]["events"]["format"].as_str().unwrap();
     
-    println!("Config file: {}", config_path);
+    println!("Config file: {}", selected_path);
     println!("Log file: {}", log_file);
     println!("Events file: {}", events_file);
     println!("Log level: {}", log_level);
