@@ -25,12 +25,12 @@ source $HOME/.cargo/env
 cargo build --release
 
 %install
-echo "localstatedir: ${_localstatedir}"
+echo "localstatedir: %{_localstatedir}"
 echo "RPM_BUILD_ROOT: ${RPM_BUILD_ROOT}"
-mkdir -m 750 ${_localstatedir}
+mkdir -p -m 750 ${RPM_BUILD_ROOT}%{_localstatedir}
 
-install -m 0750 target/release/fim ${RPM_BUILD_ROOT}/
-install -m 0640 config.yml ${RPM_BUILD_ROOT}/
+install -m 0750 target/release/fim ${RPM_BUILD_ROOT}%{_localstatedir}/
+install -m 0640 config.yml ${RPM_BUILD_ROOT}%{_localstatedir}/
 
 %pre
 
