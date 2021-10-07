@@ -1,0 +1,20 @@
+#!/bin/sh
+set -e
+
+DIR="/usr/share/fim"
+
+case "$1" in
+    remove|failed-upgrade|abort-install|abort-upgrade|disappear)
+        rm -rf ${DIR}
+    ;;
+
+    upgrade)
+    ;;
+
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0

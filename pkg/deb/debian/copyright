@@ -1,0 +1,27 @@
+This work was packaged for Debian by:
+
+    Jose Fernandez <support@achiefs.com> on Thu, 07 Oct 2021 22:45:00 +0000
+
+It was downloaded from:
+
+    https://github.com/Achiefs/fim/releases
+
+Upstream Authors:
+
+    support@achiefs.com
+    pylott@gmail.com
+
+Copyright:
+
+    GNU General Public License version 3.
+
+License:
+
+    GNU General Public License version 3.
+
+The Debian packaging is:
+
+    Copyright (C) 2021 Achiefs <support@achiefs.com>
+
+and is licensed under the GPL version 3,
+see "/usr/share/common-licenses/GPL-3".

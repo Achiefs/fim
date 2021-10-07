@@ -1,0 +1,12 @@
+Source: fim
+Section: admin
+Priority: extra
+Maintainer: Jose Fernandez <support@achiefs.com>
+Build-Depends: debhelper (>=10)
+Standards-Version: 4.0.0
+Homepage: https://github.com/Achiefs/fim
+
+Package: fim
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: FIM helps you to monitor your files of any unwanted action.

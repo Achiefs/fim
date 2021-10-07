@@ -1,0 +1,40 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Sample debian/rules that uses debhelper.
+#
+# This file was originally written by Joey Hess and Craig Small.
+# As a special exception, when this file is copied by dh-make into a
+# dh-make output file, you may use that output file without restriction.
+# This special exception was added by Craig Small in version 0.37 of dh-make.
+#
+# Modified to make a template file for a multi-binary package with separated
+# build-arch and build-indep targets  by Bill Allombert 2001
+
+# Uncomment this to turn on verbose mode.
+export DH_VERBOSE=1
+
+# This has to be exported to make some magic below work.
+export DH_OPTIONS
+
+# Package build options
+export INSTALLATION_DIR="/usr/share/fim"
+export PATH="${PATH}"
+
+%:
+	dh $@
+
+override_dh_clean:
+	rm -rf /tmp/fim
+
+override_dh_build:
+	curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+	source ${HOME}/.cargo/env
+	cargo build --release
+
+override_dh_install:
+	mkdir -p -m 750 ${RPM_BUILD_ROOT}%{_localstatedir}
+	install -m 0750 target/release/fim ${RPM_BUILD_ROOT}%{_localstatedir}/
+	install -m 0640 config.yml ${RPM_BUILD_ROOT}%{_localstatedir}/
+
+.PHONY: override_dh_clean override_dh_build override_dh_install

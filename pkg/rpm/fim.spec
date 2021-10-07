@@ -1,14 +1,14 @@
 Summary:     FIM software provides a easy way to watch your files.
 Name:        fim
 Version:     %{_version}
-Release:     %{_release}
+Release:     1
 License:     GPL
 Group:       System Environment/Daemons
 Source0:     %{name}-%{version}.tar.gz
 URL:         https://github.com/Achiefs/fim
 BuildRoot:   %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-Vendor:      Achiefs, Inc <support@achiefs.com>
-Packager:    Achiefs, Inc <support@achiefs.com>
+Vendor:      Achiefs <support@achiefs.com>
+Packager:    Jose Fernandez <support@achiefs.com>
 AutoReqProv: no
 ExclusiveOS: linux
 
