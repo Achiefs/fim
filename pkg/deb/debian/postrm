@@ -1,11 +1,11 @@
 #!/bin/sh
 set -e
 
-DIR="/usr/share/fim"
+INSTALL_DIR="/usr/share/fim"
 
 case "$1" in
     remove|failed-upgrade|abort-install|abort-upgrade|disappear)
-        rm -rf ${DIR}
+        rm -rf ${INSTALL_DIR}
     ;;
 
     upgrade)

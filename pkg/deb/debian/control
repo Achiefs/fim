@@ -1,6 +1,6 @@
 Source: fim
 Section: admin
-Priority: extra
+Priority: optional
 Maintainer: Jose Fernandez <support@achiefs.com>
 Build-Depends: debhelper (>=10)
 Standards-Version: 4.0.0
@@ -8,5 +8,7 @@ Homepage: https://github.com/Achiefs/fim
 
 Package: fim
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: FIM helps you to monitor your files of any unwanted action.
+Depends: ${misc:Depends}
+Description: This software helps you to monitor your files of any unwanted action.
+ With FIM you could take a deep eye into your files 
+ and know when they are exactly changed.

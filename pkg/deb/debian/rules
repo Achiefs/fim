@@ -17,24 +17,26 @@ export DH_VERBOSE=1
 export DH_OPTIONS
 
 # Package build options
-export INSTALLATION_DIR="/usr/share/fim"
-export PATH="${PATH}"
+export BRAND=""
+export TARGET_DIR=${CURDIR}/debian/${BRAND}
+export INSTALL_DIR="/usr/share/fim"
+export BUILD_DIR=""
+export PKG_DIR="${TARGET_DIR}${INSTALL_DIR}"
 
 %:
 	dh $@
 
 override_dh_clean:
-	rm -rf /tmp/fim
-
-override_dh_build:
-	curl https://sh.rustup.rs -sSf | sh -s -- -y
-
-	source ${HOME}/.cargo/env
-	cargo build --release
 
 override_dh_install:
-	mkdir -p -m 750 ${RPM_BUILD_ROOT}%{_localstatedir}
-	install -m 0750 target/release/fim ${RPM_BUILD_ROOT}%{_localstatedir}/
-	install -m 0640 config.yml ${RPM_BUILD_ROOT}%{_localstatedir}/
+	rm -rf $(TARGET_DIR)/
+	curl https://sh.rustup.rs -sSf | sh -s -- -y
 
-.PHONY: override_dh_clean override_dh_build override_dh_install
+	cd ${BUILD_DIR}
+	${HOME}/.cargo/bin/cargo build --release
+
+	mkdir -p -m 750 ${PKG_DIR}/
+	install -m 0750 ${BUILD_DIR}/target/release/fim ${PKG_DIR}/
+	install -m 0640 ${BUILD_DIR}/config.yml ${PKG_DIR}/
+
+.PHONY: override_dh_clean override_dh_install
