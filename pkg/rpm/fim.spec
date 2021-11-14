@@ -24,9 +24,10 @@ source $HOME/.cargo/env
 cargo build --release
 
 %install
-mkdir -p -m 750 ${RPM_BUILD_ROOT}%{_localstatedir}
-install -m 0750 target/release/fim ${RPM_BUILD_ROOT}%{_localstatedir}/
-install -m 0640 config.yml ${RPM_BUILD_ROOT}%{_localstatedir}/
+mkdir -p -m 640 ${RPM_BUILD_ROOT}%{_configdir}
+
+install -m 0750 target/release/fim ${RPM_BUILD_ROOT}%{_bindir}/
+install -m 0640 config.yml ${RPM_BUILD_ROOT}%{_configdir}/
 
 %pre
 %post
@@ -36,7 +37,8 @@ install -m 0640 config.yml ${RPM_BUILD_ROOT}%{_localstatedir}/
 # If the package is been uninstalled
 if [ $1 = 0 ];then
   # Remove lingering folders and files
-  rm -rf %{_localstatedir}
+  rm -f %{_bindir}/%{name}
+  rm -rf %{_configdir}
 fi
 
 %clean
@@ -44,9 +46,9 @@ rm -fr %{buildroot}
 
 %files
 %defattr(-,root,root)
-%dir %attr(750, root, root) %{_localstatedir}
-%attr(750, root, root) %{_localstatedir}/fim
-%attr(640, root, root) %{_localstatedir}/config.yml
+%attr(750, root, root) %{_bindir}/fim
+%dir %attr(750, root, root) %{_configdir}
+%attr(640, root, root) %{_configdir}/config.yml
 
 
 %changelog

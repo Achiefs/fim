@@ -27,7 +27,7 @@ fn main() {
     let b = Path::new("./config.yml").exists();
     let selected_path = match b {
         true => "./config.yml",
-        false => "/usr/share/fim/config.yml"
+        false => "/etc/fim/config.yml"
     };
 
     println!("Loaded config from: {}", selected_path);

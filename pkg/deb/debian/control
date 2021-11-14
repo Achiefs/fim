@@ -8,7 +8,7 @@ Homepage: https://github.com/Achiefs/fim
 
 Package: fim
 Architecture: any
-Depends: ${misc:Depends}
+Depends: ${shlibs:Depends}
 Description: This software helps you to monitor your files of any unwanted action.
  With FIM you could take a deep eye into your files 
  and know when they are exactly changed.

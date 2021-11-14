@@ -2,12 +2,13 @@
 # Dependencies: rpm-build, tar, gcc
 set -ex
 
-install_path=$1
 brand="fim"
 current_dir=$(pwd)
 architecture="x86_64"
 rpmbuild="/usr/bin/rpmbuild"
 version="$(head -n1 ../../config.yml | cut -d' ' -f2)"
+bin_path="/usr/bin"
+config_path="/etc/${brand}"
 
 # Build directories
 build_dir="/tmp/fim"
@@ -28,7 +29,8 @@ echo "%debug_package %{nil}" >> /root/.rpmmacros
 
 # Building RPM
 $rpmbuild --define "_topdir ${rpm_build_dir}" \
-    --define "_version ${version}" --define "_localstatedir ${install_path}" \
+    --define "_version ${version}"
+    --define "_bindir ${bin_path}" --define "_configdir ${config_path}" \
     --target ${architecture} -ba ${rpm_build_dir}/SPECS/${pkg_name}.spec
 
 cp ${rpm_build_dir}/RPMS/${architecture}/${brand}*.rpm ${current_dir}/
