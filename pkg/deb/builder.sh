@@ -1,5 +1,5 @@
 #!/bin/bash
-# Dependencies: curl, devscripts, equivs, debuild, tar, gcc
+# Dependencies: curl, devscripts, equivs, tar, gcc
 set -ex
 
 brand="fim"
