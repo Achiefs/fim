@@ -1,5 +1,8 @@
-// To read and write files
+// To read and write directories and files
 use std::fs::OpenOptions;
+use std::fs;
+// To get Operating system
+use std::env;
 // To get file system changes
 use notify::{RecommendedWatcher, Watcher, RecursiveMode};
 use std::sync::mpsc::channel;
@@ -23,10 +26,12 @@ fn pop(value: &str) -> &str {
 // Main function where the magic happens
 fn main() {
     println!("Reading config...");
+    println!("System detected {}", env::consts::OS);
 
-    let b = Path::new("./config.yml").exists();
+    let config_path = format!("./config/{}/config.yml", env::consts::OS);
+    let b = Path::new(config_path.as_str()).exists();
     let selected_path = match b {
-        true => "./config.yml",
+        true => config_path.as_str(),
         false => "/etc/fim/config.yml"
     };
 
@@ -43,6 +48,10 @@ fn main() {
     println!("Log file: {}", log_file);
     println!("Events file: {}", events_file);
     println!("Log level: {}", log_level);
+
+    //Create folders
+    fs::create_dir_all(Path::new(log_file).parent().unwrap().to_str().unwrap()).unwrap();
+    fs::create_dir_all(Path::new(events_file).parent().unwrap().to_str().unwrap()).unwrap();
 
     // Create output log to write app logs.
     WriteLogger::init(

@@ -1,0 +1,21 @@
+version: 0.2.0
+
+# Monitor folder or files in windows.
+monitor: 
+  - path: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup
+  - path: C:\Program Files\
+  - path: C:\Users\
+  - path: C:\Windows\Temp\
+
+# Path to output and events files:
+# output to write app log.
+# events to write monitorized folder/files events.
+log: 
+  output: 
+    file: C:\ProgramData\fim\fim.log
+    # Possible levels debug, info, error, warning
+    level: debug
+  events:
+    file: C:\ProgramData\fim\events.json
+    # Format of output events options json/syslog
+    format: json
