@@ -29,7 +29,7 @@ override_dh_install:
 	mkdir -p ${BIN_DIR}
 	mkdir -p ${DOC_DIR}
 	install -m 0750 ${BUILD_DIR}/target/release/fim ${BIN_DIR}/
-	install -m 0640 ${BUILD_DIR}/config.yml ${CONFIG_DIR}/
+	install -m 0640 ${BUILD_DIR}/config/linux/config.yml ${CONFIG_DIR}/
 	install -m 0640 ${BUILD_DIR}/pkg/deb/debian/copyright ${DOC_DIR}/
 	install -m 0640 ${BUILD_DIR}/pkg/deb/debian/changelog ${DOC_DIR}/
 

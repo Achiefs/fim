@@ -25,9 +25,10 @@ cargo build --release
 
 %install
 mkdir -p -m 640 ${RPM_BUILD_ROOT}%{_configdir}
+mkdir -p -m 640 ${RPM_BUILD_ROOT}%{_bindir}
 
 install -m 0750 target/release/fim ${RPM_BUILD_ROOT}%{_bindir}/
-install -m 0640 config.yml ${RPM_BUILD_ROOT}%{_configdir}/
+install -m 0640 config/linux/config.yml ${RPM_BUILD_ROOT}%{_configdir}/
 
 %pre
 %post

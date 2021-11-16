@@ -28,8 +28,7 @@ cd ${build_dir} && tar czf "${rpm_build_dir}/SOURCES/${pkg_name}.tar.gz" "${pkg_
 echo "%debug_package %{nil}" >> /root/.rpmmacros
 
 # Building RPM
-$rpmbuild --define "_topdir ${rpm_build_dir}" \
-    --define "_version ${version}"
+$rpmbuild --define "_topdir ${rpm_build_dir}" --define "_version ${version}" \
     --define "_bindir ${bin_path}" --define "_configdir ${config_path}" \
     --target ${architecture} -ba ${rpm_build_dir}/SPECS/${pkg_name}.spec
 
