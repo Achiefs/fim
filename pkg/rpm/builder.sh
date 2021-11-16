@@ -6,7 +6,7 @@ brand="fim"
 current_dir=$(pwd)
 architecture="x86_64"
 rpmbuild="/usr/bin/rpmbuild"
-version="$(head -n1 ../../config.yml | cut -d' ' -f2)"
+version="$(head -n1 ../../config/linux/config.yml | cut -d' ' -f2)"
 bin_path="/usr/bin"
 config_path="/etc/${brand}"
 

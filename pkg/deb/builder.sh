@@ -6,7 +6,7 @@ brand="fim"
 target_dir=$(pwd)
 architecture="amd64"
 base_dir="${target_dir}/../../"
-version="$(head -n1 ${base_dir}/config.yml | cut -d' ' -f2)"
+version="$(head -n1 ${base_dir}/config/linux/config.yml | cut -d' ' -f2)"
 
 # Build directories
 build_dir="/tmp/${brand}"
