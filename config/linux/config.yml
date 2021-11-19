@@ -6,7 +6,6 @@ monitor:
   - path: /bin/
   - path: /usr/bin/
   - path: /etc
-  - path: /var/log/
 
 # Path to output and events files:
 # output to write app log.
