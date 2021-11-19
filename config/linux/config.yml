@@ -1,0 +1,21 @@
+version: 0.2.0
+
+# Monitor folder or files in unix.
+monitor: 
+  - path: /tmp/
+  - path: /bin/
+  - path: /usr/bin/
+  - path: /etc
+
+# Path to output and events files:
+# output to write app log.
+# events to write monitorized folder/files events.
+log: 
+  output: 
+    file: /var/log/fim/fim.log
+    # Possible levels debug, info, error, warning
+    level: debug
+  events:
+    file: /usr/share/fim/events.json
+    # Format of output events options json/syslog
+    format: json

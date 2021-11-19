@@ -1,0 +1,21 @@
+#!/bin/sh
+set -e
+
+INSTALL_DIR="/usr/local"
+
+case "$1" in
+    remove|failed-upgrade|abort-install|abort-upgrade|disappear)
+        rm -rf ${INSTALL_DIR}/bin/fim
+        rm -rf ${INSTALL_DIR}/etc/fim/config.yml
+    ;;
+
+    upgrade)
+    ;;
+
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0

@@ -1,5 +1,8 @@
-// To read and write files
+// To read and write directories and files
 use std::fs::OpenOptions;
+use std::fs;
+// To get Operating system
+use std::env;
 // To get file system changes
 use notify::{RecommendedWatcher, Watcher, RecursiveMode};
 use std::sync::mpsc::channel;
@@ -23,9 +26,17 @@ fn pop(value: &str) -> &str {
 // Main function where the magic happens
 fn main() {
     println!("Reading config...");
+    println!("System detected {}", env::consts::OS);
 
-    let config_path = "config.yml";
-    let config = config::read_config(config_path);
+    let config_path = format!("./config/{}/config.yml", env::consts::OS);
+    let b = Path::new(config_path.as_str()).exists();
+    let selected_path = match b {
+        true => config_path.as_str(),
+        false => "/etc/fim/config.yml"
+    };
+
+    println!("Loaded config from: {}", selected_path);
+    let config = config::read_config(selected_path); 
     let monitor = &config[0]["monitor"];
     //println!("{}", monitor.as_str().unwrap());
     let log_file = &config[0]["log"]["output"]["file"].as_str().unwrap();
@@ -33,10 +44,14 @@ fn main() {
     let events_file = &config[0]["log"]["events"]["file"].as_str().unwrap();
     let events_format = &config[0]["log"]["events"]["format"].as_str().unwrap();
     
-    println!("Config file: {}", config_path);
+    println!("Config file: {}", selected_path);
     println!("Log file: {}", log_file);
     println!("Events file: {}", events_file);
     println!("Log level: {}", log_level);
+
+    //Create folders
+    fs::create_dir_all(Path::new(log_file).parent().unwrap().to_str().unwrap()).unwrap();
+    fs::create_dir_all(Path::new(events_file).parent().unwrap().to_str().unwrap()).unwrap();
 
     // Create output log to write app logs.
     WriteLogger::init(

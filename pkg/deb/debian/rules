@@ -1,0 +1,44 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+export DH_VERBOSE=1
+
+# This has to be exported to make some magic below work.
+export DH_OPTIONS
+
+# Package build options
+export BUILD_DIR="../.."
+export TARGET_DIR="${CURDIR}/debian/fim"
+export PKG_DIR="${TARGET_DIR}/usr"
+export CONFIG_DIR="${TARGET_DIR}/etc/fim"
+export BIN_DIR="${PKG_DIR}/bin"
+export DOC_DIR="${PKG_DIR}/share/doc/fim"
+
+%:
+	dh $@
+
+override_dh_clean:
+
+override_dh_install:
+	curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+	echo ${CURDIR}
+	${HOME}/.cargo/bin/cargo build --release
+
+	mkdir -p ${CONFIG_DIR}
+	mkdir -p ${BIN_DIR}
+	mkdir -p ${DOC_DIR}
+	install -m 0750 ${BUILD_DIR}/target/release/fim ${BIN_DIR}/
+	install -m 0640 ${BUILD_DIR}/config/linux/config.yml ${CONFIG_DIR}/
+	install -m 0640 ${BUILD_DIR}/pkg/deb/debian/copyright ${DOC_DIR}/
+	install -m 0640 ${BUILD_DIR}/pkg/deb/debian/changelog ${DOC_DIR}/
+
+override_dh_installdocs:
+
+override_dh_installchangelogs:
+
+override_dh_perl:
+
+override_dh_link:
+
+.PHONY: override_dh_clean override_dh_install override_dh_installdocs override_dh_installchangelogs override_dh_perl override_dh_link

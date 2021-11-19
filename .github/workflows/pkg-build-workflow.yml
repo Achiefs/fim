@@ -1,0 +1,13 @@
+name: Pkg build
+on: [push]
+jobs:
+  Pkg-build-ubuntu:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+      - name: Install required dependencies
+        run: sudo apt install -y curl devscripts equivs tar gcc
+      - name: Building package
+        run: cd pkg/deb && sudo ./builder.sh
+      - run: echo "Job's status is ${{ job.status }}."
