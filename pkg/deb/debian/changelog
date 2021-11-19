@@ -1,11 +1,11 @@
-fim (0.2.0) devel; urgency=medium
+fim (0.2.0-1) devel; urgency=medium
 
   * Initial release
   * More info: https://github.com/Achiefs/fim/releases/tag/v0.2.0
 
  -- Jose Fernandez <support@achiefs.com>  Sat, 09 Oct 2021 14:00:00 +0000
 
-fim (0.1.0) UNRELEASED; urgency=medium
+fim (0.1.0-1) UNRELEASED; urgency=medium
 
   * Closes itp bug
   * More info: https://github.com/Achiefs/fim/releases/tag/v0.1.0
