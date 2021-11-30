@@ -1,37 +1,82 @@
-## Welcome to GitHub Pages
+# File integrity monitoring in Rust
+Hello everybody,
 
-You can use the [editor on GitHub](https://github.com/Achiefs/fim/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
+This software aims to improve the File integrity monitoring that we perform nowadays.
+File integrity monitoring is a common task in a security environment that all world is demanding.
+For that reason, we want to produce faster and easy to use open-source FIM tool improving similar functionality from Ossec.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+## First steps: Package installation (RPM and DEB only)
+To install FIM packages you only need to perform a few steps:
+1. Download our last package from the packages repository, located at Github `fim/pkg/{rpm,deb}/repository/release`
 
-### Markdown
+2. Install with
+RPM: `yum install fim-*.rpm`
+DEB: `apt install $(pwd)/PACKAGE_NAME.deb`
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+3. You can start to work typing `sudo nohup fim` in your terminal
+4. FIM software will start monitoring any activity on the default folders configured in `/etc/fim/config.yml` file.
 
-```markdown
-Syntax highlighted code block
+5. If you want to test it you could launch `touch /tmp/file.txt` in your terminal then, take a look at `/usr/share/fim/events.json` file. It will store each produced event in JSON format.
 
-# Header 1
-## Header 2
-### Header 3
 
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
+## Contributing: How to compile 
+We suggest using the `Cargo` tool to get dependencies automatically downloaded
+Steps: 
+```
+cargo build --release
 ```
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+### Set up environment
+Linux
+- Install git
+- Install gcc
+- Run `curl https://sh.rustup.rs -sSf | sh` to install rust (install at default location).
+- Reload PATH variable in your terminal.
+- Run `git clone https://github.com/Achiefs/fim.git`
+- Run `cd fim` to go inside cloned folder.
+- Edit `config.yml` to adjust your needs, add paths or ignore files.
+- Run `cargo run` to download crates, build and run Fim software.
 
-### Jekyll Themes
+## How to use
+You need to modify the `config.yml` file to adjust to your needs.
+This file has to be on the same path as the binary file.
+Run `fim` with:
+Linux
+```
+sudo ./fim
+```
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/Achiefs/fim/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+Windows
+```
+./fim.exe
+```
 
-### Support or Contact
+### Configuration file
+To customize your installation and monitor all required files, you may want to edit the `config.yml` file. Such file is pretty straightforward below you have its structure:
+```
+monitor: 
+  # Windows version
+  - path: C:\tmp\test.txt
+    ignore: .log
+  # Linux version
+  - path: /tmp/dir
+    ignore: .txt
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+log: 
+  output: 
+    file: fim.log
+    level: debug
+  events:
+    file: events.log
+    format: json
+```
+The `monitor` section keeps a list of files/directories. Add to it as many lines as you require.
+By now the recursion is only supported by adding nested folders.
+
+The `log` section keeps all configuration of software output there are two sections here:
+- `output` Handle application output logging:
+    - `file` path to writing the output logs.
+    - `level` the level of verbosity of the FIM app, currently supported debug/info/error/warning.
+- `events` Section to handle file system events output:
+    - `file` path to writing the output events.
+    - `format` the output format, currently supported `json` or `syslog`
