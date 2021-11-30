@@ -16,6 +16,10 @@ use std::path::Path;
 mod config;
 // To load events handling
 mod events;
+// To manage single event data
+#[path="./events/event.rs"]
+mod event;
+use event::Event;
 
 fn pop(value: &str) -> &str {
     let mut chars = value.chars();
@@ -25,9 +29,14 @@ fn pop(value: &str) -> &str {
 
 // Main function where the magic happens
 fn main() {
+    let _event = Event { id: "10" };
+
+    println!("Printing Event ID: {}", _event.get_id());
+
     println!("Reading config...");
     println!("System detected {}", env::consts::OS);
 
+    // Select directory where to load config.yml it depends on system
     let config_path = format!("./config/{}/config.yml", env::consts::OS);
     let b = Path::new(config_path.as_str()).exists();
     let selected_path = match b {
@@ -35,10 +44,10 @@ fn main() {
         false => "/etc/fim/config.yml"
     };
 
+    // Loading selected config.yml values into variables
     println!("Loaded config from: {}", selected_path);
     let config = config::read_config(selected_path); 
     let monitor = &config[0]["monitor"];
-    //println!("{}", monitor.as_str().unwrap());
     let log_file = &config[0]["log"]["output"]["file"].as_str().unwrap();
     let log_level = &config[0]["log"]["output"]["level"].as_str().unwrap();
     let events_file = &config[0]["log"]["events"]["file"].as_str().unwrap();
@@ -49,11 +58,11 @@ fn main() {
     println!("Events file: {}", events_file);
     println!("Log level: {}", log_level);
 
-    //Create folders
+    // Create folders to store logs and events based on config.yml
     fs::create_dir_all(Path::new(log_file).parent().unwrap().to_str().unwrap()).unwrap();
     fs::create_dir_all(Path::new(events_file).parent().unwrap().to_str().unwrap()).unwrap();
 
-    // Create output log to write app logs.
+    // Create logger output to write generated logs.
     WriteLogger::init(
         config::get_log_level(log_level.to_string(), log_file.to_string()),
         Config::default(),
@@ -65,7 +74,7 @@ fn main() {
             .expect("Unable to open log file")
     ).unwrap();
     
-    // Iterating over monitor paths and set each watcher to watch.
+    // Iterating over monitor paths and set watcher on each folder to watch.
     let (tx, rx) = channel();
     let mut watcher: RecommendedWatcher = Watcher::new_raw(tx).unwrap();
     for m in monitor.as_vec().unwrap() {
@@ -73,7 +82,7 @@ fn main() {
         let ignore = match m["ignore"].as_str() {
             Some(ig) => ig,
             None => {
-                println!("Ignore for {} not set", path);
+                println!("Ignore for '{}' not set", path);
                 "?"
             }
         };
@@ -82,15 +91,17 @@ fn main() {
         watcher.watch(path, RecursiveMode::Recursive).unwrap();
     }
 
-    // Main loop, receive any produced event and write into the events log.
+    // Main loop, receive any produced event and write it into the events log.
     loop {
         match rx.recv() {
             Ok(event) => {
+                // Get the event path and filename
                 debug!("Event registered: {:?}", event);
                 let event_data = Path::new(event.path.as_ref().unwrap().to_str().unwrap());
                 let event_parent_path = event_data.parent().unwrap().to_str().unwrap();
                 let event_filename = event_data.file_name().unwrap();
 
+                // Iterate over monitoring paths to match ignore string and ignore event or not
                 let monitor_vector = monitor.as_vec().unwrap().to_vec();
                 if monitor_vector.iter().any(|it| {
                     let path = it["path"].as_str().unwrap();

@@ -4,7 +4,6 @@ version: 0.2.0
 monitor: 
   - path: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup
   - path: C:\Program Files\
-  - path: C:\Users\
   - path: C:\Windows\Temp\
 
 # Path to output and events files:
