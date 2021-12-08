@@ -11,15 +11,15 @@ use log::*;
 use simplelog::{WriteLogger, Config};
 // To manage paths
 use std::path::Path;
+// To manage time
+use std::time::{SystemTime, UNIX_EPOCH};
 
 // To load configuration functions
 mod config;
-// To load events handling
-mod events;
 // To manage single event data
-#[path="./events/event.rs"]
 mod event;
 use event::Event;
+
 
 fn pop(value: &str) -> &str {
     let mut chars = value.chars();
@@ -29,17 +29,13 @@ fn pop(value: &str) -> &str {
 
 // Main function where the magic happens
 fn main() {
-    let _event = Event { id: "10" };
-
-    println!("Printing Event ID: {}", _event.get_id());
-
     println!("Reading config...");
     println!("System detected {}", env::consts::OS);
 
     // Select directory where to load config.yml it depends on system
     let config_path = format!("./config/{}/config.yml", env::consts::OS);
-    let b = Path::new(config_path.as_str()).exists();
-    let selected_path = match b {
+    let path_exist = Path::new(config_path.as_str()).exists();
+    let selected_path = match path_exist {
         true => config_path.as_str(),
         false => "/etc/fim/config.yml"
     };
@@ -94,10 +90,10 @@ fn main() {
     // Main loop, receive any produced event and write it into the events log.
     loop {
         match rx.recv() {
-            Ok(event) => {
+            Ok(raw_event) => {
                 // Get the event path and filename
-                debug!("Event registered: {:?}", event);
-                let event_data = Path::new(event.path.as_ref().unwrap().to_str().unwrap());
+                debug!("Event registered: {:?}", raw_event);
+                let event_data = Path::new(raw_event.path.as_ref().unwrap().to_str().unwrap());
                 let event_parent_path = event_data.parent().unwrap().to_str().unwrap();
                 let event_filename = event_data.file_name().unwrap();
 
@@ -112,7 +108,15 @@ fn main() {
                         None => "?"
                     })
                 }){
-                    events::log_event(events_file, event, events_format)
+                    let now = SystemTime::now();
+                    let event = Event {
+                      id: format!("{:?}", now.duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis()),
+                      operation: raw_event.op.unwrap().clone(),
+                      path: raw_event.path.unwrap().clone()
+                    };
+
+                    debug!("Event received: {:?}", event);
+                    event.log_event(events_file, events_format)
                 }else{
                     debug!("Event ignored not stored in alerts");
                 }
