@@ -1,3 +1,10 @@
+fim (0.2.1-1) devel; urgency=medium
+
+  * Added UUID to events
+  * More info: https://github.com/Achiefs/fim/releases/tag/v0.2.1
+
+ -- Jose Fernandez <support@achiefs.com>  Tue, 18 Jan 2022 23:00:00 +0000
+
 fim (0.2.0-1) devel; urgency=medium
 
   * Initial release
