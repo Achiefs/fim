@@ -19,7 +19,12 @@ DEB: `apt install $(pwd)/PACKAGE_NAME.deb`
 5. If you want to test it you could launch `touch /tmp/file.txt` in your terminal then, take a look at `/usr/share/fim/events.json` file. It will store each produced event in JSON format.
 
 
-## Contributing: How to compile 
+## Contribute
+### Feedback
+Feel free to open us an issue or send your feedback to our developers through support@achiefs.com
+We will be glad to hear from you and your thoughs about the software.
+
+### How to compile 
 We suggest using the `Cargo` tool to get dependencies automatically downloaded
 Steps: 
 ```
