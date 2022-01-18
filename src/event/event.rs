@@ -21,6 +21,8 @@ pub struct Event {
     pub id: String,
     pub timestamp: String,
     pub hostname: String,
+    pub nodename: String,
+    pub version: String,
     pub path: PathBuf,
     pub operation: Op
 }
@@ -34,16 +36,16 @@ impl Event {
                     id: self.id.clone(),
                     timestamp: self.timestamp.clone(),
                     hostname: self.hostname.clone(),
-                    node: "FIM",
-                    pid: process::id()
+                    node: self.nodename.clone(),
+                    pid: process::id(),
+                    version: self.version.clone()
                 ]
             },
             "SYSLOG" | _ => {
                 json::object![
-                    id: self.id.clone(),
                     timestamp: self.timestamp.clone(),
                     hostname: self.hostname.clone(),
-                    node: "FIM",
+                    node: self.nodename.clone(),
                     pid: process::id()
                 ]
             },
@@ -68,7 +70,7 @@ impl Event {
       }
       let mut obj = self.get_common_message(clean_format);
       let message = format!("{} {} {}[{}]:",
-              obj["timestamp"], obj["hostname"], obj["app"], obj["pid"]);
+              obj["timestamp"], obj["hostname"], obj["node"], obj["pid"]);
 
       match self.operation {
           Op::CREATE => {

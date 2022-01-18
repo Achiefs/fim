@@ -13,6 +13,8 @@ use simplelog::{WriteLogger, Config};
 use std::path::Path;
 // To manage time
 use std::time::{SystemTime, UNIX_EPOCH};
+// To manage unique event identifier
+use uuid::Uuid;
 
 // To load configuration functions
 mod config;
@@ -42,8 +44,10 @@ fn main() {
 
     // Loading selected config.yml values into variables
     println!("Loaded config from: {}", selected_path);
-    let config = config::read_config(selected_path); 
+    let config = config::read_config(selected_path);
+    let version = &config[0]["version"];
     let monitor = &config[0]["monitor"];
+    let nodename = &config[0]["nodename"];
     let log_file = &config[0]["log"]["output"]["file"].as_str().unwrap();
     let log_level = &config[0]["log"]["output"]["level"].as_str().unwrap();
     let events_file = &config[0]["log"]["events"]["file"].as_str().unwrap();
@@ -111,9 +115,11 @@ fn main() {
                     let timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
                     let hostname = format!("{}", gethostname::gethostname().into_string().unwrap());
                     let event = Event {
-                      id: format!("{}.{}", "FIM", timestamp),
+                      id: format!("{}", Uuid::new_v4()),
                       timestamp: timestamp,
                       hostname: hostname,
+                      nodename: String::from(nodename.as_str().unwrap()),
+                      version: String::from(version.as_str().unwrap()),
                       operation: raw_event.op.unwrap().clone(),
                       path: raw_event.path.unwrap().clone()
                     };

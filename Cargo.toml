@@ -16,3 +16,4 @@ gethostname = "0.2.1"
 chrono = "0.4"
 json = "0.12.4"
 retry = "1.2.0"
+uuid = { version = "0.8.2", features = ["v4"] }
