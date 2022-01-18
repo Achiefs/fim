@@ -29,8 +29,8 @@ fn pop(value: &str) -> &str {
 
 // Main function where the magic happens
 fn main() {
-    println!("Reading config...");
     println!("System detected {}", env::consts::OS);
+    println!("Reading config...");
 
     // Select directory where to load config.yml it depends on system
     let config_path = format!("./config/{}/config.yml", env::consts::OS);
@@ -108,9 +108,12 @@ fn main() {
                         None => "?"
                     })
                 }){
-                    let now = SystemTime::now();
+                    let timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
+                    let hostname = format!("{}", gethostname::gethostname().into_string().unwrap());
                     let event = Event {
-                      id: format!("{:?}", now.duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis()),
+                      id: format!("{}.{}", "FIM", timestamp),
+                      timestamp: timestamp,
+                      hostname: hostname,
                       operation: raw_event.op.unwrap().clone(),
                       path: raw_event.path.unwrap().clone()
                     };

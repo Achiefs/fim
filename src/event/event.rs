@@ -3,8 +3,6 @@ use std::fmt;
 // To handle files
 use std::fs::{OpenOptions, metadata};
 use std::io::{Write, Error, ErrorKind};
-// To get Date and Time
-use chrono::Utc;
 // To get own process ID
 use std::process;
 // Event handling
@@ -20,36 +18,37 @@ use std::path::PathBuf;
 
 
 pub struct Event {
-  pub id: String,
-  pub path: PathBuf,
-  pub operation: Op
+    pub id: String,
+    pub timestamp: String,
+    pub hostname: String,
+    pub path: PathBuf,
+    pub operation: Op
 }
 
 impl Event {
-  // To get JSON object of common data.
-  fn get_common_message(&self, format: &str) -> JsonValue {
-      let hostname = gethostname::gethostname().into_string().unwrap();
-      match format {
-          "JSON" => {
-              json::object![
-                  id: self.id.clone(),
-                  timestamp: format!("{}", Utc::now().format("%s")),
-                  hostname: hostname,
-                  app: "FIM",
-                  pid: process::id()
-              ]
-          },
-          "SYSLOG" | _ => {
-              json::object![
-                  id: self.id.clone(),
-                  timestamp: format!("{}", Utc::now().format("%b %d %H:%M:%S")),
-                  hostname: hostname,
-                  app: "FIM",
-                  pid: process::id()
-              ]
-          },
-      }
-  }
+    // To get JSON object of common data.
+    fn get_common_message(&self, format: &str) -> JsonValue {
+        match format {
+            "JSON" => {
+                json::object![
+                    id: self.id.clone(),
+                    timestamp: self.timestamp.clone(),
+                    hostname: self.hostname.clone(),
+                    node: "FIM",
+                    pid: process::id()
+                ]
+            },
+            "SYSLOG" | _ => {
+                json::object![
+                    id: self.id.clone(),
+                    timestamp: self.timestamp.clone(),
+                    hostname: self.hostname.clone(),
+                    node: "FIM",
+                    pid: process::id()
+                ]
+            },
+        }
+    }
 
   // --------------------------------------------------------------------------
 
@@ -191,11 +190,11 @@ impl Event {
 }
 
 impl fmt::Debug for Event {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
-    f.debug_tuple("")
-      .field(&self.id)
-      .field(&self.path)
-      .field(&self.operation)
-      .finish()
-  }
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
+        f.debug_tuple("")
+          .field(&self.id)
+          .field(&self.path)
+          .field(&self.operation)
+          .finish()
+    }
 }
