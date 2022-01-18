@@ -10,8 +10,8 @@ To install FIM packages you only need to perform a few steps:
 1. Download our last package from the packages repository, located at Github `fim/pkg/{rpm,deb}/repository/release`
 
 2. Install with
-RPM: `yum install fim-*.rpm`
-DEB: `apt install $(pwd)/PACKAGE_NAME.deb`
+  - RPM: `yum install fim-*.rpm`
+  - DEB: `apt install $(pwd)/PACKAGE_NAME.deb`
 
 3. You can start to work typing `sudo nohup fim` in your terminal
 4. FIM software will start monitoring any activity on the default folders configured in `/etc/fim/config.yml` file.
