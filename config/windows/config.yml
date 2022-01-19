@@ -1,8 +1,8 @@
-version: 0.2.0
+version: 0.2.1
+nodename: "FIM"
 
 # Monitor folder or files in windows.
 monitor: 
-  - path: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup
   - path: C:\Program Files\
   - path: C:\Users\
   - path: C:\Windows\Temp\

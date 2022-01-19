@@ -10,37 +10,13 @@ To install FIM packages you only need to perform a few steps:
 1. Download our last package from the packages repository, located at Github `fim/pkg/{rpm,deb}/repository/release`
 
 2. Install with
-RPM: `yum install fim-*.rpm`
-DEB: `apt install $(pwd)/PACKAGE_NAME.deb`
+  - RPM: `yum install fim-*.rpm`
+  - DEB: `apt install $(pwd)/PACKAGE_NAME.deb`
 
 3. You can start to work typing `sudo nohup fim` in your terminal
 4. FIM software will start monitoring any activity on the default folders configured in `/etc/fim/config.yml` file.
 
 5. If you want to test it you could launch `touch /tmp/file.txt` in your terminal then, take a look at `/usr/share/fim/events.json` file. It will store each produced event in JSON format.
-
-
-## Contribute
-### Feedback
-Feel free to open us an issue or send your feedback to our developers through support@achiefs.com
-We will be glad to hear from you and your thoughs about the software.
-
-### How to compile 
-We suggest using the `Cargo` tool to get dependencies automatically downloaded
-Steps: 
-```
-cargo build --release
-```
-
-### Set up environment
-Linux
-- Install git
-- Install gcc
-- Run `curl https://sh.rustup.rs -sSf | sh` to install rust (install at default location).
-- Reload PATH variable in your terminal.
-- Run `git clone https://github.com/Achiefs/fim.git`
-- Run `cd fim` to go inside cloned folder.
-- Edit `config.yml` to adjust your needs, add paths or ignore files.
-- Run `cargo run` to download crates, build and run Fim software.
 
 ## How to use
 You need to modify the `config.yml` file to adjust to your needs.
@@ -85,3 +61,26 @@ The `log` section keeps all configuration of software output there are two secti
 - `events` Section to handle file system events output:
     - `file` path to writing the output events.
     - `format` the output format, currently supported `json` or `syslog`
+
+## Contribute
+### Feedback
+Feel free to open us an issue or send your feedback to our developers through support@achiefs.com
+We will be glad to hear from you and your thoughs about the software.
+
+### How to compile 
+We suggest using the `Cargo` tool to get dependencies automatically downloaded
+Steps: 
+```
+cargo build --release
+```
+
+### Set up environment
+Linux
+- Install git
+- Install gcc
+- Run `curl https://sh.rustup.rs -sSf | sh` to install rust (install at default location).
+- Reload PATH variable in your terminal.
+- Run `git clone https://github.com/Achiefs/fim.git`
+- Run `cd fim` to go inside cloned folder.
+- Edit `config.yml` to adjust your needs, add paths or ignore files.
+- Run `cargo run` to download crates, build and run Fim software.

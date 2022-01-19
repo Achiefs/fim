@@ -49,9 +49,12 @@ rm -fr %{buildroot}
 %defattr(-,root,root)
 %attr(750, root, root) %{_bindir}/fim
 %dir %attr(750, root, root) %{_configdir}
-%attr(640, root, root) %{_configdir}/config.yml
+%attr(640, root, root) %config(noreplace) %{_configdir}/config.yml
 
 
 %changelog
+* Tue Jan 18 2022 support <support@achiefs.com> - 0.2.1
+- More info: https://github.com/Achiefs/fim/releases/tag/v0.2.1
+
 * Tue Oct 05 2021 support <support@achiefs.com> - 0.2.0
 - More info: https://github.com/Achiefs/fim/releases/tag/v0.2.0
