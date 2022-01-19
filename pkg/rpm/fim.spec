@@ -49,7 +49,7 @@ rm -fr %{buildroot}
 %defattr(-,root,root)
 %attr(750, root, root) %{_bindir}/fim
 %dir %attr(750, root, root) %{_configdir}
-%attr(640, root, root) %{_configdir}/config.yml
+%attr(640, root, root) %config(noreplace) %{_configdir}/config.yml
 
 
 %changelog
