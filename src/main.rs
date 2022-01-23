@@ -53,7 +53,6 @@ fn main() {
     let events_file = &config[0]["log"]["events"]["file"].as_str().unwrap();
     let events_format = &config[0]["log"]["events"]["format"].as_str().unwrap();
     
-    println!("Config file: {}", selected_path);
     println!("Log file: {}", log_file);
     println!("Events file: {}", events_file);
     println!("Log level: {}", log_level);
