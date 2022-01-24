@@ -1,12 +1,17 @@
 #!/bin/sh
 set -e
 
-INSTALL_DIR="/usr/local"
+INSTALL_DIR="/usr"
+DOC_DIR="${INSTALL_DIR}/share/doc/fim"
 
 case "$1" in
     remove|failed-upgrade|abort-install|abort-upgrade|disappear)
         rm -rf ${INSTALL_DIR}/bin/fim
+    ;;
+
+    purge)
         rm -rf ${INSTALL_DIR}/etc/fim/config.yml
+        rm -rf ${DOC_DIR}
     ;;
 
     upgrade)

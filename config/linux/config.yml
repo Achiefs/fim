@@ -15,8 +15,8 @@ log:
   output: 
     file: /var/log/fim/fim.log
     # Possible levels debug, info, error, warning
-    level: debug
+    level: info
   events:
-    file: /usr/share/fim/events.json
+    file: /var/lib/fim/events.json
     # Format of output events options json/syslog
     format: json

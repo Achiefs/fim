@@ -5,7 +5,6 @@ nodename: "FIM"
 monitor: 
   - path: C:\Program Files\
   - path: C:\Users\
-  - path: C:\Windows\Temp\
 
 # Path to output and events files:
 # output to write app log.
@@ -14,7 +13,7 @@ log:
   output: 
     file: C:\ProgramData\fim\fim.log
     # Possible levels debug, info, error, warning
-    level: debug
+    level: info
   events:
     file: C:\ProgramData\fim\events.json
     # Format of output events options json/syslog

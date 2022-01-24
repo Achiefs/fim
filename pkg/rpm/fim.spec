@@ -33,14 +33,7 @@ install -m 0640 config/linux/config.yml ${RPM_BUILD_ROOT}%{_configdir}/
 %pre
 %post
 %preun
-
 %postun
-# If the package is been uninstalled
-if [ $1 = 0 ];then
-  # Remove lingering folders and files
-  rm -f %{_bindir}/%{name}
-  rm -rf %{_configdir}
-fi
 
 %clean
 rm -fr %{buildroot}
