@@ -5,7 +5,7 @@ import json
 import os
 
 events_json = '/var/lib/fim/events.json'
-test_file = '/tmp/test/test.txt'
+test_file = '/tmp/test.txt'
 
 def get_last_event():
     with open(events_json) as f:
