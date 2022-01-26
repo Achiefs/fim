@@ -1,5 +1,7 @@
 #!/usr/bin/make -f
 
+# Copyright (C) 2021, Achiefs.
+
 # Uncomment this to turn on verbose mode.
 export DH_VERBOSE=1
 

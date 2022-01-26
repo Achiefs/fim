@@ -1,3 +1,5 @@
+// Copyright (C) 2021, Achiefs.
+
 // To read and write directories and files
 use std::fs::OpenOptions;
 use std::fs;

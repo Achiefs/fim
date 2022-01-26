@@ -1,3 +1,5 @@
+// Copyright (C) 2021, Achiefs.
+
 // To get file checksums
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
