@@ -9,9 +9,11 @@ jobs:
       - name: Install pytest
         run: pip3 install pytest
       - name: Build FIM
-        run: cargo build
+        run: cargo build --release
+      - name: Copy FIM binary to main folder
+        run: cp ./target/release/fim ./
       - name: Start FIM process
-        run: sudo ${HOME}/.cargo/bin/cargo run &
+        run: sudo ./fim &
       - name: Launch test suite
         run: pytest test/system/test_system.py -v
       - run: echo "Job's status is ${{ job.status }}."
