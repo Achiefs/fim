@@ -11,7 +11,7 @@ jobs:
       - name: Build FIM
         run: cargo build
       - name: Start FIM process
-        run: cargo run &
+        run: sudo cargo run &
       - name: Launch test suite
         run: pytest test/system/test_system.py -v
       - run: echo "Job's status is ${{ job.status }}."
