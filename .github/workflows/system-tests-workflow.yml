@@ -1,0 +1,13 @@
+name: System tests
+on: [push]
+jobs:
+  system-tests-ubuntu:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+      - name: Start FIM process
+        run: cargo run &
+      - name: Launch test suite
+        run: pytest test/system/test_system.py
+      - run: echo "Job's status is ${{ job.status }}."
