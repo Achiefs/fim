@@ -8,8 +8,10 @@ jobs:
         uses: actions/checkout@v2
       - name: Install pytest
         run: pip3 install pytest
+      - name: Build FIM
+        run: cargo build
       - name: Start FIM process
         run: cargo run &
       - name: Launch test suite
-        run: pytest test/system/test_system.py
+        run: pytest test/system/test_system.py -v
       - run: echo "Job's status is ${{ job.status }}."
