@@ -14,6 +14,8 @@ jobs:
         run: cp ./target/release/fim ./
       - name: Start FIM process
         run: sudo ./fim &
+      - name: Create test directory
+        run: mkdir -p /tmp/test
       - name: Launch test suite
         run: pytest test/system/test_system.py -v
       - run: echo "Job's status is ${{ job.status }}."
