@@ -6,6 +6,8 @@ jobs:
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
+      - name: Install pytest
+        run: pip3 install pytest
       - name: Start FIM process
         run: cargo run &
       - name: Launch test suite
