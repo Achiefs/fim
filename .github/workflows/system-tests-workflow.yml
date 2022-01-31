@@ -29,7 +29,7 @@ jobs:
         run: sudo ./fim &
 
       - name: Launch test suite
-        run: pytest test/system/test_system.py -v || true
+        run: pytest test/system/test_system.py -v
 
       - name: Print events.json file
         run: cat /var/lib/fim/events.json
