@@ -23,7 +23,7 @@ jobs:
         run: mkdir -p /tmp/test ; sudo mkdir -p /var/lib/fim
 
       - name: Create events.json file
-        run: touch /var/lib/fim/events.json
+        run: sudo touch /var/lib/fim/events.json
 
       - name: Start FIM process
         run: sudo ./fim &
