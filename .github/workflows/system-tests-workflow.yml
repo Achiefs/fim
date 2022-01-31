@@ -10,6 +10,8 @@ jobs:
         run: pip3 install pytest
       - name: Build FIM
         run: cargo build --release
+      - name: Change configuration to test
+        run: sed -i 's|tmp/.*|tmp/test|g' config/linux/config.yml
       - name: Copy FIM binary to main folder
         run: cp ./target/release/fim ./
       - name: Start FIM process
