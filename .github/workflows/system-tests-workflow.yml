@@ -17,14 +17,19 @@ jobs:
       - name: Build FIM
         run: cargo build --release
 
-      - name: Change configuration to test
+      - name: Change configuration to test on Linux
+        if: ${{ RUNNER_OS == 'Linux' }}
         run: sed -i 's|tmp/.*|tmp/test|g' config/linux/config.yml
+
+      - name: Change configuration to test on macOS
+        if: ${{ RUNNER_OS == 'macOS' }}
+        run: sed -i '' 's|tmp/.*|tmp/test|g' config/linux/config.yml
 
       - name: Copy FIM binary to main folder
         run: cp ./target/release/fim ./
 
       - name: Create required directories
-        run: mkdir -p /tmp/test ; sudo mkdir -p /var/lib/fim
+        run: mkdir /tmp/test ; sudo mkdir /var/lib/fim
 
       - name: Create events.json file
         run: sudo touch /var/lib/fim/events.json
