@@ -1,8 +1,12 @@
 name: System tests
 on: [push]
 jobs:
-  system-tests-ubuntu:
-    runs-on: [ubuntu-20.04, macos-10.15]
+  system-tests-unix:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-10.15, ubuntu-18.04]
+
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
