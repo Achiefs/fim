@@ -19,5 +19,5 @@ jobs:
       - name: Launch test suite
         run: pytest test/system/test_system.py -v || true
       - name: Print events.json file
-        run: cat /usr/share/fim/events.json
+        run: cat /var/lib/fim/events.json
       - run: echo "Job's status is ${{ job.status }}."
