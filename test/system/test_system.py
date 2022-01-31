@@ -3,11 +3,13 @@
 import pytest
 import json
 import os
+import time
 
 events_json = '/var/lib/fim/events.json'
-test_file = '/tmp/test/create'
+test_file = '/tmp/test/test_file'
 
 def get_last_event():
+    time.sleep(0.1)
     with open(events_json) as f:
         for line in f: pass
         last_line = line.strip()
