@@ -19,8 +19,8 @@ jobs:
       - name: Copy FIM binary to main folder
         run: cp ./target/release/fim ./
 
-      - name: Create test directory
-        run: mkdir -p /tmp/test
+      - name: Create required directories
+        run: mkdir -p /tmp/test || mkdir -p /var/lib/fim
 
       - name: Create events.json file
         run: touch /var/lib/fim/events.json
