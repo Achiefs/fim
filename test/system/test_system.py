@@ -5,7 +5,7 @@ import json
 import os
 
 events_json = '/var/lib/fim/events.json'
-test_file = '/tmp/test/test.txt'
+test_file = '/tmp/test/create'
 
 def get_last_event():
     with open(events_json) as f:
@@ -16,20 +16,20 @@ def get_last_event():
 # -----------------------------------------------------------------------------
 
 def test_file_create():
-    f = open(test_file, 'w')
+    c = open(test_file, 'w')
     data = json.loads(get_last_event())
     assert data['kind'] == "CREATE"
-    f.close()
+    c.close()
 
 def test_file_write():
-    f = open(test_file, 'w')
+    w = open(test_file, 'w')
     data = json.loads(get_last_event())
     assert data['kind'] == "WRITE"
-    f.close()
+    w.close()
 
 def test_file_close():
-    f = open(test_file, 'w')
-    f.close()
+    cl = open(test_file, 'w')
+    cl.close()
     data = json.loads(get_last_event())
     assert data['kind'] == "CLOSE_WRITE"
 
