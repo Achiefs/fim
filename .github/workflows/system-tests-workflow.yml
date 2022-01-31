@@ -22,6 +22,9 @@ jobs:
       - name: Create test directory
         run: mkdir -p /tmp/test
 
+      - name: Create events.json file
+        run: touch /var/lib/fim/events.json
+
       - name: Start FIM process
         run: sudo ./fim &
 
@@ -30,5 +33,5 @@ jobs:
 
       - name: Print events.json file
         run: cat /var/lib/fim/events.json
-        
+
       - run: echo "Job's status is ${{ job.status }}."
