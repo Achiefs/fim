@@ -6,20 +6,29 @@ jobs:
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
+
       - name: Install pytest
         run: pip3 install pytest
+
       - name: Build FIM
         run: cargo build --release
+
       - name: Change configuration to test
         run: sed -i 's|tmp/.*|tmp/test|g' config/linux/config.yml
+
       - name: Copy FIM binary to main folder
         run: cp ./target/release/fim ./
-      - name: Start FIM process
-        run: sudo ./fim &
+
       - name: Create test directory
         run: mkdir -p /tmp/test
+
+      - name: Start FIM process
+        run: sudo ./fim &
+
       - name: Launch test suite
         run: pytest test/system/test_system.py -v || true
+
       - name: Print events.json file
         run: cat /var/lib/fim/events.json
+        
       - run: echo "Job's status is ${{ job.status }}."

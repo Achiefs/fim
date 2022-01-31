@@ -44,7 +44,7 @@ def test_file_chmod():
     data = json.loads(get_last_event())
     assert data['kind'] == "CHMOD"
 
-def test_file_restan():
+def test_file_rescan():
     # Check https://docs.rs/notify/latest/notify/op/index.html#rescan to apply rescan test
     # For now it will be always green
     assert True
