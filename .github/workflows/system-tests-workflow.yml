@@ -18,11 +18,11 @@ jobs:
         run: cargo build --release
 
       - name: Change configuration to test on Linux
-        if: ${{ RUNNER_OS == 'Linux' }}
+        if: runner.os == 'Linux'
         run: sed -i 's|tmp/.*|tmp/test|g' config/linux/config.yml
 
       - name: Change configuration to test on macOS
-        if: ${{ RUNNER_OS == 'macOS' }}
+        if: runner.os == 'macOS'
         run: sed -i '' 's|tmp/.*|tmp/test|g' config/linux/config.yml
 
       - name: Copy FIM binary to main folder
