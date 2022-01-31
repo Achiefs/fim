@@ -18,4 +18,6 @@ jobs:
         run: mkdir -p /tmp/test
       - name: Launch test suite
         run: pytest test/system/test_system.py -v
+      - name: Print events.json file
+        run: cat /usr/share/fim/events.json
       - run: echo "Job's status is ${{ job.status }}."
