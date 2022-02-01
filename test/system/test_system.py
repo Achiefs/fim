@@ -32,7 +32,7 @@ def test_file_write():
     assert data['kind'] == "WRITE"
     w.close()
 
-@pytest.mark.skipif(system == "Darwin" or system == "Windows")
+@pytest.mark.skipif(system == "Darwin" or system == "Windows", reason="Cannot run on Darwin or Windows")
 def test_file_close():
     cl = open(test_file, 'w')
     cl.close()
@@ -45,7 +45,7 @@ def test_file_rename():
     data = json.loads(get_last_event())
     assert data['kind'] == "RENAME"
 
-@pytest.mark.skipif(system == "Windows")
+@pytest.mark.skipif(system == "Windows", reason="Cannot run on Windows")
 def test_file_chmod():
     os.chmod(test_file, 0o777)
     data = json.loads(get_last_event())
