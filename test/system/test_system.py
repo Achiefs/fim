@@ -4,9 +4,11 @@ import pytest
 import json
 import os
 import time
+import platform
 
 events_json = '/var/lib/fim/events.json'
 test_file = '/tmp/test/test_file'
+system = platform.system()
 
 def get_last_event():
     time.sleep(0.1)
@@ -25,10 +27,12 @@ def test_file_create():
 
 def test_file_write():
     w = open(test_file, 'w')
+    w.write("This is a test")
     data = json.loads(get_last_event())
     assert data['kind'] == "WRITE"
     w.close()
 
+@pytest.mark.skipif(system == "Darwin" or system == "Windows")
 def test_file_close():
     cl = open(test_file, 'w')
     cl.close()
@@ -41,6 +45,7 @@ def test_file_rename():
     data = json.loads(get_last_event())
     assert data['kind'] == "RENAME"
 
+@pytest.mark.skipif(system == "Windows")
 def test_file_chmod():
     os.chmod(test_file, 0o777)
     data = json.loads(get_last_event())
