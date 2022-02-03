@@ -8,12 +8,12 @@ edition = "2018"
 
 [dependencies]
 yaml-rust = "0.4"
-rust-crypto = "0.2.36"
-notify = "4.0.15"
+sha3 = "0.10.0"
+hex = "0.4.3"
+notify = "4.0.17"
 log = "0.4.11"
 simplelog = "0.11.2"
 gethostname = "0.2.1"
-chrono = "0.4"
 json = "0.12.4"
 retry = "1.2.0"
 uuid = { version = "0.8.2", features = ["v4"] }
