@@ -1,3 +1,5 @@
+// Copyright (C) 2021, Achiefs.
+
 // To parse files in yaml format
 use yaml_rust::yaml::{Yaml, YamlLoader};
 // To use files IO operations.

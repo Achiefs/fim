@@ -1,4 +1,6 @@
 #!/bin/bash
+
+# Copyright (C) 2021, Achiefs.
 # Dependencies: curl, devscripts, equivs, tar, gcc
 set -ex
 

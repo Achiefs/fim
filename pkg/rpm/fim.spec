@@ -1,3 +1,5 @@
+# Copyright (C) 2021, Achiefs.
+
 Summary:     FIM software provides a easy way to watch your files.
 Name:        fim
 Version:     %{_version}

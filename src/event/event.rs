@@ -1,3 +1,5 @@
+// Copyright (C) 2021, Achiefs.
+
 // To implement Debug and fmt method
 use std::fmt;
 // To handle files
