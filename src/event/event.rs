@@ -33,7 +33,15 @@ impl Event {
     // To get JSON object of common data.
     fn get_common_message(&self, format: &str) -> JsonValue {
         match format {
-            "JSON" => {
+            "SYSLOG" => {
+                json::object![
+                    timestamp: self.timestamp.clone(),
+                    hostname: self.hostname.clone(),
+                    node: self.nodename.clone(),
+                    pid: process::id()
+                ]
+            },
+            "JSON" | _ => {
                 json::object![
                     id: self.id.clone(),
                     timestamp: self.timestamp.clone(),
@@ -41,14 +49,6 @@ impl Event {
                     node: self.nodename.clone(),
                     pid: process::id(),
                     version: self.version.clone()
-                ]
-            },
-            "SYSLOG" | _ => {
-                json::object![
-                    timestamp: self.timestamp.clone(),
-                    hostname: self.hostname.clone(),
-                    node: self.nodename.clone(),
-                    pid: process::id()
                 ]
             },
         }
@@ -67,8 +67,8 @@ impl Event {
 
         let clean_format: &str;
         match format {
-            "json" | "JSON" | "j" | "J" | "Json" => clean_format = "JSON",
-            "syslog" | "s" | "SYSLOG" | "S" | "Syslog" | _ => clean_format = "SYSLOG",
+            "syslog" | "s" | "SYSLOG" | "S" | "Syslog" => clean_format = "SYSLOG",
+            "json" | "JSON" | "j" | "J" | "Json" | _ => clean_format = "JSON",
         }
         let mut obj = self.get_common_message(clean_format);
         let message = format!("{} {} {}[{}]:",
@@ -204,5 +204,109 @@ impl fmt::Debug for Event {
           .field(&self.path)
           .field(&self.operation)
           .finish()
+    }
+}
+
+// ----------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use crate::event::Event;
+    use notify::op::Op;
+    use std::path::PathBuf;
+    use std::process;
+    use std::fs;
+
+    fn remove_test_file(filename: &str) {
+        fs::remove_file(filename).unwrap()
+    }
+
+    fn create_test_event() -> Event {
+        Event {
+            id: "Test_id".to_string(),
+            timestamp: "Timestamp".to_string(),
+            hostname: "Hostname".to_string(),
+            nodename: "FIM".to_string(),
+            version: "x.x.x".to_string(),
+            operation: Op::CREATE,
+            path: PathBuf::new()
+        }
+    }
+
+    #[test]
+    fn test_create_event() {
+        let evt = create_test_event();
+        assert_eq!(evt.id, "Test_id".to_string());
+        assert_eq!(evt.timestamp, "Timestamp".to_string());
+        assert_eq!(evt.hostname, "Hostname".to_string());
+        assert_eq!(evt.nodename, "FIM".to_string());
+        assert_eq!(evt.version, "x.x.x".to_string());
+        assert_eq!(evt.operation, Op::CREATE);
+        assert_eq!(evt.path, PathBuf::new());
+    }
+
+    #[test]
+    fn test_get_common_message_syslog() {
+        let evt = create_test_event();
+        let expected_output = json::object![
+            timestamp: evt.timestamp.clone(),
+            hostname: evt.hostname.clone(),
+            node: evt.nodename.clone(),
+            pid: process::id()
+        ];
+        assert_eq!(evt.get_common_message("SYSLOG"), expected_output);
+    }
+
+    #[test]
+    fn test_get_common_message_json() {
+        let evt = create_test_event();
+        let expected_output = json::object![
+            id: evt.id.clone(),
+            timestamp: evt.timestamp.clone(),
+            hostname: evt.hostname.clone(),
+            node: evt.nodename.clone(),
+            pid: process::id(),
+            version: evt.version.clone()
+        ];
+        assert_eq!(evt.get_common_message("JSON"), expected_output);
+    }
+
+    #[test]
+    fn test_get_common_message_default() {
+        let evt = create_test_event();
+        let expected_output = json::object![
+            id: evt.id.clone(),
+            timestamp: evt.timestamp.clone(),
+            hostname: evt.hostname.clone(),
+            node: evt.nodename.clone(),
+            pid: process::id(),
+            version: evt.version.clone()
+        ];
+        assert_eq!(evt.get_common_message("TEST"), expected_output);
+        assert_eq!(evt.get_common_message(""), expected_output);
+    }
+
+    #[test]
+    fn test_log_event_json() {
+        let filename = "test_event.json";
+        let evt = create_test_event();
+
+        evt.log_event(filename, "JSON");
+        let contents = fs::read_to_string(filename);
+        let expected = format!("{{\"id\":\"Test_id\",\"timestamp\":\"Timestamp\",\"hostname\":\"Hostname\",\"node\":\"FIM\",\"pid\":{},\"version\":\"x.x.x\",\"kind\":\"CREATE\",\"file\":\"\",\"checksum\":\"IGNORED\"}}\n", process::id());
+        assert_eq!(contents.unwrap(), expected);
+        remove_test_file(filename);
+    }
+
+    #[test]
+    fn test_log_event_syslog() {
+        let filename = "test_event.log";
+        let evt = create_test_event();
+
+        evt.log_event(filename, "SYSLOG");
+        let contents = fs::read_to_string(filename);
+        let expected = format!("Timestamp Hostname FIM[{}]: File '' created, checksum IGNORED\n", process::id());
+        assert_eq!(contents.unwrap(), expected);
+        remove_test_file(filename);
     }
 }
