@@ -16,7 +16,7 @@ To install FIM packages you only need to perform a few steps:
 3. You can start to work typing `sudo nohup fim` in your terminal
 4. FIM software will start monitoring any activity on the default folders configured in `/etc/fim/config.yml` file.
 
-5. If you want to test it you could launch `touch /tmp/file.txt` in your terminal then, take a look at `/usr/share/fim/events.json` file. It will store each produced event in JSON format.
+5. If you want to test it you could launch `touch /tmp/file.txt` in your terminal then, take a look at `/var/lib/fim/events.json` file. It will store each produced event in JSON format.
 
 ## How to use
 You need to modify the `config.yml` file to adjust to your needs.
