@@ -14,9 +14,9 @@ pub fn get_checksum(file: &str) -> Result<String, Error> {
             hasher.update(&data);
             let result = hasher.finalize().to_vec();
             let hash = encode(result);
-            return Ok(hash)
+            Ok(hash)
         },
-        Err(e) => return Err(e),
+        Err(e) => Err(e),
     }
 }
 
