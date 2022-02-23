@@ -112,7 +112,10 @@ fn main() {
                     let path = it["path"].as_str().unwrap();
                     let value = if path.ends_with('/') || path.ends_with("\\"){ pop(path) }else{ path };
                     event_parent_path.contains(value) &&
-                    !it["ignore"].as_vec().unwrap().iter().any(|ignore| { event_filename.to_str().unwrap().contains(ignore.as_str().unwrap()) })
+                    !match it["ignore"].as_vec(){
+                        Some(ig) => ig.iter().any(|ignore| { event_filename.to_str().unwrap().contains(ignore.as_str().unwrap()) }),
+                        None => true
+                    }
                 }){
                     let timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
                     let hostname = format!("{}", gethostname::gethostname().into_string().unwrap());
