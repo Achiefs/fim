@@ -17,6 +17,8 @@ use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 // To manage unique event identifier
 use uuid::Uuid;
+// To use intersperse()
+use itertools::Itertools;
 
 // To load configuration functions
 mod config;
@@ -80,15 +82,17 @@ fn main() {
     let mut watcher: RecommendedWatcher = Watcher::new_raw(tx).unwrap();
     for m in monitor.as_vec().unwrap() {
         let path = m["path"].as_str().unwrap();
-        let ignore = match m["ignore"].as_str() {
-            Some(ig) => ig,
+        info!("Monitoring path: {}", path);
+        match m["ignore"].as_vec() {
+            Some(ig) => {
+                let ignore_list_vec  = ig.iter().map(|e| { e.as_str().unwrap() });
+                let ignore_list : String = Itertools::intersperse(ignore_list_vec, ", ").collect();
+                info!("Ignoring files with: {} inside {}", ignore_list, path);
+            },
             None => {
                 println!("Ignore for '{}' not set", path);
-                "?"
             }
         };
-        info!("Monitoring path: {}", path);
-        info!("Ignoring files with: {}, inside {}", ignore, path);
         watcher.watch(path, RecursiveMode::Recursive).unwrap();
     }
 
@@ -108,7 +112,10 @@ fn main() {
                     let path = it["path"].as_str().unwrap();
                     let value = if path.ends_with('/') || path.ends_with('\\'){ pop(path) }else{ path };
                     event_parent_path.contains(value) &&
-                    !event_filename.to_str().unwrap().contains(it["ignore"].as_str().unwrap_or("?"))
+                    !match it["ignore"].as_vec(){
+                        Some(ig) => ig.iter().any(|ignore| { event_filename.to_str().unwrap().contains(ignore.as_str().unwrap_or("?")) }),
+                        None => true
+                    }
                 }){
                     let current_timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
                     let current_hostname = gethostname::gethostname().into_string().unwrap();

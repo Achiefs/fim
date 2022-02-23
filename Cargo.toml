@@ -16,4 +16,5 @@ simplelog = "0.11.2"
 gethostname = "0.2.1"
 json = "0.12.4"
 retry = "1.2.0"
+itertools = "0.10.3"
 uuid = { version = "0.8.2", features = ["v4"] }
