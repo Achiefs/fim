@@ -110,22 +110,22 @@ fn main() {
                 let monitor_vector = monitor.as_vec().unwrap().to_vec();
                 if monitor_vector.iter().any(|it| {
                     let path = it["path"].as_str().unwrap();
-                    let value = if path.ends_with('/') || path.ends_with("\\"){ pop(path) }else{ path };
+                    let value = if path.ends_with('/') || path.ends_with('\\'){ pop(path) }else{ path };
                     event_parent_path.contains(value) &&
                     !match it["ignore"].as_vec(){
-                        Some(ig) => ig.iter().any(|ignore| { event_filename.to_str().unwrap().contains(ignore.as_str().unwrap()) }),
+                        Some(ig) => ig.iter().any(|ignore| { event_filename.to_str().unwrap().contains(ignore.as_str().unwrap_or("?")) }),
                         None => true
                     }
                 }){
-                    let timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
-                    let hostname = format!("{}", gethostname::gethostname().into_string().unwrap());
+                    let current_timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
+                    let current_hostname = gethostname::gethostname().into_string().unwrap();
                     let event = Event {
                       id: format!("{}", Uuid::new_v4()),
-                      timestamp: timestamp,
-                      hostname: hostname,
+                      timestamp: current_timestamp,
+                      hostname: current_hostname,
                       nodename: String::from(nodename.as_str().unwrap()),
                       version: String::from(version.as_str().unwrap()),
-                      operation: raw_event.op.unwrap().clone(),
+                      operation: raw_event.op.unwrap(),
                       path: raw_event.path.unwrap().clone()
                     };
 
