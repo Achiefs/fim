@@ -114,7 +114,7 @@ fn main() {
                     event_parent_path.contains(value) &&
                     !match it["ignore"].as_vec(){
                         Some(ig) => ig.iter().any(|ignore| { event_filename.to_str().unwrap().contains(ignore.as_str().unwrap()) }),
-                        None => true
+                        None => false // To match the negation `!`
                     }
                 }){
                     let current_timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
