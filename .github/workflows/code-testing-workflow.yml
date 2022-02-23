@@ -27,3 +27,12 @@ jobs:
       - name: Launch cargo test
         run: cargo test
       - run: echo "Job's status is ${{ job.status }}."
+
+  Static-analysis:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+      - name: Launch cargo clippy
+        run: cargo clippy
+      - run: echo "Job's status is ${{ job.status }}."
