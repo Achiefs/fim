@@ -113,7 +113,7 @@ fn main() {
                     let value = if path.ends_with('/') || path.ends_with('\\'){ pop(path) }else{ path };
                     event_parent_path.contains(value) &&
                     !match it["ignore"].as_vec(){
-                        Some(ig) => ig.iter().any(|ignore| { event_filename.to_str().unwrap().contains(ignore.as_str().unwrap_or("?")) }),
+                        Some(ig) => ig.iter().any(|ignore| { event_filename.to_str().unwrap().contains(ignore.as_str().unwrap()) }),
                         None => true
                     }
                 }){
