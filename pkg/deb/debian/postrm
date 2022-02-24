@@ -5,6 +5,7 @@
 set -e
 
 INSTALL_DIR="/usr"
+CONFIG_DIR="/etc/fim"
 DOC_DIR="${INSTALL_DIR}/share/doc/fim"
 
 case "$1" in
@@ -13,7 +14,7 @@ case "$1" in
     ;;
 
     purge)
-        rm -rf ${INSTALL_DIR}/etc/fim/config.yml
+        rm -rf ${CONFIG_DIR}
         rm -rf ${DOC_DIR}
     ;;
 
