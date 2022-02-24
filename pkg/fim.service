@@ -1,0 +1,14 @@
+# Contents of /etc/systemd/system/fim.service
+# Copyright (C) 2021, Achiefs.
+
+[Unit]
+Description=File integrity monitoring
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/bin/fim
+
+[Install]
+WantedBy=multi-user.target

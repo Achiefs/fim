@@ -15,9 +15,10 @@ export PKG_DIR="${TARGET_DIR}/usr"
 export CONFIG_DIR="${TARGET_DIR}/etc/fim"
 export BIN_DIR="${PKG_DIR}/bin"
 export DOC_DIR="${PKG_DIR}/share/doc/fim"
+export SYS_DIR="${TARGET_DIR}/lib/systemd/system"
 
 %:
-	dh $@
+	dh $@ --with=systemd
 
 override_dh_clean:
 
@@ -30,10 +31,13 @@ override_dh_install:
 	mkdir -p ${CONFIG_DIR}
 	mkdir -p ${BIN_DIR}
 	mkdir -p ${DOC_DIR}
+	mkdir -p ${SYS_DIR}
+
 	install -m 0750 ${BUILD_DIR}/target/release/fim ${BIN_DIR}/
 	install -m 0640 ${BUILD_DIR}/config/linux/config.yml ${CONFIG_DIR}/
 	install -m 0640 ${BUILD_DIR}/pkg/deb/debian/copyright ${DOC_DIR}/
-	install -m 0640 ${BUILD_DIR}/pkg/deb/debian/changelog ${DOC_DIR}/
+	install -m 0644 ${BUILD_DIR}/pkg/fim.service ${SYS_DIR}/
+	gzip -9 ${BUILD_DIR}/pkg/deb/debian/changelog -c -n > ${DOC_DIR}/changelog.Debian.gz
 
 override_dh_installdocs:
 

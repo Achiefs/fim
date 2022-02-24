@@ -28,9 +28,13 @@ cargo build --release
 %install
 mkdir -p -m 640 ${RPM_BUILD_ROOT}%{_configdir}
 mkdir -p -m 640 ${RPM_BUILD_ROOT}%{_bindir}
+mkdir -p -m 640 ${RPM_BUILD_ROOT}/lib/systemd/system
+mkdir -p -m 640 ${RPM_BUILD_ROOT}/usr/share/man/man1
 
 install -m 0750 target/release/fim ${RPM_BUILD_ROOT}%{_bindir}/
 install -m 0640 config/linux/config.yml ${RPM_BUILD_ROOT}%{_configdir}/
+install -m 0644 pkg/fim.service ${RPM_BUILD_ROOT}/lib/systemd/system/
+install -m 0644 pkg/fim.1 ${RPM_BUILD_ROOT}/usr/share/man/man1/fim.1
 
 %pre
 %post
@@ -45,6 +49,9 @@ rm -fr %{buildroot}
 %attr(750, root, root) %{_bindir}/fim
 %dir %attr(750, root, root) %{_configdir}
 %attr(640, root, root) %config(noreplace) %{_configdir}/config.yml
+%attr(644, root, root) /lib/systemd/system/fim.service
+%attr(644, root, root) /usr/share/man/man1/fim.1
+
 
 
 %changelog
