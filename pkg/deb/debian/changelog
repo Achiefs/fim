@@ -1,13 +1,10 @@
-fim (0.2.1-1) devel; urgency=medium
+fim (0.2.1-1) bionic; urgency=medium
 
-  * Added UUID to events
-  * Improved Debian package purge and removal
-  * Changed events folder to /var/lib/fim
   * More info: https://github.com/Achiefs/fim/releases/tag/v0.2.1
 
- -- Jose Fernandez <support@achiefs.com>  Tue, 18 Jan 2022 23:00:00 +0000
+ -- Jose Fernandez <support@achiefs.com>  Fri, 25 Feb 2022 12:00:00 +0000
 
-fim (0.2.0-1) devel; urgency=medium
+fim (0.2.0-1) bionic; urgency=medium
 
   * Initial release
   * More info: https://github.com/Achiefs/fim/releases/tag/v0.2.0

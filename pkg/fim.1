@@ -1,0 +1,73 @@
+.\" **************************************************************************
+.\"       _________ _____ ____    ____
+.\"      |_   ___  |_   _|_   \  /   _|
+.\"        | |_  \_| | |   |   \/   |
+.\"        |  _|     | |   | |\  /| |
+.\"       _| |_     _| |_ _| |_\/_| |_
+.\"      |_____|   |_____|_____||_____|
+.\"
+.\" *
+.\" * Copyright (C) 2021, Achiefs, <support@achiefs.com>, et al.
+.\" *
+.\" * This software is licensed as described in the file copyright, which
+.\" * you should have received as part of this distribution. The terms
+.\" * are also available at https://github.com/Achiefs/fim/blob/main/LICENSE.
+.\" *
+.\" *
+.\" * This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
+.\" * KIND, either express or implied.
+.\" *
+.\" **************************************************************************
+.\"
+.TH fim 1 "24 Feb 2022" "FIM 0.2.1" "FIM Manual"
+
+.SH NAME
+.B FIM
+- File integrity monitoring software in Rust
+
+.SH SYNOPSIS
+.B fim
+
+.SH DESCRIPTION
+FIM is a File Integrity Monitoring tool that tracks any event performed over your files. It is capable of keeping historical data of your files. It checks the filesystem changes in the background. FIM is the fastest alternative to other software like Ossec to perform file integrity monitoring. It can be integrated with other security tools like Ossec or Wazuh. The produced data can be ingested and analyzed with tools like ElasticSearch/OpenSearch. Developed with Rust, the next generation of programming language. Some of the features provided by FIM are:
+
+.RS
+.nf
+- Filesystem monitor
+- Identification of changes in content, attributes, ownership or permissions
+- Store logs of detected events
+- Easy integration
+.RE
+
+.SH FILES
+.TP
+.I
+/etc/fim/config.yml
+.TP
+.I
+/usr/bin/fim
+.TP
+.I
+/var/lib/fim/events.json
+.TP
+.I
+/var/lib/fim/events.log
+
+.SH DIAGNOSTICS
+.PP
+The activity performed using this utility is logged in the file /var/log/fim/fim.log
+.PP
+The events are stored in /var/lib/fim/events.json
+
+.SH COPYRIGHT
+.PP
+Copyright 2021 Achiefs. All rights reserved
+https://achiefs.github.io/fim/
+
+.SH CREDITS
+.PP
+This man page is created by the Achiefs team <support@achiefs.com>
+
+.SH
+.PP
+Achiefs fim
