@@ -250,6 +250,7 @@ mod tests {
         assert_eq!(evt.version, "x.x.x".to_string());
         assert_eq!(evt.operation, Op::CREATE);
         assert_eq!(evt.path, PathBuf::new());
+        assert_eq!(evt.labels, Vec::<String>::new());
     }
 
     #[test]
@@ -259,7 +260,7 @@ mod tests {
             timestamp: evt.timestamp.clone(),
             hostname: evt.hostname.clone(),
             node: evt.nodename.clone(),
-            pid: process::id()
+            pid: process::id(),
         ];
         assert_eq!(evt.get_common_message("SYSLOG"), expected_output);
     }
@@ -273,7 +274,8 @@ mod tests {
             hostname: evt.hostname.clone(),
             node: evt.nodename.clone(),
             pid: process::id(),
-            version: evt.version.clone()
+            version: evt.version.clone(),
+            labels: Vec::<String>::new()
         ];
         assert_eq!(evt.get_common_message("JSON"), expected_output);
     }
@@ -287,7 +289,8 @@ mod tests {
             hostname: evt.hostname.clone(),
             node: evt.nodename.clone(),
             pid: process::id(),
-            version: evt.version.clone()
+            version: evt.version.clone(),
+            labels: Vec::<String>::new()
         ];
         assert_eq!(evt.get_common_message("TEST"), expected_output);
         assert_eq!(evt.get_common_message(""), expected_output);
@@ -300,7 +303,7 @@ mod tests {
 
         evt.log_event(filename, "JSON");
         let contents = fs::read_to_string(filename);
-        let expected = format!("{{\"id\":\"Test_id\",\"timestamp\":\"Timestamp\",\"hostname\":\"Hostname\",\"node\":\"FIM\",\"pid\":{},\"version\":\"x.x.x\",\"kind\":\"CREATE\",\"file\":\"\",\"checksum\":\"IGNORED\"}}\n", process::id());
+        let expected = format!("{{\"id\":\"Test_id\",\"timestamp\":\"Timestamp\",\"hostname\":\"Hostname\",\"node\":\"FIM\",\"pid\":{},\"version\":\"x.x.x\",\"labels\":[],\"kind\":\"CREATE\",\"file\":\"\",\"checksum\":\"IGNORED\"}}\n", process::id());
         assert_eq!(contents.unwrap(), expected);
         remove_test_file(filename);
     }
