@@ -26,7 +26,8 @@ pub struct Event {
     pub nodename: String,
     pub version: String,
     pub path: PathBuf,
-    pub operation: Op
+    pub operation: Op,
+    pub labels: Vec<String>
 }
 
 impl Event {
@@ -48,7 +49,8 @@ impl Event {
                     hostname: self.hostname.clone(),
                     node: self.nodename.clone(),
                     pid: process::id(),
-                    version: self.version.clone()
+                    version: self.version.clone(),
+                    labels: self.labels.clone()
                 ]
             },
         }
