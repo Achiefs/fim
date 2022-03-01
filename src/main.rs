@@ -49,7 +49,7 @@ fn main() {
     // Loading selected config.yml values into variables
     println!("Loaded config from: {}", selected_path);
     let config = config::read_config(selected_path);
-    let version = &config[0]["version"];
+    let version = "0.2.2";
     let monitor = &config[0]["monitor"];
     let nodename = &config[0]["nodename"];
     let log_file = &config[0]["log"]["output"]["file"].as_str().unwrap();
@@ -124,7 +124,7 @@ fn main() {
                       timestamp: current_timestamp,
                       hostname: current_hostname,
                       nodename: String::from(nodename.as_str().unwrap()),
-                      version: String::from(version.as_str().unwrap()),
+                      version: String::from(version),
                       operation: raw_event.op.unwrap(),
                       path: raw_event.path.unwrap().clone()
                     };
