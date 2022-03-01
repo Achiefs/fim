@@ -235,7 +235,8 @@ mod tests {
             nodename: "FIM".to_string(),
             version: "x.x.x".to_string(),
             operation: Op::CREATE,
-            path: PathBuf::new()
+            path: PathBuf::new(),
+            labels: Vec::new()
         }
     }
 
