@@ -92,3 +92,9 @@ Linux
 - Run `cd fim` to go inside cloned folder.
 - Edit `config.yml` to adjust your needs, add paths or ignore files.
 - Run `cargo run` to download crates, build and run FIM software.
+
+### Invest
+Any kind of contribution will be invested into the project advertising, development or improvement.
+If you want to contribute with this matter you could send us your contribution through:
+- Cardano cryptocoin address `addr1qxuu48cln7ch3p4ncf393z6axza764ltkqfnr5t5hrayfqyevgzmdqwrctf8tmtgentkd0sr9wuya5rzkk8twwt3tfgqy26zdd`
+- Paypal [paypal.me/achiefs](https://paypal.me/achiefs)
