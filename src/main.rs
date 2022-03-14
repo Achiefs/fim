@@ -113,21 +113,22 @@ fn main() {
                     let value = if path.ends_with('/') || path.ends_with('\\'){ pop(path) }else{ path };
                     event_parent_path.contains(value)
                 });
+                let index = monitor_index.unwrap();
 
                 if monitor_index.is_some() &&
-                    match monitor_vector[monitor_index.unwrap()]["ignore"].as_vec() {
+                    match monitor_vector[index]["ignore"].as_vec() {
                         Some(igv) => ! igv.to_vec().iter().any(|ignore| event_filename.to_str().unwrap().contains(ignore.as_str().unwrap()) ),
                         None => true
                     }{
+                    
                     let current_timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
                     let current_hostname = gethostname::gethostname().into_string().unwrap();
-                    let yaml_labels = match monitor.as_vec().unwrap()[monitor_index.unwrap()]["labels"].clone().into_vec() {
+                    let yaml_labels = match monitor.as_vec().unwrap()[index]["labels"].clone().into_vec() {
                         Some(lb) => lb,
                         None => Vec::new()
                     };
                     let current_labels = yaml_labels.to_vec().iter().map(|element| String::from(element.as_str().unwrap()) ).collect();
 
-                    println!("{:?}", current_labels);
                     let event = Event {
                         id: format!("{}", Uuid::new_v4()),
                         timestamp: current_timestamp,
