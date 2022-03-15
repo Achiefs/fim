@@ -8,7 +8,7 @@ brand="fim"
 current_dir=$(pwd)
 architecture="x86_64"
 rpmbuild="/usr/bin/rpmbuild"
-version="$(head -n1 ../../config/linux/config.yml | cut -d' ' -f2)"
+version="$(grep -m1 'version' ../../Cargo.toml | cut -d' ' -f3 | tr -d '"')"
 bin_path="/usr/bin"
 config_path="/etc/${brand}"
 

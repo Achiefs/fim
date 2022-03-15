@@ -49,7 +49,7 @@ fn main() {
     // Loading selected config.yml values into variables
     println!("Loaded config from: {}", selected_path);
     let config = config::read_config(selected_path);
-    let version = &config[0]["version"];
+    let version = "0.2.2";
     let monitor = &config[0]["monitor"];
     let nodename = &config[0]["nodename"];
     let log_file = &config[0]["log"]["output"]["file"].as_str().unwrap();
@@ -102,31 +102,42 @@ fn main() {
             Ok(raw_event) => {
                 // Get the event path and filename
                 debug!("Event registered: {:?}", raw_event);
-                let event_data = Path::new(raw_event.path.as_ref().unwrap().to_str().unwrap());
-                let event_parent_path = event_data.parent().unwrap().to_str().unwrap();
-                let event_filename = event_data.file_name().unwrap();
+                let event_path = Path::new(raw_event.path.as_ref().unwrap().to_str().unwrap());
+                let event_parent_path = event_path.parent().unwrap().to_str().unwrap();
+                let event_filename = event_path.file_name().unwrap();
 
                 // Iterate over monitoring paths to match ignore string and ignore event or not
                 let monitor_vector = monitor.as_vec().unwrap().to_vec();
-                if monitor_vector.iter().any(|it| {
+                let monitor_index = monitor_vector.iter().position(|it| {
                     let path = it["path"].as_str().unwrap();
                     let value = if path.ends_with('/') || path.ends_with('\\'){ pop(path) }else{ path };
-                    event_parent_path.contains(value) &&
-                    !match it["ignore"].as_vec(){
-                        Some(ig) => ig.iter().any(|ignore| { event_filename.to_str().unwrap().contains(ignore.as_str().unwrap()) }),
-                        None => false // To match the negation `!`
-                    }
-                }){
+                    event_parent_path.contains(value)
+                });
+                let index = monitor_index.unwrap();
+
+                if monitor_index.is_some() &&
+                    match monitor_vector[index]["ignore"].as_vec() {
+                        Some(igv) => ! igv.to_vec().iter().any(|ignore| event_filename.to_str().unwrap().contains(ignore.as_str().unwrap()) ),
+                        None => true
+                    }{
+                    
                     let current_timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
                     let current_hostname = gethostname::gethostname().into_string().unwrap();
+                    let yaml_labels = match monitor.as_vec().unwrap()[index]["labels"].clone().into_vec() {
+                        Some(lb) => lb,
+                        None => Vec::new()
+                    };
+                    let current_labels = yaml_labels.to_vec().iter().map(|element| String::from(element.as_str().unwrap()) ).collect();
+
                     let event = Event {
-                      id: format!("{}", Uuid::new_v4()),
-                      timestamp: current_timestamp,
-                      hostname: current_hostname,
-                      nodename: String::from(nodename.as_str().unwrap()),
-                      version: String::from(version.as_str().unwrap()),
-                      operation: raw_event.op.unwrap(),
-                      path: raw_event.path.unwrap().clone()
+                        id: format!("{}", Uuid::new_v4()),
+                        timestamp: current_timestamp,
+                        hostname: current_hostname,
+                        nodename: String::from(nodename.as_str().unwrap()),
+                        version: String::from(version),
+                        operation: raw_event.op.unwrap(),
+                        path: raw_event.path.unwrap().clone(),
+                        labels: current_labels
                     };
 
                     debug!("Event received: {:?}", event);

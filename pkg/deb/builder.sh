@@ -8,7 +8,7 @@ brand="fim"
 target_dir=$(pwd)
 architecture="amd64"
 base_dir="${target_dir}/../../"
-version="$(head -n1 ${base_dir}/config/linux/config.yml | cut -d' ' -f2)"
+version="$(grep -m1 'version' ${base_dir}/Cargo.toml | cut -d' ' -f3 | tr -d '"')"
 release="1"
 
 # Build directories
