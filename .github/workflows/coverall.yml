@@ -1,7 +1,7 @@
-name: Code coverage
+name: Generate LCOV and send to coveralls
 on: [push]
 jobs:
-  Compilation-test-linux:
+  coverage-report-launch:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
