@@ -26,6 +26,9 @@ mod config;
 mod event;
 use event::Event;
 
+mod net;
+use net::Net;
+
 
 fn pop(value: &str) -> &str {
     let mut chars = value.chars();
@@ -95,6 +98,11 @@ fn main() {
         };
         watcher.watch(path, RecursiveMode::Recursive).unwrap();
     }
+
+    println!("Sending document to OpenSearch");
+    Net::send();
+    println!("Document sent");
+
 
     // Main loop, receive any produced event and write it into the events log.
     loop {
