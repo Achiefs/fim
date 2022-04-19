@@ -17,7 +17,10 @@ use json::JsonValue;
 mod hash;
 // To manage Pathbufs
 use std::path::PathBuf;
-
+// To manage HTTP requests
+use reqwest::Client;
+use reqwest::header;
+use std::collections::HashMap;
 
 pub struct Event {
     pub id: String,
@@ -27,7 +30,8 @@ pub struct Event {
     pub version: String,
     pub path: PathBuf,
     pub operation: Op,
-    pub labels: Vec<String>
+    pub labels: Vec<String>,
+    pub kind: String
 }
 
 impl Event {
@@ -94,7 +98,7 @@ impl Event {
                 };
 
                 if clean_format == "JSON" {
-                    obj["kind"] = "CREATE".into();
+                    obj["kind"] = self.kind.clone().into();
                     obj["file"] = self.path.to_str().unwrap().into();
                     obj["checksum"] = checksum.into();
                     writeln!(log, "{}", json::stringify(obj))
@@ -110,7 +114,7 @@ impl Event {
                 };
 
                 if clean_format == "JSON" {
-                    obj["kind"] = "WRITE".into();
+                    obj["kind"] = self.kind.clone().into();
                     obj["file"] = self.path.to_str().unwrap().into();
                     obj["checksum"] = checksum.into();
                     writeln!(log, "{}", json::stringify(obj))
@@ -145,7 +149,7 @@ impl Event {
                     Err(_e) => String::from("IGNORED")
                 };
                 if clean_format == "JSON" {
-                    obj["kind"] = "RENAME".into();
+                    obj["kind"] = self.kind.clone().into();
                     obj["file"] = self.path.to_str().unwrap().into();
                     obj["checksum"] = checksum.into();
                     writeln!(log, "{}", json::stringify(obj))
@@ -156,7 +160,7 @@ impl Event {
             }
             Op::REMOVE => {
                 if clean_format == "JSON" {
-                    obj["kind"] = "REMOVE".into();
+                    obj["kind"] = self.kind.clone().into();
                     obj["file"] = self.path.to_str().unwrap().into();
                     writeln!(log, "{}", json::stringify(obj))
                 } else {
@@ -166,7 +170,7 @@ impl Event {
             },
             Op::CHMOD => {
                 if clean_format == "JSON" {
-                    obj["kind"] = "CHMOD".into();
+                    obj["kind"] = self.kind.clone().into();
                     obj["file"] = self.path.to_str().unwrap().into();
                     writeln!(log, "{}", json::stringify(obj))
                 } else {
@@ -176,7 +180,7 @@ impl Event {
             },
             Op::CLOSE_WRITE => {
                 if clean_format == "JSON" {
-                    obj["kind"] = "CLOSE_WRITE".into();
+                    obj["kind"] = self.kind.clone().into();
                     obj["file"] = self.path.to_str().unwrap().into();
                     writeln!(log, "{}", json::stringify(obj))
                 } else {
@@ -186,7 +190,7 @@ impl Event {
             },
             Op::RESCAN => {
                 if clean_format == "JSON" {
-                    obj["kind"] = "RESCAN".into();
+                    obj["kind"] = self.kind.clone().into();
                     obj["file"] = self.path.to_str().unwrap().into();
                     writeln!(log, "{}", json::stringify(obj))
                 } else {
@@ -201,7 +205,38 @@ impl Event {
             },
         }.expect("Error writing event")
     }
+
+    // ------------------------------------------------------------------------
+
+    // Function to send events through network
+    pub async fn send(&self, endpoint: String) {
+        let mut data = HashMap::new();
+        data.insert("fid", self.id.clone());
+        data.insert("timestamp", self.timestamp.clone());
+        data.insert("hostname", self.hostname.clone());
+        data.insert("node", self.nodename.clone());
+        data.insert("pid", process::id().to_string());
+        data.insert("version", self.version.clone());
+        //data.insert("labels", self.labels.clone());
+        data.insert("kind", self.kind.clone());
+        data.insert("file", String::from(self.path.clone().to_str().unwrap()) );
+
+        let request_url = format!("{}/fim/_doc/", endpoint);
+        let client = Client::builder()
+            .danger_accept_invalid_certs(true)
+            .build().unwrap();
+        let response = client
+            .post(request_url)
+            .header(header::CONTENT_TYPE, "application/json")
+            .basic_auth("admin", Some("admin"))
+            .json(&data)
+            .send()
+            .await;
+        debug!("Event send Response: {:?}", response.unwrap().text().await);
+    }
 }
+
+// ----------------------------------------------------------------------------
 
 impl fmt::Debug for Event {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
@@ -210,6 +245,21 @@ impl fmt::Debug for Event {
           .field(&self.path)
           .field(&self.operation)
           .finish()
+    }
+}
+
+// ----------------------------------------------------------------------------
+
+pub fn get_kind(operation: Op) -> String {
+    return match operation {
+        Op::CREATE => { String::from("CREATE") },
+        Op::WRITE => { String::from("WRITE") },
+        Op::RENAME => { String::from("RENAME") },
+        Op::REMOVE => { String::from("REMOVE") },
+        Op::CHMOD => { String::from("CHMOD") },
+        Op::CLOSE_WRITE => { String::from("CLOSE_WRITE") },
+        Op::RESCAN => { String::from("RESCAN") },
+        _ => { String::from("UNKNOW") }
     }
 }
 

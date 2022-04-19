@@ -25,9 +25,9 @@ mod config;
 // To manage single event data
 mod event;
 use event::Event;
-
-mod net;
-use net::Net;
+// To manage futures and async calls
+use futures::executor::block_on;
+use tokio;
 
 
 fn pop(value: &str) -> &str {
@@ -37,7 +37,8 @@ fn pop(value: &str) -> &str {
 }
 
 // Main function where the magic happens
-fn main() {
+#[tokio::main]
+async fn main() {
     println!("System detected {}", env::consts::OS);
     println!("Reading config...");
 
@@ -53,6 +54,7 @@ fn main() {
     println!("Loaded config from: {}", selected_path);
     let config = config::read_config(selected_path);
     let version = "0.2.2";
+    let endpoint = &config[0]["endpoint"];
     let monitor = &config[0]["monitor"];
     let nodename = &config[0]["nodename"];
     let log_file = &config[0]["log"]["output"]["file"].as_str().unwrap();
@@ -99,11 +101,6 @@ fn main() {
         watcher.watch(path, RecursiveMode::Recursive).unwrap();
     }
 
-    println!("Sending document to OpenSearch");
-    Net::send();
-    println!("Document sent");
-
-
     // Main loop, receive any produced event and write it into the events log.
     loop {
         match rx.recv() {
@@ -136,6 +133,7 @@ fn main() {
                         None => Vec::new()
                     };
                     let current_labels = yaml_labels.to_vec().iter().map(|element| String::from(element.as_str().unwrap()) ).collect();
+                    let operation = raw_event.op.unwrap().clone();
 
                     let event = Event {
                         id: format!("{}", Uuid::new_v4()),
@@ -143,13 +141,15 @@ fn main() {
                         hostname: current_hostname,
                         nodename: String::from(nodename.as_str().unwrap()),
                         version: String::from(version),
-                        operation: raw_event.op.unwrap(),
+                        operation: operation.clone(),
                         path: raw_event.path.unwrap().clone(),
-                        labels: current_labels
+                        labels: current_labels,
+                        kind: event::get_kind(operation.clone())
                     };
 
                     debug!("Event received: {:?}", event);
-                    event.log_event(events_file, events_format)
+                    event.log_event(events_file, events_format);
+                    block_on(event.send( String::from(endpoint.as_str().unwrap())) );
                 }else{
                     debug!("Event ignored not stored in alerts");
                 }
