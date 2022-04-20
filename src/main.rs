@@ -29,6 +29,8 @@ use event::Event;
 use futures::executor::block_on;
 use tokio;
 
+mod index;
+
 
 fn pop(value: &str) -> &str {
     let mut chars = value.chars();
@@ -54,7 +56,8 @@ async fn main() {
     println!("Loaded config from: {}", selected_path);
     let config = config::read_config(selected_path);
     let version = "0.2.2";
-    let endpoint = &config[0]["endpoint"];
+    // Include a way to manage events destination
+    let endpoint = config[0]["events"]["endpoint"].as_str().unwrap();
     let monitor = &config[0]["monitor"];
     let nodename = &config[0]["nodename"];
     let log_file = &config[0]["log"]["output"]["file"].as_str().unwrap();
@@ -100,6 +103,9 @@ async fn main() {
         };
         watcher.watch(path, RecursiveMode::Recursive).unwrap();
     }
+
+    // On start create index (Include check if events won't be ingested by http)
+    block_on(index::create_index( String::from(endpoint)) );
 
     // Main loop, receive any produced event and write it into the events log.
     loop {
@@ -149,7 +155,7 @@ async fn main() {
 
                     debug!("Event received: {:?}", event);
                     event.log_event(events_file, events_format);
-                    block_on(event.send( String::from(endpoint.as_str().unwrap())) );
+                    block_on(event.send( String::from(endpoint)) );
                 }else{
                     debug!("Event ignored not stored in alerts");
                 }
