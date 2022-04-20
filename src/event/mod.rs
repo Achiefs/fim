@@ -19,7 +19,6 @@ mod hash;
 use std::path::PathBuf;
 // To manage HTTP requests
 use reqwest::Client;
-use reqwest::header;
 use std::collections::HashMap;
 
 pub struct Event {
@@ -209,9 +208,10 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to send events through network
+    // Include a way to pass credentials
+    // Include a way to insert labels
     pub async fn send(&self, endpoint: String) {
         let mut data = HashMap::new();
-        data.insert("fid", self.id.clone());
         data.insert("timestamp", self.timestamp.clone());
         data.insert("hostname", self.hostname.clone());
         data.insert("node", self.nodename.clone());
@@ -221,13 +221,12 @@ impl Event {
         data.insert("kind", self.kind.clone());
         data.insert("file", String::from(self.path.clone().to_str().unwrap()) );
 
-        let request_url = format!("{}/fim/_doc/", endpoint);
+        let request_url = format!("{}/fim-10-10-2022/_doc/{}", endpoint, self.id);
         let client = Client::builder()
             .danger_accept_invalid_certs(true)
             .build().unwrap();
         let response = client
             .post(request_url)
-            .header(header::CONTENT_TYPE, "application/json")
             .basic_auth("admin", Some("admin"))
             .json(&data)
             .send()
