@@ -3,7 +3,7 @@
 // To implement Debug and fmt method
 use std::fmt;
 // To handle files
-use std::fs::{OpenOptions, metadata};
+use std::fs::OpenOptions;
 use std::io::{Write, Error, ErrorKind};
 // To get own process ID
 use std::process;
@@ -12,14 +12,11 @@ use notify::op::Op;
 // To log the program process
 use log::*;
 // To handle JSON objects
-use json::JsonValue;
-// To load hashing functions
-mod hash;
+use serde_json::{json, to_string};
 // To manage Pathbufs
 use std::path::PathBuf;
 // To manage HTTP requests
 use reqwest::Client;
-use std::collections::HashMap;
 
 pub struct Event {
     pub id: String,
@@ -30,40 +27,74 @@ pub struct Event {
     pub path: PathBuf,
     pub operation: Op,
     pub labels: Vec<String>,
-    pub kind: String
+    pub kind: String,
+    pub checksum: String
 }
 
 impl Event {
-    // To get JSON object of common data.
-    fn get_common_message(&self, format: &str) -> JsonValue {
+    // Get formatted string with all required data
+    fn format_json(&self, format: &str) -> String {
         match format {
             "SYSLOG" => {
-                json::object![
-                    timestamp: self.timestamp.clone(),
-                    hostname: self.hostname.clone(),
-                    node: self.nodename.clone(),
-                    pid: process::id()
-                ]
+                format!("{} {} {}[{}] File '{}' {}, checksum: {}",
+                    self.timestamp.clone(),
+                    self.hostname.clone(),
+                    self.nodename.clone(),
+                    process::id(),
+                    self.path.clone().to_str().unwrap(),
+                    self.kind.clone(),
+                    self.checksum.clone())
             },
             _ => {
-                json::object![
-                    id: self.id.clone(),
-                    timestamp: self.timestamp.clone(),
-                    hostname: self.hostname.clone(),
-                    node: self.nodename.clone(),
-                    pid: process::id(),
-                    version: self.version.clone(),
-                    labels: self.labels.clone()
-                ]
-            },
+                let obj = json!({
+                    "id": self.id.clone(),
+                    "timestamp": self.timestamp.clone(),
+                    "hostname": self.hostname.clone(),
+                    "node": self.nodename.clone(),
+                    "pid": process::id(),
+                    "version": self.version.clone(),
+                    "labels": self.labels.clone(),
+                    "kind": self.kind.clone(),
+                    "file": String::from(self.path.clone().to_str().unwrap()),
+                    "checksum": self.checksum.clone()
+                });
+                format!("{}", to_string(&obj).unwrap())
+            }
         }
     }
 
     // ------------------------------------------------------------------------
 
+    // To get JSON object of common data.
+/*    fn get_common_message(&self, format: &str) -> json::JsonValue {
+        match format {
+            "SYSLOG" => {
+                json!({
+                    "timestamp": self.timestamp.clone(),
+                    "hostname": self.hostname.clone(),
+                    "node": self.nodename.clone(),
+                    "pid": process::id()
+                })
+            },
+            _ => {
+                json!({
+                    "id": self.id.clone(),
+                    "timestamp": self.timestamp.clone(),
+                    "hostname": self.hostname.clone(),
+                    "node": self.nodename.clone(),
+                    "pid": process::id(),
+                    "version": self.version.clone(),
+                    "labels": self.labels.clone()
+                })
+            },
+        }
+    }
+*/
+    // ------------------------------------------------------------------------
+
     // Function to write the received events to file
     pub fn log_event(&self, file: &str, format: &str){
-        let mut log = OpenOptions::new()
+        let mut events_file = OpenOptions::new()
             .create(true)
             .write(true)
             .append(true)
@@ -75,127 +106,10 @@ impl Event {
             "syslog" | "s" | "SYSLOG" | "S" | "Syslog" => clean_format = "SYSLOG",
             _ => clean_format = "JSON",
         }
-        let mut obj = self.get_common_message(clean_format);
-        let message = format!("{} {} {}[{}]:",
-                obj["timestamp"], obj["hostname"], obj["node"], obj["pid"]);
 
         match self.operation {
-            Op::CREATE => {
-                let checksum = match metadata(&self.path){
-                    Ok(metadata_struct) => {
-                        match metadata_struct.is_file() {
-                            true => {
-                                match hash::get_checksum(self.path.to_str().unwrap()) {
-                                    Ok(data) => data,
-                                    Err(_e) => String::from("IGNORED")
-                                }
-                            },
-                            false => String::from("IGNORED")
-                        }
-                    },
-                    Err(_e) => String::from("IGNORED")
-                };
-
-                if clean_format == "JSON" {
-                    obj["kind"] = self.kind.clone().into();
-                    obj["file"] = self.path.to_str().unwrap().into();
-                    obj["checksum"] = checksum.into();
-                    writeln!(log, "{}", json::stringify(obj))
-                } else {
-                    writeln!(log, "{} File '{}' created, checksum {}", message,
-                        self.path.to_str().unwrap(), checksum)
-                }
-            }
-            Op::WRITE => {
-                let checksum = match hash::get_checksum(self.path.to_str().unwrap()) {
-                    Ok(data) => data,
-                    Err(_e) => String::from("IGNORED")
-                };
-
-                if clean_format == "JSON" {
-                    obj["kind"] = self.kind.clone().into();
-                    obj["file"] = self.path.to_str().unwrap().into();
-                    obj["checksum"] = checksum.into();
-                    writeln!(log, "{}", json::stringify(obj))
-                } else {
-                    writeln!(log, "{} File '{}' written, new checksum {}", message,
-                        self.path.to_str().unwrap(), checksum)
-                }
-            }
-            Op::RENAME => {
-                let checksum = match metadata(&self.path) {
-                    Ok(md) => {
-                        match md.is_file() {
-                            true => {
-                                match hash::get_checksum(self.path.to_str().unwrap()) {
-                                    Ok(data) => data,
-                                    Err(e) => {
-                                        match e.kind() {
-                                            ErrorKind::NotFound => debug!("File Not found error ignoring..."),
-                                            ErrorKind::InvalidData => debug!("File data not valid ignoring..."),
-                                            _ => {
-                                                debug!("Error not handled: {:?}", e.kind());
-                                                panic!("Not handled error on get_checksum function.")
-                                            },
-                                        };
-                                        String::from("IGNORED")
-                                    }
-                                }
-                            },
-                            false => String::from("IGNORED")
-                        }
-                    },
-                    Err(_e) => String::from("IGNORED")
-                };
-                if clean_format == "JSON" {
-                    obj["kind"] = self.kind.clone().into();
-                    obj["file"] = self.path.to_str().unwrap().into();
-                    obj["checksum"] = checksum.into();
-                    writeln!(log, "{}", json::stringify(obj))
-                } else {
-                    writeln!(log, "{} File '{}' renamed, checksum {}", message,
-                        self.path.to_str().unwrap(), checksum)
-                }
-            }
-            Op::REMOVE => {
-                if clean_format == "JSON" {
-                    obj["kind"] = self.kind.clone().into();
-                    obj["file"] = self.path.to_str().unwrap().into();
-                    writeln!(log, "{}", json::stringify(obj))
-                } else {
-                    writeln!(log, "{} File '{}' removed", message,
-                        self.path.to_str().unwrap())
-                }
-            },
-            Op::CHMOD => {
-                if clean_format == "JSON" {
-                    obj["kind"] = self.kind.clone().into();
-                    obj["file"] = self.path.to_str().unwrap().into();
-                    writeln!(log, "{}", json::stringify(obj))
-                } else {
-                    writeln!(log, "{} File '{}' permissions modified", message,
-                        self.path.to_str().unwrap())
-                }
-            },
-            Op::CLOSE_WRITE => {
-                if clean_format == "JSON" {
-                    obj["kind"] = self.kind.clone().into();
-                    obj["file"] = self.path.to_str().unwrap().into();
-                    writeln!(log, "{}", json::stringify(obj))
-                } else {
-                    writeln!(log, "{} File '{}' closed", message,
-                        self.path.to_str().unwrap())
-                }
-            },
-            Op::RESCAN => {
-                if clean_format == "JSON" {
-                    obj["kind"] = self.kind.clone().into();
-                    obj["file"] = self.path.to_str().unwrap().into();
-                    writeln!(log, "{}", json::stringify(obj))
-                } else {
-                    writeln!(log, "{} Directory '{}' need to be rescaned", message,
-                        self.path.to_str().unwrap())
-                }
+            Op::CREATE|Op::WRITE|Op::RENAME|Op::REMOVE|Op::CHMOD|Op::CLOSE_WRITE|Op::RESCAN => {
+                writeln!(events_file, "{}", self.format_json(clean_format.clone()) )
             },
             _ => {
                 let error_msg = "Event Op not Handled or do not exists";
@@ -209,17 +123,18 @@ impl Event {
 
     // Function to send events through network
     // Include a way to pass credentials
-    // Include a way to insert labels
     pub async fn send(&self, endpoint: String) {
-        let mut data = HashMap::new();
-        data.insert("timestamp", self.timestamp.clone());
-        data.insert("hostname", self.hostname.clone());
-        data.insert("node", self.nodename.clone());
-        data.insert("pid", process::id().to_string());
-        data.insert("version", self.version.clone());
-        //data.insert("labels", self.labels.clone());
-        data.insert("kind", self.kind.clone());
-        data.insert("file", String::from(self.path.clone().to_str().unwrap()) );
+        let data = json!({
+            "timestamp": self.timestamp.clone(),
+            "hostname": self.hostname.clone(),
+            "node": self.nodename.clone(),
+            "pid": process::id(),
+            "version": self.version.clone(),
+            "labels": self.labels.clone(),
+            "kind": self.kind.clone(),
+            "file": String::from(self.path.clone().to_str().unwrap()),
+            "checksum": self.checksum.clone()
+        });
 
         let request_url = format!("{}/fim-10-10-2022/_doc/{}", endpoint, self.id);
         let client = Client::builder()
@@ -250,7 +165,7 @@ impl fmt::Debug for Event {
 // ----------------------------------------------------------------------------
 
 pub fn get_kind(operation: Op) -> String {
-    return match operation {
+    match operation {
         Op::CREATE => { String::from("CREATE") },
         Op::WRITE => { String::from("WRITE") },
         Op::RENAME => { String::from("RENAME") },
@@ -259,6 +174,21 @@ pub fn get_kind(operation: Op) -> String {
         Op::CLOSE_WRITE => { String::from("CLOSE_WRITE") },
         Op::RESCAN => { String::from("RESCAN") },
         _ => { String::from("UNKNOW") }
+    }
+}
+
+// ----------------------------------------------------------------------------
+
+pub fn has_checksum(operation: Op) -> bool {
+    match operation {
+        Op::CREATE => { true },
+        Op::WRITE => { true },
+        Op::RENAME => { true },
+        Op::REMOVE => { false },
+        Op::CHMOD => { false },
+        Op::CLOSE_WRITE => { false },
+        Op::RESCAN => { false },
+        _ => { false }
     }
 }
 

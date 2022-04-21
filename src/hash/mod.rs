@@ -3,20 +3,35 @@
 // To get file checksums
 use hex::encode;
 use sha3::{Sha3_512, Digest};
-use std::result::Result;
-use std::io::Error;
+use std::io::ErrorKind;
+// To log the program process
+use log::*;
 
 // To calculate file content hash in sha512 format (SHA3 implementation)
-pub fn get_checksum(file: &str) -> Result<String, Error> {
+pub fn get_checksum(file: &str) -> String {
     let mut hasher = Sha3_512::new();
     match std::fs::read_to_string(file) {
         Ok(data) => {
             hasher.update(&data);
             let result = hasher.finalize().to_vec();
-            let hash = encode(result);
-            Ok(hash)
+            encode(result)
         },
-        Err(e) => Err(e),
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::NotFound => {
+                    debug!("File Not found error ignoring...");
+                    String::from("UNKNOWN")
+                },
+                ErrorKind::InvalidData => {
+                    debug!("File data not valid ignoring...");
+                    String::from("UNKNOWN")
+                },
+                _ => {
+                    debug!("Error not handled: {:?}", e.kind());
+                    String::from("UNKNOWN")
+                },
+            }
+        },
     }
 }
 

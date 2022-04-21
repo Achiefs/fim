@@ -20,16 +20,18 @@ use uuid::Uuid;
 // To use intersperse()
 use itertools::Itertools;
 
+// To load hashing functions
+mod hash;
 // To load configuration functions
 mod config;
+// To load index management functions
+mod index;
 // To manage single event data
 mod event;
 use event::Event;
 // To manage futures and async calls
 use futures::executor::block_on;
 use tokio;
-
-mod index;
 
 
 fn pop(value: &str) -> &str {
@@ -64,7 +66,7 @@ async fn main() {
     let log_level = &config[0]["log"]["output"]["level"].as_str().unwrap();
     let events_file = &config[0]["log"]["events"]["file"].as_str().unwrap();
     let events_format = &config[0]["log"]["events"]["format"].as_str().unwrap();
-    
+
     println!("Log file: {}", log_file);
     println!("Events file: {}", events_file);
     println!("Log level: {}", log_level);
@@ -84,7 +86,7 @@ async fn main() {
             .open(log_file)
             .expect("Unable to open log file")
     ).unwrap();
-    
+
     // Iterating over monitor paths and set watcher on each folder to watch.
     let (tx, rx) = channel();
     let mut watcher: RecommendedWatcher = Watcher::new_raw(tx).unwrap();
@@ -131,7 +133,7 @@ async fn main() {
                         Some(igv) => ! igv.to_vec().iter().any(|ignore| event_filename.to_str().unwrap().contains(ignore.as_str().unwrap()) ),
                         None => true
                     }{
-                    
+
                     let current_timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
                     let current_hostname = gethostname::gethostname().into_string().unwrap();
                     let yaml_labels = match monitor.as_vec().unwrap()[index]["labels"].clone().into_vec() {
@@ -140,6 +142,7 @@ async fn main() {
                     };
                     let current_labels = yaml_labels.to_vec().iter().map(|element| String::from(element.as_str().unwrap()) ).collect();
                     let operation = raw_event.op.unwrap().clone();
+                    let path = raw_event.path.unwrap().clone();
 
                     let event = Event {
                         id: format!("{}", Uuid::new_v4()),
@@ -148,9 +151,10 @@ async fn main() {
                         nodename: String::from(nodename.as_str().unwrap()),
                         version: String::from(version),
                         operation: operation.clone(),
-                        path: raw_event.path.unwrap().clone(),
+                        path: path.clone(),
                         labels: current_labels,
-                        kind: event::get_kind(operation.clone())
+                        kind: event::get_kind(operation.clone()),
+                        checksum: hash::get_checksum(path.to_str().unwrap().clone())
                     };
 
                     debug!("Event received: {:?}", event);

@@ -1,5 +1,4 @@
 {
-  "aliases" : { },
   "mappings" : {
     "properties" : {
       "pid" : { "type" : "integer" },
@@ -41,6 +40,24 @@
         }
       },
       "version" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "checksum" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "labels" : {
         "type" : "text",
         "fields" : {
           "keyword" : {

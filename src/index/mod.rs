@@ -6,6 +6,8 @@ use tokio_util::codec::{BytesCodec, FramedRead};
 // To manage HTTP requests
 use reqwest::{Client, Body};
 use reqwest::header;
+// To log the program process
+use log::*;
 
 pub async fn create_index(endpoint: String){
     let file = File::open("config/index_template.json").await.unwrap();
