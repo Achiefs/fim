@@ -13,12 +13,15 @@ use log::*;
 use simplelog::{WriteLogger, Config};
 // To manage paths
 use std::path::Path;
-// To manage time
+// To manage date and time
 use std::time::{SystemTime, UNIX_EPOCH};
+use time::OffsetDateTime;
 // To manage unique event identifier
 use uuid::Uuid;
 // To use intersperse()
 use itertools::Itertools;
+// To get own process ID
+use std::process;
 
 // To load hashing functions
 mod hash;
@@ -59,14 +62,18 @@ async fn main() {
     let config = config::read_config(selected_path);
     let version = "0.2.2";
     // Include a way to manage events destination
-    let endpoint = config[0]["events"]["endpoint"].as_str().unwrap();
+    let endpoint_address = String::from(config[0]["events"]["endpoint"]["address"].as_str().unwrap());
+    let endpoint_user = String::from(config[0]["events"]["endpoint"]["credentials"]["user"].as_str().unwrap());
+    let endpoint_pass = String::from(config[0]["events"]["endpoint"]["credentials"]["password"].as_str().unwrap());
     let monitor = &config[0]["monitor"];
     let nodename = &config[0]["nodename"];
     let log_file = &config[0]["log"]["output"]["file"].as_str().unwrap();
     let log_level = &config[0]["log"]["output"]["level"].as_str().unwrap();
     let events_file = &config[0]["log"]["events"]["file"].as_str().unwrap();
-    let events_format = &config[0]["log"]["events"]["format"].as_str().unwrap();
 
+    let date = OffsetDateTime::now_utc();
+    let index_name = format!("fim-{}-{}-{}", date.year(), date.month() as u8, date.day() );
+    println!("{}", index_name);
     println!("Log file: {}", log_file);
     println!("Events file: {}", events_file);
     println!("Log level: {}", log_level);
@@ -107,7 +114,7 @@ async fn main() {
     }
 
     // On start create index (Include check if events won't be ingested by http)
-    block_on(index::create_index( String::from(endpoint)) );
+    block_on(index::create_index( index_name.clone(), endpoint_address.clone(), endpoint_user.clone(), endpoint_pass.clone()) );
 
     // Main loop, receive any produced event and write it into the events log.
     loop {
@@ -154,12 +161,13 @@ async fn main() {
                         path: path.clone(),
                         labels: current_labels,
                         kind: event::get_kind(operation.clone()),
-                        checksum: hash::get_checksum(path.to_str().unwrap().clone())
+                        checksum: hash::get_checksum(path.to_str().unwrap().clone()),
+                        pid: process::id()
                     };
 
                     debug!("Event received: {:?}", event);
-                    event.log_event(events_file, events_format);
-                    block_on(event.send( String::from(endpoint)) );
+                    event.log_event(events_file);
+                    block_on(event.send( index_name.clone(), endpoint_address.clone(), endpoint_user.clone(), endpoint_pass.clone()) );
                 }else{
                     debug!("Event ignored not stored in alerts");
                 }

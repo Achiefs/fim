@@ -5,11 +5,9 @@ use std::fmt;
 // To handle files
 use std::fs::OpenOptions;
 use std::io::{Write, Error, ErrorKind};
-// To get own process ID
-use std::process;
 // Event handling
 use notify::op::Op;
-// To log the program process
+// To log the program procedure
 use log::*;
 // To handle JSON objects
 use serde_json::{json, to_string};
@@ -28,72 +26,32 @@ pub struct Event {
     pub operation: Op,
     pub labels: Vec<String>,
     pub kind: String,
-    pub checksum: String
+    pub checksum: String,
+    pub pid: u32
 }
 
 impl Event {
     // Get formatted string with all required data
-    fn format_json(&self, format: &str) -> String {
-        match format {
-            "SYSLOG" => {
-                format!("{} {} {}[{}] File '{}' {}, checksum: {}",
-                    self.timestamp.clone(),
-                    self.hostname.clone(),
-                    self.nodename.clone(),
-                    process::id(),
-                    self.path.clone().to_str().unwrap(),
-                    self.kind.clone(),
-                    self.checksum.clone())
-            },
-            _ => {
-                let obj = json!({
-                    "id": self.id.clone(),
-                    "timestamp": self.timestamp.clone(),
-                    "hostname": self.hostname.clone(),
-                    "node": self.nodename.clone(),
-                    "pid": process::id(),
-                    "version": self.version.clone(),
-                    "labels": self.labels.clone(),
-                    "kind": self.kind.clone(),
-                    "file": String::from(self.path.clone().to_str().unwrap()),
-                    "checksum": self.checksum.clone()
-                });
-                format!("{}", to_string(&obj).unwrap())
-            }
-        }
+    fn format_json(&self) -> String {
+        let obj = json!({
+            "id": self.id.clone(),
+            "timestamp": self.timestamp.clone(),
+            "hostname": self.hostname.clone(),
+            "node": self.nodename.clone(),
+            "pid": self.pid.clone(),
+            "version": self.version.clone(),
+            "labels": self.labels.clone(),
+            "kind": self.kind.clone(),
+            "file": String::from(self.path.clone().to_str().unwrap()),
+            "checksum": self.checksum.clone()
+        });
+        format!("{}", to_string(&obj).unwrap())
     }
 
-    // ------------------------------------------------------------------------
-
-    // To get JSON object of common data.
-/*    fn get_common_message(&self, format: &str) -> json::JsonValue {
-        match format {
-            "SYSLOG" => {
-                json!({
-                    "timestamp": self.timestamp.clone(),
-                    "hostname": self.hostname.clone(),
-                    "node": self.nodename.clone(),
-                    "pid": process::id()
-                })
-            },
-            _ => {
-                json!({
-                    "id": self.id.clone(),
-                    "timestamp": self.timestamp.clone(),
-                    "hostname": self.hostname.clone(),
-                    "node": self.nodename.clone(),
-                    "pid": process::id(),
-                    "version": self.version.clone(),
-                    "labels": self.labels.clone()
-                })
-            },
-        }
-    }
-*/
     // ------------------------------------------------------------------------
 
     // Function to write the received events to file
-    pub fn log_event(&self, file: &str, format: &str){
+    pub fn log_event(&self, file: &str){
         let mut events_file = OpenOptions::new()
             .create(true)
             .write(true)
@@ -101,15 +59,9 @@ impl Event {
             .open(file)
             .expect("Unable to open events log file.");
 
-        let clean_format: &str;
-        match format {
-            "syslog" | "s" | "SYSLOG" | "S" | "Syslog" => clean_format = "SYSLOG",
-            _ => clean_format = "JSON",
-        }
-
         match self.operation {
             Op::CREATE|Op::WRITE|Op::RENAME|Op::REMOVE|Op::CHMOD|Op::CLOSE_WRITE|Op::RESCAN => {
-                writeln!(events_file, "{}", self.format_json(clean_format.clone()) )
+                writeln!(events_file, "{}", self.format_json() )
             },
             _ => {
                 let error_msg = "Event Op not Handled or do not exists";
@@ -122,13 +74,12 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to send events through network
-    // Include a way to pass credentials
-    pub async fn send(&self, endpoint: String) {
+    pub async fn send(&self, index: String, address: String, user: String, pass: String) {
         let data = json!({
             "timestamp": self.timestamp.clone(),
             "hostname": self.hostname.clone(),
             "node": self.nodename.clone(),
-            "pid": process::id(),
+            "pid": self.pid.clone(),
             "version": self.version.clone(),
             "labels": self.labels.clone(),
             "kind": self.kind.clone(),
@@ -136,13 +87,13 @@ impl Event {
             "checksum": self.checksum.clone()
         });
 
-        let request_url = format!("{}/fim-10-10-2022/_doc/{}", endpoint, self.id);
+        let request_url = format!("{}/{}/_doc/{}", address, index, self.id);
         let client = Client::builder()
             .danger_accept_invalid_certs(true)
             .build().unwrap();
         let response = client
             .post(request_url)
-            .basic_auth("admin", Some("admin"))
+            .basic_auth(user, Some(pass))
             .json(&data)
             .send()
             .await;
@@ -179,27 +130,11 @@ pub fn get_kind(operation: Op) -> String {
 
 // ----------------------------------------------------------------------------
 
-pub fn has_checksum(operation: Op) -> bool {
-    match operation {
-        Op::CREATE => { true },
-        Op::WRITE => { true },
-        Op::RENAME => { true },
-        Op::REMOVE => { false },
-        Op::CHMOD => { false },
-        Op::CLOSE_WRITE => { false },
-        Op::RESCAN => { false },
-        _ => { false }
-    }
-}
-
-// ----------------------------------------------------------------------------
-
 #[cfg(test)]
 mod tests {
     use crate::event::Event;
     use notify::op::Op;
     use std::path::PathBuf;
-    use std::process;
     use std::fs;
 
     fn remove_test_file(filename: &str) {
@@ -215,7 +150,8 @@ mod tests {
             version: "x.x.x".to_string(),
             operation: Op::CREATE,
             path: PathBuf::new(),
-            labels: Vec::new()
+            labels: Vec::new(),
+            pid: 0
         }
     }
 
@@ -239,7 +175,7 @@ mod tests {
             timestamp: evt.timestamp.clone(),
             hostname: evt.hostname.clone(),
             node: evt.nodename.clone(),
-            pid: process::id(),
+            pid: evt.pid.clone(),
         ];
         assert_eq!(evt.get_common_message("SYSLOG"), expected_output);
     }
@@ -252,7 +188,7 @@ mod tests {
             timestamp: evt.timestamp.clone(),
             hostname: evt.hostname.clone(),
             node: evt.nodename.clone(),
-            pid: process::id(),
+            pid: evt.pid.clone(),
             version: evt.version.clone(),
             labels: Vec::<String>::new()
         ];
@@ -267,7 +203,7 @@ mod tests {
             timestamp: evt.timestamp.clone(),
             hostname: evt.hostname.clone(),
             node: evt.nodename.clone(),
-            pid: process::id(),
+            pid: evt.pid.clone(),
             version: evt.version.clone(),
             labels: Vec::<String>::new()
         ];
@@ -276,25 +212,13 @@ mod tests {
     }
 
     #[test]
-    fn test_log_event_json() {
+    fn test_log_event() {
         let filename = "test_event.json";
         let evt = create_test_event();
 
-        evt.log_event(filename, "JSON");
+        evt.log_event(filename);
         let contents = fs::read_to_string(filename);
-        let expected = format!("{{\"id\":\"Test_id\",\"timestamp\":\"Timestamp\",\"hostname\":\"Hostname\",\"node\":\"FIM\",\"pid\":{},\"version\":\"x.x.x\",\"labels\":[],\"kind\":\"CREATE\",\"file\":\"\",\"checksum\":\"IGNORED\"}}\n", process::id());
-        assert_eq!(contents.unwrap(), expected);
-        remove_test_file(filename);
-    }
-
-    #[test]
-    fn test_log_event_syslog() {
-        let filename = "test_event.log";
-        let evt = create_test_event();
-
-        evt.log_event(filename, "SYSLOG");
-        let contents = fs::read_to_string(filename);
-        let expected = format!("Timestamp Hostname FIM[{}]: File '' created, checksum IGNORED\n", process::id());
+        let expected = "{{\"id\":\"Test_id\",\"timestamp\":\"Timestamp\",\"hostname\":\"Hostname\",\"node\":\"FIM\",\"pid\":0,\"version\":\"x.x.x\",\"labels\":[],\"kind\":\"CREATE\",\"file\":\"\",\"checksum\":\"IGNORED\"}}\n";
         assert_eq!(contents.unwrap(), expected);
         remove_test_file(filename);
     }
