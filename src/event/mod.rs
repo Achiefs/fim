@@ -27,7 +27,8 @@ pub struct Event {
     pub labels: Vec<String>,
     pub kind: String,
     pub checksum: String,
-    pub pid: u32
+    pub pid: u32,
+    pub system: String
 }
 
 impl Event {
@@ -43,7 +44,8 @@ impl Event {
             "labels": self.labels.clone(),
             "kind": self.kind.clone(),
             "file": String::from(self.path.clone().to_str().unwrap()),
-            "checksum": self.checksum.clone()
+            "checksum": self.checksum.clone(),
+            "system": self.system.clone()
         });
         format!("{}", to_string(&obj).unwrap())
     }
@@ -51,7 +53,7 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to write the received events to file
-    pub fn log_event(&self, file: &str){
+    pub fn log_event(&self, file: String){
         let mut events_file = OpenOptions::new()
             .create(true)
             .write(true)
@@ -84,7 +86,8 @@ impl Event {
             "labels": self.labels.clone(),
             "kind": self.kind.clone(),
             "file": String::from(self.path.clone().to_str().unwrap()),
-            "checksum": self.checksum.clone()
+            "checksum": self.checksum.clone(),
+            "system": self.system.clone()
         });
 
         let request_url = format!("{}/{}/_doc/{}", address, index, self.id);

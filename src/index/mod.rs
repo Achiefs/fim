@@ -7,14 +7,13 @@ use tokio_util::codec::{BytesCodec, FramedRead};
 use reqwest::{Client, Body};
 use reqwest::header;
 // To log the program process
-use log::*;
+use log::debug;
 
 pub async fn create_index(name: String, address: String, user: String, pass: String){
     let file = File::open("config/index_template.json").await.unwrap();
     let stream = FramedRead::new(file, BytesCodec::new());
     let body = Body::wrap_stream(stream);
 
-    // Include a way to create an index per day
     let request_url = format!("{}/{}", address, name);
     let client = Client::builder()
         .danger_accept_invalid_certs(true)
