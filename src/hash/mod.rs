@@ -8,7 +8,7 @@ use std::io::ErrorKind;
 use log::*;
 
 // To calculate file content hash in sha512 format (SHA3 implementation)
-pub fn get_checksum(file: &str) -> String {
+pub fn get_checksum(file: String) -> String {
     let mut hasher = Sha3_512::new();
     match std::fs::read_to_string(file) {
         Ok(data) => {
