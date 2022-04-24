@@ -218,112 +218,128 @@ pub fn read_config(path: String) -> Vec<Yaml> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
 
-    fn remove_test_file(filename: &str) {
-        fs::remove_file(filename).unwrap()
+    // ------------------------------------------------------------------------
+
+    fn create_test_config(filter: &str) -> Config {
+        Config {
+            version: String::from(VERSION),
+            path: String::from("test"),
+            events_destination: String::from("test"),
+            endpoint_address: String::from("test"),
+            endpoint_user: String::from("test"),
+            endpoint_pass: String::from("test"),
+            events_file: String::from("test"),
+            monitor: Array::new(),
+            nodename: String::from("test"),
+            log_file: String::from("./test.log"),
+            log_level: String::from(filter),
+            system: String::from("test")
+        }
     }
+
+    // ------------------------------------------------------------------------
 
     #[test]
     fn test_get_level_filter() {
-        let file = "info.txt";
-        let filename = String::from(file);
         let filter = LevelFilter::Info;
-        assert_eq!(get_level_filter(String::from("info"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("Info"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("INFO"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("I"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("i"), filename.clone()), filter);
-        remove_test_file(file);
+        assert_eq!(create_test_config("info").get_level_filter(), filter);
+        assert_eq!(create_test_config("Info").get_level_filter(), filter);
+        assert_eq!(create_test_config("INFO").get_level_filter(), filter);
+        assert_eq!(create_test_config("I").get_level_filter(), filter);
+        assert_eq!(create_test_config("i").get_level_filter(), filter);
     }
+
+    // ------------------------------------------------------------------------
 
     #[test]
     fn test_get_level_filter_debug() {
-        let file = "debug.txt";
-        let filename = String::from(file);
         let filter = LevelFilter::Debug;
-        assert_eq!(get_level_filter(String::from("debug"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("Debug"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("DEBUG"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("D"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("d"), filename.clone()), filter);
-        remove_test_file(file);
+        assert_eq!(create_test_config("debug").get_level_filter(), filter);
+        assert_eq!(create_test_config("Debug").get_level_filter(), filter);
+        assert_eq!(create_test_config("DEBUG").get_level_filter(), filter);
+        assert_eq!(create_test_config("D").get_level_filter(), filter);
+        assert_eq!(create_test_config("d").get_level_filter(), filter);
     }
+
+    // ------------------------------------------------------------------------
 
     #[test]
     fn test_get_level_filter_error() {
-        let file = "error.txt";
-        let filename = String::from(file);
         let filter = LevelFilter::Error;
-        assert_eq!(get_level_filter(String::from("error"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("Error"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("ERROR"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("E"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("e"), filename.clone()), filter);
-        remove_test_file(file);
+        assert_eq!(create_test_config("error").get_level_filter(), filter);
+        assert_eq!(create_test_config("Error").get_level_filter(), filter);
+        assert_eq!(create_test_config("ERROR").get_level_filter(), filter);
+        assert_eq!(create_test_config("E").get_level_filter(), filter);
+        assert_eq!(create_test_config("e").get_level_filter(), filter);
     }
+
+    // ------------------------------------------------------------------------
 
     #[test]
     fn test_get_level_filter_warning() {
-        let file = "warning.txt";
-        let filename = String::from(file);
         let filter = LevelFilter::Warn;
-        assert_eq!(get_level_filter(String::from("warning"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("Warning"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("WARNING"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("W"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("w"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("warn"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("Warn"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("WARN"), filename.clone()), filter);
-        remove_test_file(file);
+        assert_eq!(create_test_config("warning").get_level_filter(), filter);
+        assert_eq!(create_test_config("Warning").get_level_filter(), filter);
+        assert_eq!(create_test_config("WARNING").get_level_filter(), filter);
+        assert_eq!(create_test_config("W").get_level_filter(), filter);
+        assert_eq!(create_test_config("w").get_level_filter(), filter);
+        assert_eq!(create_test_config("warn").get_level_filter(), filter);
+        assert_eq!(create_test_config("Warn").get_level_filter(), filter);
+        assert_eq!(create_test_config("WARN").get_level_filter(), filter);
     }
+
+    // ------------------------------------------------------------------------
 
     #[test]
     fn test_get_level_filter_bad() {
-        let file = "bad.txt";
-        let filename = String::from(file);
         let filter = LevelFilter::Info;
-        assert_eq!(get_level_filter(String::from("bad"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("BAD"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("B"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("b"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("test"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("anything"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from(""), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("_"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("?"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("="), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("/"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("."), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from(":"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from(";"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("!"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("''"), filename.clone()), filter);
-        assert_eq!(get_level_filter(String::from("[]"), filename.clone()), filter);
-        remove_test_file(file);
+        assert_eq!(create_test_config("bad").get_level_filter(), filter);
+        assert_eq!(create_test_config("BAD").get_level_filter(), filter);
+        assert_eq!(create_test_config("B").get_level_filter(), filter);
+        assert_eq!(create_test_config("b").get_level_filter(), filter);
+        assert_eq!(create_test_config("test").get_level_filter(), filter);
+        assert_eq!(create_test_config("anything").get_level_filter(), filter);
+        assert_eq!(create_test_config("").get_level_filter(), filter);
+        assert_eq!(create_test_config("_").get_level_filter(), filter);
+        assert_eq!(create_test_config("?").get_level_filter(), filter);
+        assert_eq!(create_test_config("=").get_level_filter(), filter);
+        assert_eq!(create_test_config("/").get_level_filter(), filter);
+        assert_eq!(create_test_config(".").get_level_filter(), filter);
+        assert_eq!(create_test_config(":").get_level_filter(), filter);
+        assert_eq!(create_test_config(";").get_level_filter(), filter);
+        assert_eq!(create_test_config("!").get_level_filter(), filter);
+        assert_eq!(create_test_config("''").get_level_filter(), filter);
+        assert_eq!(create_test_config("[]").get_level_filter(), filter);
     }
 
+    // ------------------------------------------------------------------------
+
     #[test]
-    #[should_panic(expected = "NotFound")]
-    fn test_get_level_filter_panic_empty() {
-        get_level_filter("".to_string(), "".to_string());
+    fn test_get_level_filter_empty() {
+        assert_eq!(create_test_config("").get_level_filter(), LevelFilter::Info);
     }
+
+    // ------------------------------------------------------------------------
 
     #[test]
     fn test_read_config() {
-        read_config("config/linux/config.yml");
+        read_config(String::from("config/linux/config.yml"));
     }
+
+    // ------------------------------------------------------------------------
 
     #[test]
     #[should_panic(expected = "NotFound")]
     fn test_read_config_panic() {
-        read_config("not_found");
+        read_config(String::from("not_found"));
     }
+
+    // ------------------------------------------------------------------------
 
     #[test]
     #[should_panic(expected = "ScanError")]
     fn test_read_config_panic_not_config() {
-        read_config("README.md");
+        read_config(String::from("README.md"));
     }
 }
