@@ -33,7 +33,6 @@ mod event;
 use event::Event;
 // Async calls management
 use futures::executor::block_on;
-use tokio;
 
 // ----------------------------------------------------------------------------
 
@@ -133,7 +132,7 @@ async fn main() {
                         None => Vec::new()
                     };
                     let current_labels = yaml_labels.to_vec().iter().map(|element| String::from(element.as_str().unwrap()) ).collect();
-                    let operation = raw_event.op.unwrap().clone();
+                    let operation = raw_event.op.unwrap();
                     let path = raw_event.path.unwrap().clone();
 
                     let event = Event {
@@ -142,11 +141,11 @@ async fn main() {
                         hostname: current_hostname,
                         nodename: config.nodename.clone(),
                         version: String::from(config::VERSION),
-                        operation: operation.clone(),
+                        operation,
                         path: path.clone(),
                         labels: current_labels,
-                        kind: event::get_kind(operation.clone()),
-                        checksum: hash::get_checksum(path.to_str().unwrap().clone()),
+                        kind: event::get_kind(operation),
+                        checksum: hash::get_checksum( String::from(path.to_str().unwrap()) ),
                         pid: process::id(),
                         system: config.system.clone()
                     };

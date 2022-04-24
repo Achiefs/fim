@@ -43,8 +43,8 @@ impl Config {
         // Select directory where to load config.yml it depends on system
         let default_path = format!("./config/{}/config.yml", env::consts::OS);
         let config_path = match Path::new(default_path.as_str()).exists() {
-            true => default_path.as_str(),
-            false => CONFIG_LINUX_PATH
+            true => String::from(default_path.as_str()),
+            false => String::from(CONFIG_LINUX_PATH)
         };
         println!("[INFO] Loaded config from: {}", config_path);
         let yaml = read_config(config_path.clone());
@@ -62,7 +62,7 @@ impl Config {
         let events_file = match yaml[0]["events"]["file"].as_str() {
             Some(value) => String::from(value),
             None => {
-                if events_destination != String::from("network") {
+                if events_destination != *"network" {
                     println!("[ERROR] events->file not found in config.yml.");
                     panic!("events->file not found in config.yml.");
                 }else{
@@ -75,7 +75,7 @@ impl Config {
         let endpoint_address = match yaml[0]["events"]["endpoint"]["address"].as_str() {
             Some(value) => String::from(value),
             None => {
-                if events_destination != String::from("file") {
+                if events_destination != *"file" {
                     println!("[ERROR] events->endpoint->address not found in config.yml.");
                     panic!("events->endpoint->address not found in config.yml.");
                 }else{
@@ -88,7 +88,7 @@ impl Config {
         let endpoint_user = match yaml[0]["events"]["endpoint"]["credentials"]["user"].as_str() {
             Some(value) => String::from(value),
             None => {
-                if events_destination != String::from("file") {
+                if events_destination != *"file" {
                     println!("[ERROR] events->endpoint->credentials->user not found in config.yml.");
                     panic!("events->endpoint->credentials->user not found in config.yml.");
                 }else{
@@ -101,7 +101,7 @@ impl Config {
         let endpoint_pass = match yaml[0]["events"]["endpoint"]["credentials"]["password"].as_str() {
             Some(value) => String::from(value),
             None => {
-                if events_destination != String::from("file") {
+                if events_destination != *"file" {
                     println!("[ERROR] events->endpoint->credentials->password not found in config.yml.");
                     panic!("events->endpoint->credentials->password not found in config.yml.");
                 }else{
@@ -148,16 +148,16 @@ impl Config {
 
         Config {
             version: String::from(VERSION),
-            path: String::from(config_path.clone()),
-            events_destination: events_destination,
-            endpoint_address: endpoint_address,
-            endpoint_user: endpoint_user,
-            endpoint_pass: endpoint_pass,
-            events_file: events_file,
-            monitor: monitor,
-            nodename: nodename,
-            log_file: log_file,
-            log_level: log_level,
+            path: config_path,
+            events_destination,
+            endpoint_address,
+            endpoint_user,
+            endpoint_pass,
+            events_file,
+            monitor,
+            nodename,
+            log_file,
+            log_level,
             system: String::from(env::consts::OS)
         }
     }
@@ -203,7 +203,7 @@ impl Config {
 // ----------------------------------------------------------------------------
 
 // To read the Yaml configuration file
-pub fn read_config(path: &str) -> Vec<Yaml> {
+pub fn read_config(path: String) -> Vec<Yaml> {
     let mut file = File::open(path).expect("Unable to open file");
     let mut contents = String::new();
 

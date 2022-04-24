@@ -47,7 +47,7 @@ impl Event {
             "checksum": self.checksum.clone(),
             "system": self.system.clone()
         });
-        format!("{}", to_string(&obj).unwrap())
+        to_string(&obj).unwrap()
     }
 
     // ------------------------------------------------------------------------
