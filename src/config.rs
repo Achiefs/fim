@@ -43,7 +43,7 @@ impl Config {
         // Select directory where to load config.yml it depends on system
         let default_path = format!("./config/{}/config.yml", env::consts::OS);
         let config_path = match Path::new(default_path.as_str()).exists() {
-            true => String::from(default_path.as_str()),
+            true => String::from(default_path),
             false => String::from(CONFIG_LINUX_PATH)
         };
         println!("[INFO] Loaded config from: {}", config_path);
@@ -218,14 +218,15 @@ pub fn read_config(path: String) -> Vec<Yaml> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::env;
 
     // ------------------------------------------------------------------------
 
-    fn create_test_config(filter: &str) -> Config {
+    fn create_test_config(filter: &str, events_destination: &str) -> Config {
         Config {
             version: String::from(VERSION),
             path: String::from("test"),
-            events_destination: String::from("test"),
+            events_destination: String::from(events_destination),
             endpoint_address: String::from("test"),
             endpoint_user: String::from("test"),
             endpoint_pass: String::from("test"),
@@ -241,13 +242,40 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
+    fn test_new_config() {
+        let default_path = format!("./config/{}/config.yml", env::consts::OS);
+        let config = Config::new();
+        assert_eq!(config.version, String::from(VERSION));
+        assert_eq!(config.path, default_path);
+        assert_eq!(config.events_destination, String::from("file"));
+        assert_eq!(config.endpoint_address, String::from("Not_used"));
+        assert_eq!(config.endpoint_user, String::from("Not_used"));
+        assert_eq!(config.endpoint_pass, String::from("Not_used"));
+        assert_eq!(config.nodename, String::from("FIM"));
+        assert_eq!(config.log_level, String::from("info"));
+        assert_eq!(config.system, String::from(env::consts::OS));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    #[ignore]
+    fn windows_test_new_config() {
+        let config = Config::new();
+        assert_eq!(config.events_file, String::from("C:\\ProgramData\\fim\\events.json"));
+        assert_eq!(config.log_file, String::from("C:\\ProgramData\\fim\\fim.log"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
     fn test_get_level_filter() {
         let filter = LevelFilter::Info;
-        assert_eq!(create_test_config("info").get_level_filter(), filter);
-        assert_eq!(create_test_config("Info").get_level_filter(), filter);
-        assert_eq!(create_test_config("INFO").get_level_filter(), filter);
-        assert_eq!(create_test_config("I").get_level_filter(), filter);
-        assert_eq!(create_test_config("i").get_level_filter(), filter);
+        assert_eq!(create_test_config("info", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("Info", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("INFO", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("I", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("i", "").get_level_filter(), filter);
     }
 
     // ------------------------------------------------------------------------
@@ -255,11 +283,11 @@ mod tests {
     #[test]
     fn test_get_level_filter_debug() {
         let filter = LevelFilter::Debug;
-        assert_eq!(create_test_config("debug").get_level_filter(), filter);
-        assert_eq!(create_test_config("Debug").get_level_filter(), filter);
-        assert_eq!(create_test_config("DEBUG").get_level_filter(), filter);
-        assert_eq!(create_test_config("D").get_level_filter(), filter);
-        assert_eq!(create_test_config("d").get_level_filter(), filter);
+        assert_eq!(create_test_config("debug", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("Debug", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("DEBUG", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("D", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("d", "").get_level_filter(), filter);
     }
 
     // ------------------------------------------------------------------------
@@ -267,11 +295,11 @@ mod tests {
     #[test]
     fn test_get_level_filter_error() {
         let filter = LevelFilter::Error;
-        assert_eq!(create_test_config("error").get_level_filter(), filter);
-        assert_eq!(create_test_config("Error").get_level_filter(), filter);
-        assert_eq!(create_test_config("ERROR").get_level_filter(), filter);
-        assert_eq!(create_test_config("E").get_level_filter(), filter);
-        assert_eq!(create_test_config("e").get_level_filter(), filter);
+        assert_eq!(create_test_config("error", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("Error", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("ERROR", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("E", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("e", "").get_level_filter(), filter);
     }
 
     // ------------------------------------------------------------------------
@@ -279,14 +307,14 @@ mod tests {
     #[test]
     fn test_get_level_filter_warning() {
         let filter = LevelFilter::Warn;
-        assert_eq!(create_test_config("warning").get_level_filter(), filter);
-        assert_eq!(create_test_config("Warning").get_level_filter(), filter);
-        assert_eq!(create_test_config("WARNING").get_level_filter(), filter);
-        assert_eq!(create_test_config("W").get_level_filter(), filter);
-        assert_eq!(create_test_config("w").get_level_filter(), filter);
-        assert_eq!(create_test_config("warn").get_level_filter(), filter);
-        assert_eq!(create_test_config("Warn").get_level_filter(), filter);
-        assert_eq!(create_test_config("WARN").get_level_filter(), filter);
+        assert_eq!(create_test_config("warning", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("Warning", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("WARNING", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("W", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("w", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("warn", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("Warn", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("WARN", "").get_level_filter(), filter);
     }
 
     // ------------------------------------------------------------------------
@@ -294,30 +322,33 @@ mod tests {
     #[test]
     fn test_get_level_filter_bad() {
         let filter = LevelFilter::Info;
-        assert_eq!(create_test_config("bad").get_level_filter(), filter);
-        assert_eq!(create_test_config("BAD").get_level_filter(), filter);
-        assert_eq!(create_test_config("B").get_level_filter(), filter);
-        assert_eq!(create_test_config("b").get_level_filter(), filter);
-        assert_eq!(create_test_config("test").get_level_filter(), filter);
-        assert_eq!(create_test_config("anything").get_level_filter(), filter);
-        assert_eq!(create_test_config("").get_level_filter(), filter);
-        assert_eq!(create_test_config("_").get_level_filter(), filter);
-        assert_eq!(create_test_config("?").get_level_filter(), filter);
-        assert_eq!(create_test_config("=").get_level_filter(), filter);
-        assert_eq!(create_test_config("/").get_level_filter(), filter);
-        assert_eq!(create_test_config(".").get_level_filter(), filter);
-        assert_eq!(create_test_config(":").get_level_filter(), filter);
-        assert_eq!(create_test_config(";").get_level_filter(), filter);
-        assert_eq!(create_test_config("!").get_level_filter(), filter);
-        assert_eq!(create_test_config("''").get_level_filter(), filter);
-        assert_eq!(create_test_config("[]").get_level_filter(), filter);
+        assert_eq!(create_test_config("bad", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("BAD", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("B", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("b", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("test", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("_", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("?", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("=", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("/", "").get_level_filter(), filter);
+        assert_eq!(create_test_config(".", "").get_level_filter(), filter);
+        assert_eq!(create_test_config(":", "").get_level_filter(), filter);
+        assert_eq!(create_test_config(";", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("!", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("''", "").get_level_filter(), filter);
+        assert_eq!(create_test_config("[]", "").get_level_filter(), filter);
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_get_level_filter_empty() {
-        assert_eq!(create_test_config("").get_level_filter(), LevelFilter::Info);
+    fn test_get_events_destination() {
+        assert_eq!(create_test_config("info", "both").get_events_destination(), String::from(BOTH_MODE));
+        assert_eq!(create_test_config("info", "network").get_events_destination(), String::from(NETWORK_MODE));
+        assert_eq!(create_test_config("info", "file").get_events_destination(), String::from(FILE_MODE));
+        assert_eq!(create_test_config("info", "").get_events_destination(), String::from(FILE_MODE));
+        assert_eq!(create_test_config("info", "?").get_events_destination(), String::from(FILE_MODE));
     }
 
     // ------------------------------------------------------------------------
