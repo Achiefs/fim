@@ -127,7 +127,7 @@ pub fn get_kind(operation: Op) -> String {
         Op::CHMOD => { String::from("CHMOD") },
         Op::CLOSE_WRITE => { String::from("CLOSE_WRITE") },
         Op::RESCAN => { String::from("RESCAN") },
-        _ => { String::from("UNKNOW") }
+        _ => { String::from("UNKNOWN") }
     }
 }
 
@@ -135,11 +135,13 @@ pub fn get_kind(operation: Op) -> String {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::event::Event;
     use notify::op::Op;
     use std::path::PathBuf;
-    //use serde_json::json;
     use std::fs;
+
+    // ------------------------------------------------------------------------
 
     fn remove_test_file(filename: String) {
         fs::remove_file(filename).unwrap()
@@ -162,6 +164,8 @@ mod tests {
         }
     }
 
+    // ------------------------------------------------------------------------
+
     #[test]
     fn test_create_event() {
         let evt = create_test_event();
@@ -173,50 +177,52 @@ mod tests {
         assert_eq!(evt.operation, Op::CREATE);
         assert_eq!(evt.path, PathBuf::new());
         assert_eq!(evt.labels, Vec::<String>::new());
+        assert_eq!(evt.kind, String::from("TEST"));
+        assert_eq!(evt.pid, 0);
+        assert_eq!(evt.system, String::from("test"));
     }
 
-/*    #[test]
-    fn test_get_common_message_syslog() {
-        let evt = create_test_event();
-        let expected_output = json!({
-            "timestamp": evt.timestamp.clone(),
-            "hostname": evt.hostname.clone(),
-            "node": evt.nodename.clone(),
-            "pid": evt.pid.clone(),
-        });
-        assert_eq!(evt.get_common_message("SYSLOG"), expected_output);
-    }
+    // ------------------------------------------------------------------------
 
     #[test]
-    fn test_get_common_message_json() {
+    fn test_send_event() {
         let evt = create_test_event();
-        let expected_output = json!({
-            "id": evt.id.clone(),
-            "timestamp": evt.timestamp.clone(),
-            "hostname": evt.hostname.clone(),
-            "node": evt.nodename.clone(),
-            "pid": evt.pid.clone(),
-            "version": evt.version.clone(),
-            "labels": Vec::<String>::new()
-        });
-        assert_eq!(evt.get_common_message("JSON"), expected_output);
+        tokio_test::block_on( evt.send(
+            String::from("test"), String::from("https://127.0.0.1:9200"),
+            String::from("admin"), String::from("admin")) );
     }
 
+    // ------------------------------------------------------------------------
+
     #[test]
-    fn test_get_common_message_default() {
-        let evt = create_test_event();
-        let expected_output = json!({
-            "id": evt.id.clone(),
-            "timestamp": evt.timestamp.clone(),
-            "hostname": evt.hostname.clone(),
-            "node": evt.nodename.clone(),
-            "pid": evt.pid.clone(),
-            "version": evt.version.clone(),
-            "labels": Vec::<String>::new()
-        });
-        assert_eq!(evt.get_common_message("TEST"), expected_output);
-        assert_eq!(evt.get_common_message(""), expected_output);
-    }*/
+    fn test_get_kind(){
+        assert_eq!(get_kind(Op::CREATE), String::from("CREATE"));
+        assert_eq!(get_kind(Op::WRITE), String::from("WRITE"));
+        assert_eq!(get_kind(Op::RENAME), String::from("RENAME"));
+        assert_eq!(get_kind(Op::REMOVE), String::from("REMOVE"));
+        assert_eq!(get_kind(Op::CHMOD), String::from("CHMOD"));
+        assert_eq!(get_kind(Op::CLOSE_WRITE), String::from("CLOSE_WRITE"));
+        assert_eq!(get_kind(Op::RESCAN), String::from("RESCAN"));
+        assert_eq!(get_kind(Op::empty()), String::from("UNKNOWN"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_event_fmt(){
+        let out = format!("{:?}", create_test_event());
+        assert_eq!(out, "(\"Test_id\", \"\", CREATE)");
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_format_json() {
+        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"hostname\":\"Hostname\",\"id\":\"Test_id\",\"kind\":\"TEST\",\"labels\":[],\"node\":\"FIM\",\"pid\":0,\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}";
+        assert_eq!(create_test_event().format_json(), expected);
+    }
+
+    // ------------------------------------------------------------------------
 
     #[test]
     fn test_log_event() {

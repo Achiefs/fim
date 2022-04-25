@@ -15,7 +15,6 @@ use std::io::Read;
 use std::io::Write;
 // To manage paths
 use std::path::Path;
-use std::env;
 // To set log filter level
 use simplelog::LevelFilter;
 
@@ -38,10 +37,10 @@ pub struct Config {
 
 impl Config {
 
-    pub fn new() -> Self {
-        println!("[INFO] System detected {}", env::consts::OS);
+    pub fn new(system: &str) -> Self {
+        println!("[INFO] System detected {}", system);
         // Select directory where to load config.yml it depends on system
-        let default_path = format!("./config/{}/config.yml", env::consts::OS);
+        let default_path = format!("./config/{}/config.yml", system);
         let config_path = match Path::new(default_path.as_str()).exists() {
             true => String::from(default_path),
             false => String::from(CONFIG_LINUX_PATH)
@@ -158,7 +157,7 @@ impl Config {
             nodename,
             log_file,
             log_level,
-            system: String::from(env::consts::OS)
+            system: String::from(system),
         }
     }
 
@@ -218,7 +217,6 @@ pub fn read_config(path: String) -> Vec<Yaml> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env;
 
     // ------------------------------------------------------------------------
 
@@ -242,9 +240,9 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_new_config() {
-        let default_path = format!("./config/{}/config.yml", env::consts::OS);
-        let config = Config::new();
+    fn test_new_config_windows() {
+        let default_path = format!("./config/{}/config.yml", "windows");
+        let config = Config::new("windows");
         assert_eq!(config.version, String::from(VERSION));
         assert_eq!(config.path, default_path);
         assert_eq!(config.events_destination, String::from("file"));
@@ -253,15 +251,7 @@ mod tests {
         assert_eq!(config.endpoint_pass, String::from("Not_used"));
         assert_eq!(config.nodename, String::from("FIM"));
         assert_eq!(config.log_level, String::from("info"));
-        assert_eq!(config.system, String::from(env::consts::OS));
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    #[ignore]
-    fn windows_test_new_config() {
-        let config = Config::new();
+        assert_eq!(config.system, String::from("windows"));
         assert_eq!(config.events_file, String::from("C:\\ProgramData\\fim\\events.json"));
         assert_eq!(config.log_file, String::from("C:\\ProgramData\\fim\\fim.log"));
     }
@@ -269,7 +259,45 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_get_level_filter() {
+    fn test_new_config_linux() {
+        let default_path = format!("./config/{}/config.yml", "linux");
+        let config = Config::new("linux");
+        assert_eq!(config.version, String::from(VERSION));
+        assert_eq!(config.path, default_path);
+        assert_eq!(config.events_destination, String::from("file"));
+        assert_eq!(config.endpoint_address, String::from("Not_used"));
+        assert_eq!(config.endpoint_user, String::from("Not_used"));
+        assert_eq!(config.endpoint_pass, String::from("Not_used"));
+        assert_eq!(config.nodename, String::from("FIM"));
+        assert_eq!(config.log_level, String::from("info"));
+        assert_eq!(config.system, String::from("linux"));
+        assert_eq!(config.events_file, String::from("/var/lib/fim/events.json"));
+        assert_eq!(config.log_file, String::from("/var/log/fim/fim.log"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_new_config_macos() {
+        let default_path = format!("./config/{}/config.yml", "macos");
+        let config = Config::new("macos");
+        assert_eq!(config.version, String::from(VERSION));
+        assert_eq!(config.path, default_path);
+        assert_eq!(config.events_destination, String::from("file"));
+        assert_eq!(config.endpoint_address, String::from("Not_used"));
+        assert_eq!(config.endpoint_user, String::from("Not_used"));
+        assert_eq!(config.endpoint_pass, String::from("Not_used"));
+        assert_eq!(config.nodename, String::from("FIM"));
+        assert_eq!(config.log_level, String::from("info"));
+        assert_eq!(config.system, String::from("macos"));
+        assert_eq!(config.events_file, String::from("/var/lib/fim/events.json"));
+        assert_eq!(config.log_file, String::from("/var/log/fim/fim.log"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_get_level_filter_info() {
         let filter = LevelFilter::Info;
         assert_eq!(create_test_config("info", "").get_level_filter(), filter);
         assert_eq!(create_test_config("Info", "").get_level_filter(), filter);
@@ -354,8 +382,45 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_read_config() {
-        read_config(String::from("config/linux/config.yml"));
+    fn test_read_config_unix() {
+        let yaml = read_config(String::from("config/linux/config.yml"));
+
+        assert_eq!(yaml[0]["nodename"].as_str().unwrap(), "FIM");
+        assert_eq!(yaml[0]["events"]["destination"].as_str().unwrap(), "file");
+        assert_eq!(yaml[0]["events"]["file"].as_str().unwrap(), "/var/lib/fim/events.json");
+
+        assert_eq!(yaml[0]["monitor"][0]["path"].as_str().unwrap(), "/tmp/");
+        assert_eq!(yaml[0]["monitor"][1]["path"].as_str().unwrap(), "/bin/");
+        assert_eq!(yaml[0]["monitor"][2]["path"].as_str().unwrap(), "/usr/bin/");
+        assert_eq!(yaml[0]["monitor"][2]["labels"][0].as_str().unwrap(), "usr/bin");
+        assert_eq!(yaml[0]["monitor"][2]["labels"][1].as_str().unwrap(), "linux");
+        assert_eq!(yaml[0]["monitor"][3]["path"].as_str().unwrap(), "/etc");
+        assert_eq!(yaml[0]["monitor"][3]["labels"][0].as_str().unwrap(), "etc");
+        assert_eq!(yaml[0]["monitor"][3]["labels"][1].as_str().unwrap(), "linux");
+
+        assert_eq!(yaml[0]["log"]["file"].as_str().unwrap(), "/var/log/fim/fim.log");
+        assert_eq!(yaml[0]["log"]["level"].as_str().unwrap(), "info");
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_read_config_windows() {
+        let yaml = read_config(String::from("config/windows/config.yml"));
+
+        assert_eq!(yaml[0]["nodename"].as_str().unwrap(), "FIM");
+        assert_eq!(yaml[0]["events"]["destination"].as_str().unwrap(), "file");
+        assert_eq!(yaml[0]["events"]["file"].as_str().unwrap(), "C:\\ProgramData\\fim\\events.json");
+
+        assert_eq!(yaml[0]["monitor"][0]["path"].as_str().unwrap(), "C:\\Program Files\\");
+        assert_eq!(yaml[0]["monitor"][0]["labels"][0].as_str().unwrap(), "Program Files");
+        assert_eq!(yaml[0]["monitor"][0]["labels"][1].as_str().unwrap(), "windows");
+        assert_eq!(yaml[0]["monitor"][1]["path"].as_str().unwrap(), "C:\\Users\\");
+        assert_eq!(yaml[0]["monitor"][1]["labels"][0].as_str().unwrap(), "Users");
+        assert_eq!(yaml[0]["monitor"][1]["labels"][1].as_str().unwrap(), "windows");
+
+        assert_eq!(yaml[0]["log"]["file"].as_str().unwrap(), "C:\\ProgramData\\fim\\fim.log");
+        assert_eq!(yaml[0]["log"]["level"].as_str().unwrap(), "info");
     }
 
     // ------------------------------------------------------------------------

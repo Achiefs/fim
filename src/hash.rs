@@ -63,6 +63,7 @@ mod tests {
     #[test]
     fn test_get_checksum_not_exists() {
         assert_ne!(get_checksum(String::from("not_exists")), String::from("This is a test"));
+        assert_eq!(get_checksum(String::from("not_exists")), String::from("UNKNOWN"));
     }
 
     #[test]

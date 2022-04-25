@@ -1,7 +1,7 @@
 // Copyright (C) 2021, Achiefs.
 
 // To read and write directories and files, env to get Operating system
-use std::fs;
+use std::{fs, env};
 // To get file system changes
 use notify::{RecommendedWatcher, Watcher, RecursiveMode};
 use std::sync::mpsc::channel;
@@ -41,7 +41,7 @@ use futures::executor::block_on;
 async fn main() {
     println!("Achiefs File Integrity Monitoring software started!");
     println!("[INFO] Reading config...");
-    let config = config::Config::new();
+    let config = config::Config::new(env::consts::OS);
     println!("[INFO] Log file: {}", config.log_file);
     println!("[INFO] Log level: {}", config.log_level);
 
