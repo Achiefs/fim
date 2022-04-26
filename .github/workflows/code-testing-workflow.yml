@@ -24,8 +24,10 @@ jobs:
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
+      - name: Change configuration to test
+        run: sed -i 's|/var/lib/fim/events.json|./events.json|g' config/linux/config.yml
       - name: Launch cargo test
-        run: sudo /home/runner/.cargo/bin/cargo test
+        run: cargo test
       - run: echo "Job's status is ${{ job.status }}."
 
   Static-analysis:
