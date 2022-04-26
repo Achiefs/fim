@@ -59,7 +59,7 @@ impl Event {
             .write(true)
             .append(true)
             .open(file)
-            .expect("Unable to open events log file.");
+            .expect("(log_event) Unable to open events log file.");
 
         match self.operation {
             Op::CREATE|Op::WRITE|Op::RENAME|Op::REMOVE|Op::CHMOD|Op::CLOSE_WRITE|Op::RESCAN => {

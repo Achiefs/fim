@@ -187,7 +187,7 @@ impl Config {
             .write(true)
             .append(true)
             .open(self.log_file.clone())
-            .expect("Unable to open events log file.");
+            .expect("(get_level_filter) Unable to open events log file.");
 
         match self.log_level.as_str() {
             "debug" | "Debug" | "DEBUG" | "D" | "d" => LevelFilter::Debug,

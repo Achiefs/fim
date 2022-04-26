@@ -208,6 +208,7 @@ mod tests {
     #[test]
     fn test_setup_logger() {
         let config = config::Config::new(env::consts::OS);
+        fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap();
         setup_logger(config.log_file.as_str(), config.get_level_filter());
     }
 
@@ -216,6 +217,7 @@ mod tests {
     #[test]
     fn test_create_index() {
         let config = config::Config::new(env::consts::OS);
+        fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
         create_index("file", String::from("fim"), config.clone());
     }
 
@@ -224,6 +226,7 @@ mod tests {
     #[test]
     fn test_watch_folders() {
         let config = config::Config::new(env::consts::OS);
+        fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
         watch_folders(config.clone());
     }
 
@@ -232,6 +235,8 @@ mod tests {
     #[test]
     fn test_process_event(){
         let config = config::Config::new(env::consts::OS);
+        fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap();
+        fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
         let event = Event {
             id: "Test_id".to_string(),
             timestamp: "Timestamp".to_string(),
