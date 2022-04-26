@@ -37,6 +37,23 @@ pub struct Config {
 
 impl Config {
 
+    pub fn clone(&self) -> Self {
+        Config {
+            version: self.version.clone(),
+            path: self.path.clone(),
+            events_destination: self.events_destination.clone(),
+            endpoint_address: self.endpoint_address.clone(),
+            endpoint_user: self.endpoint_user.clone(),
+            endpoint_pass: self.endpoint_pass.clone(),
+            events_file: self.events_file.clone(),
+            monitor: self.monitor.clone(),
+            nodename: self.nodename.clone(),
+            log_file: self.log_file.clone(),
+            log_level: self.log_level.clone(),
+            system: self.system.clone()
+        }
+    }
+
     pub fn new(system: &str) -> Self {
         println!("[INFO] System detected {}", system);
         // Select directory where to load config.yml it depends on system
@@ -220,7 +237,7 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    fn create_test_config(filter: &str, events_destination: &str) -> Config {
+    pub fn create_test_config(filter: &str, events_destination: &str) -> Config {
         Config {
             version: String::from(VERSION),
             path: String::from("test"),
@@ -235,6 +252,25 @@ mod tests {
             log_level: String::from(filter),
             system: String::from("test")
         }
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_clone() {
+        let config = create_test_config("info", "");
+        let cloned = config.clone();
+        assert_eq!(config.version, cloned.version);
+        assert_eq!(config.path, cloned.path);
+        assert_eq!(config.events_destination, cloned.events_destination);
+        assert_eq!(config.endpoint_address, cloned.endpoint_address);
+        assert_eq!(config.endpoint_user, cloned.endpoint_user);
+        assert_eq!(config.endpoint_pass, cloned.endpoint_pass);
+        assert_eq!(config.nodename, cloned.nodename);
+        assert_eq!(config.log_level, cloned.log_level);
+        assert_eq!(config.system, cloned.system);
+        assert_eq!(config.events_file, cloned.events_file);
+        assert_eq!(config.log_file, cloned.log_file);
     }
 
     // ------------------------------------------------------------------------
