@@ -59,7 +59,7 @@ impl Config {
         // Select directory where to load config.yml it depends on system
         let default_path = format!("./config/{}/config.yml", system);
         let config_path = match Path::new(default_path.as_str()).exists() {
-            true => String::from(default_path),
+            true => default_path,
             false => String::from(CONFIG_LINUX_PATH)
         };
         println!("[INFO] Loaded config from: {}", config_path);

@@ -49,7 +49,7 @@ fn setup_logger(log_file: &str, level: LevelFilter){
             .write(true)
             .create(true)
             .append(true)
-            .open(log_file.clone())
+            .open(log_file)
             .expect("Unable to open log file")
     ).unwrap();
 }
@@ -64,11 +64,11 @@ fn create_index(destination: &str, index_name: String, config: config::Config){
             fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap();
 
             // On start create index (Include check if events won't be ingested by http)
-            block_on(index::create_index( index_name.clone(), config.endpoint_address.clone(), config.endpoint_user.clone(), config.endpoint_pass.clone()) );
+            block_on(index::create_index( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass) );
         },
         config::NETWORK_MODE => {
             // On start create index (Include check if events won't be ingested by http)
-            block_on(index::create_index( index_name.clone(), config.endpoint_address.clone(), config.endpoint_user.clone(), config.endpoint_pass.clone()) );
+            block_on(index::create_index( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass) );
         },
         _ => {
             println!("[INFO] Events file: {}", config.events_file);
@@ -83,7 +83,7 @@ fn watch_folders(config: config::Config) -> Receiver<notify::RawEvent> {
     // Iterating over monitor paths and set watcher on each folder to watch.
     let (tx, rx) = channel();
     let mut watcher: RecommendedWatcher = Watcher::new_raw(tx).unwrap();
-    for m in config.monitor.clone() {
+    for m in config.monitor {
         let path = m["path"].as_str().unwrap();
         info!("Monitoring path: {}", path);
         match m["ignore"].as_vec() {
@@ -104,13 +104,13 @@ fn watch_folders(config: config::Config) -> Receiver<notify::RawEvent> {
 fn process_event(destination: &str, event: Event, index_name: String, config: config::Config){
     match destination {
         config::BOTH_MODE => {
-            event.log_event(config.events_file.clone());
-            block_on(event.send( index_name.clone(), config.endpoint_address.clone(), config.endpoint_user.clone(), config.endpoint_pass.clone()) );
+            event.log_event(config.events_file);
+            block_on(event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass) );
         },
         config::NETWORK_MODE => {
-            block_on(event.send( index_name.clone(), config.endpoint_address.clone(), config.endpoint_user.clone(), config.endpoint_pass.clone()) );
+            block_on(event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass) );
         },
-        _ => event.log_event(config.events_file.clone())
+        _ => event.log_event(config.events_file)
     }
 }
 
