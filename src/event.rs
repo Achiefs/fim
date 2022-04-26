@@ -70,7 +70,7 @@ impl Event {
                 error!("{}", error_msg);
                 Err(Error::new(ErrorKind::InvalidInput, error_msg))
             },
-        }.expect("Error writing event")
+        }.expect("(log_event) Error writing event")
     }
 
     // ------------------------------------------------------------------------

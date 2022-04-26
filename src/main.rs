@@ -4,7 +4,7 @@
 use std::{fs, env};
 // To get file system changes
 use notify::{RecommendedWatcher, Watcher, RecursiveMode};
-use std::sync::mpsc::{channel, Receiver};
+use std::sync::mpsc::channel;
 // To log the program process
 use log::{info, error, debug};
 use simplelog::{WriteLogger, Config, LevelFilter};
@@ -79,28 +79,6 @@ fn create_index(destination: &str, index_name: String, config: config::Config){
 
 // ----------------------------------------------------------------------------
 
-fn watch_folders(config: config::Config) -> Receiver<notify::RawEvent> {
-    // Iterating over monitor paths and set watcher on each folder to watch.
-    let (tx, rx) = channel();
-    let mut watcher: RecommendedWatcher = Watcher::new_raw(tx).unwrap();
-    for m in config.monitor {
-        let path = m["path"].as_str().unwrap();
-        info!("Monitoring path: {}", path);
-        match m["ignore"].as_vec() {
-            Some(ig) => {
-                let ignore_list_vec  = ig.iter().map(|e| { e.as_str().unwrap() });
-                let ignore_list : String = Itertools::intersperse(ignore_list_vec, ", ").collect();
-                info!("Ignoring files with: {} inside {}", ignore_list, path);
-            },
-            None => info!("Ignore for '{}' not set", path)
-        };
-        watcher.watch(path, RecursiveMode::Recursive).unwrap();
-    }
-    rx
-}
-
-// ----------------------------------------------------------------------------
-
 fn process_event(destination: &str, event: Event, index_name: String, config: config::Config){
     match destination {
         config::BOTH_MODE => {
@@ -132,7 +110,23 @@ async fn main() {
     let index_name = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
 
     create_index(destination.as_str(), index_name.clone(), config.clone());
-    let rx = watch_folders(config.clone());
+
+    // Iterating over monitor paths and set watcher on each folder to watch.
+    let (tx, rx) = channel();
+    let mut watcher: RecommendedWatcher = Watcher::new_raw(tx).unwrap();
+    for m in config.monitor.clone() {
+        let path = m["path"].as_str().unwrap();
+        info!("Monitoring path: {}", path);
+        match m["ignore"].as_vec() {
+            Some(ig) => {
+                let ignore_list_vec  = ig.iter().map(|e| { e.as_str().unwrap() });
+                let ignore_list : String = Itertools::intersperse(ignore_list_vec, ", ").collect();
+                info!("Ignoring files with: {} inside {}", ignore_list, path);
+            },
+            None => info!("Ignore for '{}' not set", path)
+        };
+        watcher.watch(path, RecursiveMode::Recursive).unwrap();
+    }
 
     // Main loop, receive any produced event and write it into the events log.
     loop {
@@ -219,15 +213,6 @@ mod tests {
         let config = config::Config::new(env::consts::OS);
         fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
         create_index("file", String::from("fim"), config.clone());
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    fn test_watch_folders() {
-        let config = config::Config::new(env::consts::OS);
-        fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
-        watch_folders(config.clone());
     }
 
     // ------------------------------------------------------------------------
