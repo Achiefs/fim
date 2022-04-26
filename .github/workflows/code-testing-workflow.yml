@@ -25,7 +25,7 @@ jobs:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
       - name: Launch cargo test
-        run: sudo ${HOME}/.cargo/bin/cargo test
+        run: whereis cargo
       - run: echo "Job's status is ${{ job.status }}."
 
   Static-analysis:
