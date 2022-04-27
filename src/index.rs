@@ -9,14 +9,14 @@ use reqwest::header;
 // To log the program process
 use log::debug;
 
-pub async fn create_index(name: String, address: String, user: String, pass: String){
+pub async fn create_index(name: String, address: String, user: String, pass: String, insecure: bool){
     let file = File::open("config/index_template.json").await.unwrap();
     let stream = FramedRead::new(file, BytesCodec::new());
     let body = Body::wrap_stream(stream);
     let url = format!("{}/{}", address, name);
 
     let client = Client::builder()
-        .danger_accept_invalid_certs(true)
+        .danger_accept_invalid_certs(insecure)
         .build().unwrap();
     let response = client
         .put(url)
@@ -39,7 +39,7 @@ mod tests {
     fn test_create_index() {
         tokio_test::block_on( create_index(
             String::from("test"), String::from("https://127.0.0.1:9200"),
-            String::from("admin"), String::from("admin")) );
+            String::from("admin"), String::from("admin"), true) );
     }
 
 }

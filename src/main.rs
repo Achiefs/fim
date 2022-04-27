@@ -64,11 +64,11 @@ fn create_index(destination: &str, index_name: String, config: config::Config){
             fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap();
 
             // On start create index (Include check if events won't be ingested by http)
-            block_on(index::create_index( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass) );
+            block_on(index::create_index( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure) );
         },
         config::NETWORK_MODE => {
             // On start create index (Include check if events won't be ingested by http)
-            block_on(index::create_index( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass) );
+            block_on(index::create_index( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure) );
         },
         _ => {
             println!("[INFO] Events file: {}", config.events_file);
@@ -83,10 +83,10 @@ fn process_event(destination: &str, event: Event, index_name: String, config: co
     match destination {
         config::BOTH_MODE => {
             event.log_event(config.events_file);
-            block_on(event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass) );
+            block_on(event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure) );
         },
         config::NETWORK_MODE => {
-            block_on(event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass) );
+            block_on(event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure) );
         },
         _ => event.log_event(config.events_file)
     }

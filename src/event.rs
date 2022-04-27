@@ -76,7 +76,7 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to send events through network
-    pub async fn send(&self, index: String, address: String, user: String, pass: String) {
+    pub async fn send(&self, index: String, address: String, user: String, pass: String, insecure: bool) {
         let data = json!({
             "timestamp": self.timestamp.clone(),
             "hostname": self.hostname.clone(),
@@ -92,7 +92,7 @@ impl Event {
 
         let request_url = format!("{}/{}/_doc/{}", address, index, self.id);
         let client = Client::builder()
-            .danger_accept_invalid_certs(true)
+            .danger_accept_invalid_certs(insecure)
             .build().unwrap();
         let response = client
             .post(request_url)
@@ -189,7 +189,7 @@ mod tests {
         let evt = create_test_event();
         tokio_test::block_on( evt.send(
             String::from("test"), String::from("https://127.0.0.1:9200"),
-            String::from("admin"), String::from("admin")) );
+            String::from("admin"), String::from("admin"), true) );
     }
 
     // ------------------------------------------------------------------------

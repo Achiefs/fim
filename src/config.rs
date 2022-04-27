@@ -32,7 +32,8 @@ pub struct Config {
     pub nodename: String,
     pub log_file: String,
     pub log_level: String,
-    pub system: String
+    pub system: String,
+    pub insecure: bool
 }
 
 impl Config {
@@ -50,7 +51,8 @@ impl Config {
             nodename: self.nodename.clone(),
             log_file: self.log_file.clone(),
             log_level: self.log_level.clone(),
-            system: self.system.clone()
+            system: self.system.clone(),
+            insecure: self.insecure.clone()
         }
     }
 
@@ -84,6 +86,15 @@ impl Config {
                 }else{
                     String::from("Not_used")
                 }
+            }
+        };
+
+        // Manage null value on events->endpoint->insecure value
+        let insecure = match yaml[0]["events"]["endpoint"]["insecure"].as_bool() {
+            Some(value) => value,
+            None => {
+                println!("[WARN] events->endpoint->insecure not found in config.yml, using 'false'.");
+                false
             }
         };
 
@@ -175,6 +186,7 @@ impl Config {
             log_file,
             log_level,
             system: String::from(system),
+            insecure
         }
     }
 
@@ -250,7 +262,8 @@ mod tests {
             nodename: String::from("test"),
             log_file: String::from("./test.log"),
             log_level: String::from(filter),
-            system: String::from("test")
+            system: String::from("test"),
+            insecure: true
         }
     }
 
@@ -266,11 +279,13 @@ mod tests {
         assert_eq!(config.endpoint_address, cloned.endpoint_address);
         assert_eq!(config.endpoint_user, cloned.endpoint_user);
         assert_eq!(config.endpoint_pass, cloned.endpoint_pass);
+        assert_eq!(config.events_file, cloned.events_file);
+        assert_eq!(config.monitor, cloned.monitor);
         assert_eq!(config.nodename, cloned.nodename);
+        assert_eq!(config.log_file, cloned.log_file);
         assert_eq!(config.log_level, cloned.log_level);
         assert_eq!(config.system, cloned.system);
-        assert_eq!(config.events_file, cloned.events_file);
-        assert_eq!(config.log_file, cloned.log_file);
+        assert_eq!(config.insecure, cloned.insecure);
     }
 
     // ------------------------------------------------------------------------
@@ -285,11 +300,13 @@ mod tests {
         assert_eq!(config.endpoint_address, String::from("Not_used"));
         assert_eq!(config.endpoint_user, String::from("Not_used"));
         assert_eq!(config.endpoint_pass, String::from("Not_used"));
+        assert_eq!(config.events_file, String::from("C:\\ProgramData\\fim\\events.json"));
+        // monitor
         assert_eq!(config.nodename, String::from("FIM"));
+        assert_eq!(config.log_file, String::from("C:\\ProgramData\\fim\\fim.log"));
         assert_eq!(config.log_level, String::from("info"));
         assert_eq!(config.system, String::from("windows"));
-        assert_eq!(config.events_file, String::from("C:\\ProgramData\\fim\\events.json"));
-        assert_eq!(config.log_file, String::from("C:\\ProgramData\\fim\\fim.log"));
+        assert_eq!(config.insecure, false);
     }
 
     // ------------------------------------------------------------------------
@@ -304,11 +321,13 @@ mod tests {
         assert_eq!(config.endpoint_address, String::from("Not_used"));
         assert_eq!(config.endpoint_user, String::from("Not_used"));
         assert_eq!(config.endpoint_pass, String::from("Not_used"));
+        assert_eq!(config.events_file, String::from("/var/lib/fim/events.json"));
+        // monitor
         assert_eq!(config.nodename, String::from("FIM"));
+        assert_eq!(config.log_file, String::from("/var/log/fim/fim.log"));
         assert_eq!(config.log_level, String::from("info"));
         assert_eq!(config.system, String::from("linux"));
-        assert_eq!(config.events_file, String::from("/var/lib/fim/events.json"));
-        assert_eq!(config.log_file, String::from("/var/log/fim/fim.log"));
+        assert_eq!(config.insecure, false);
     }
 
     // ------------------------------------------------------------------------
@@ -323,11 +342,13 @@ mod tests {
         assert_eq!(config.endpoint_address, String::from("Not_used"));
         assert_eq!(config.endpoint_user, String::from("Not_used"));
         assert_eq!(config.endpoint_pass, String::from("Not_used"));
+        assert_eq!(config.events_file, String::from("/var/lib/fim/events.json"));
+        // monitor
         assert_eq!(config.nodename, String::from("FIM"));
+        assert_eq!(config.log_file, String::from("/var/log/fim/fim.log"));
         assert_eq!(config.log_level, String::from("info"));
         assert_eq!(config.system, String::from("macos"));
-        assert_eq!(config.events_file, String::from("/var/lib/fim/events.json"));
-        assert_eq!(config.log_file, String::from("/var/log/fim/fim.log"));
+        assert_eq!(config.insecure, false);
     }
 
     // ------------------------------------------------------------------------
