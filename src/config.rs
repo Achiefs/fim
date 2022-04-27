@@ -52,7 +52,7 @@ impl Config {
             log_file: self.log_file.clone(),
             log_level: self.log_level.clone(),
             system: self.system.clone(),
-            insecure: self.insecure.clone()
+            insecure: self.insecure
         }
     }
 
