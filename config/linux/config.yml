@@ -1,21 +1,21 @@
 nodename: "FIM"
 
-# Monitor folder or files in unix.
-monitor: 
+# Events configuration, where to store produced events
+events:
+  destination: file
+  file: /var/lib/fim/events.json
+
+# Monitor files and folders.
+monitor:
   - path: /tmp/
   - path: /bin/
   - path: /usr/bin/
+    labels: ["usr/bin", "linux"]
   - path: /etc
+    labels: ["etc", "linux"]
 
-# Path to output and events files:
-# output to write app log.
-# events to write monitorized folder/files events.
-log: 
-  output: 
-    file: /var/log/fim/fim.log
-    # Possible levels debug, info, error, warning
-    level: info
-  events:
-    file: /var/lib/fim/events.json
-    # Format of output events options json/syslog
-    format: json
+# App procedure and errors logging
+log:
+  file: /var/log/fim/fim.log
+  # Available levels [debug, info, error, warning]
+  level: info

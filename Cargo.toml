@@ -2,7 +2,7 @@
 name = "fim"
 version = "0.2.2"
 authors = ["José Fernández <´pylott@gmail.com´>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -14,7 +14,15 @@ notify = "4.0.17"
 log = "0.4.11"
 simplelog = "0.12.0"
 gethostname = "0.2.1"
-json = "0.12.4"
 retry = "1.2.0"
 itertools = "0.10.3"
 uuid = { version = "1.0.0", features = ["v4"] }
+reqwest = { version = "0.11", features = ["json", "stream"] }
+futures = "0.3.21"
+tokio = { version = "1.17.0", features = ["rt", "rt-multi-thread", "macros"] }
+tokio-util = { version = "0.7.1", features = ["codec"] }
+serde_json = "1.0.79"
+time = "0.3.9"
+
+[dev-dependencies]
+tokio-test = "*"
