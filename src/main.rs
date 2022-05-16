@@ -143,7 +143,10 @@ async fn main() {
                 let monitor_index = monitor_vector.iter().position(|it| {
                     let path = it["path"].as_str().unwrap();
                     let value = if path.ends_with('/') || path.ends_with('\\'){ utils::pop(path) }else{ path };
-                    event_parent_path.contains(value)
+                    match event_parent_path.contains(value) {
+                        true => true,
+                        false => event_path.to_str().unwrap().contains(value)
+                    }
                 });
                 let index = monitor_index.unwrap();
 
