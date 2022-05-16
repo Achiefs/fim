@@ -66,7 +66,7 @@ impl Config {
         }else if Path::new("./config.yml").exists() {
             String::from("./config.yml")
         }else if Path::new(relative_path.as_str()).exists() {
-            String::from(relative_path)
+            relative_path
         }else{
             String::from(CONFIG_LINUX_PATH)
         };
