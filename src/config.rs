@@ -60,9 +60,15 @@ impl Config {
         println!("[INFO] System detected {}", system);
         // Select directory where to load config.yml it depends on system
         let default_path = format!("./config/{}/config.yml", system);
-        let config_path = match Path::new(default_path.as_str()).exists() {
-            true => default_path,
-            false => String::from(CONFIG_LINUX_PATH)
+        let relative_path = format!("./../../config/{}/config.yml", system);
+        let config_path = if Path::new(default_path.as_str()).exists() {
+            default_path
+        }else if Path::new("./config.yml").exists() {
+            String::from("./config.yml")
+        }else if Path::new(relative_path.as_str()).exists() {
+            String::from(relative_path)
+        }else{
+            String::from(CONFIG_LINUX_PATH)
         };
         println!("[INFO] Loaded config from: {}", config_path);
         let yaml = read_config(config_path.clone());
