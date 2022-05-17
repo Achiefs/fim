@@ -7,7 +7,7 @@ use notify::{RecommendedWatcher, Watcher, RecursiveMode};
 use std::sync::mpsc::channel;
 // To log the program process
 use log::{info, error, debug};
-use simplelog::{WriteLogger, Config, LevelFilter};
+use simplelog::{WriteLogger, Config};
 // To manage paths
 use std::path::Path;
 // To manage date and time
@@ -37,19 +37,19 @@ use event::Event;
 
 // ----------------------------------------------------------------------------
 
-fn setup_logger(log_file: &str, level: LevelFilter){
+fn setup_logger(config: config::Config){
     // Create folders to store logs based on config.yml
-    fs::create_dir_all(Path::new(log_file).parent().unwrap().to_str().unwrap()).unwrap();
+    fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
 
     // Create logger output to write generated logs.
     WriteLogger::init(
-        level,
+        config.get_level_filter(),
         Config::default(),
         fs::OpenOptions::new()
             .write(true)
             .create(true)
             .append(true)
-            .open(log_file)
+            .open(config.log_file)
             .expect("Unable to open log file")
     ).unwrap();
 }
@@ -103,7 +103,7 @@ async fn main() {
     println!("[INFO] Log file: {}", config.log_file);
     println!("[INFO] Log level: {}", config.log_level);
 
-    setup_logger(&config.log_file, config.get_level_filter());
+    setup_logger(config.clone());
 
     let destination = config.get_events_destination();
     let current_date = OffsetDateTime::now_utc();
@@ -143,7 +143,10 @@ async fn main() {
                 let monitor_index = monitor_vector.iter().position(|it| {
                     let path = it["path"].as_str().unwrap();
                     let value = if path.ends_with('/') || path.ends_with('\\'){ utils::pop(path) }else{ path };
-                    event_parent_path.contains(value)
+                    match event_parent_path.contains(value) {
+                        true => true,
+                        false => event_path.to_str().unwrap().contains(value)
+                    }
                 });
                 let index = monitor_index.unwrap();
 
@@ -203,7 +206,7 @@ mod tests {
     fn test_setup_logger() {
         let config = config::Config::new(env::consts::OS);
         fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap();
-        setup_logger(config.log_file.as_str(), config.get_level_filter());
+        setup_logger(config.clone());
     }
 
     // ------------------------------------------------------------------------

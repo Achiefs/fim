@@ -58,18 +58,7 @@ impl Config {
 
     pub fn new(system: &str) -> Self {
         println!("[INFO] System detected {}", system);
-        // Select directory where to load config.yml it depends on system
-        let default_path = format!("./config/{}/config.yml", system);
-        let relative_path = format!("./../../config/{}/config.yml", system);
-        let config_path = if Path::new(default_path.as_str()).exists() {
-            default_path
-        }else if Path::new("./config.yml").exists() {
-            String::from("./config.yml")
-        }else if Path::new(relative_path.as_str()).exists() {
-            String::from(relative_path)
-        }else{
-            String::from(CONFIG_LINUX_PATH)
-        };
+        let config_path = get_config_path(system);
         println!("[INFO] Loaded config from: {}", config_path);
         let yaml = read_config(config_path.clone());
 
@@ -246,6 +235,22 @@ pub fn read_config(path: String) -> Vec<Yaml> {
     YamlLoader::load_from_str(&contents).unwrap()
 }
 
+// ----------------------------------------------------------------------------
+
+pub fn get_config_path(system: &str) -> String {
+    // Select directory where to load config.yml it depends on system
+    let default_path = format!("./config/{}/config.yml", system);
+    let relative_path = format!("./../../config/{}/config.yml", system);
+    if Path::new(default_path.as_str()).exists() {
+        default_path
+    }else if Path::new("./config.yml").exists() {
+        String::from("./config.yml")
+    }else if Path::new(relative_path.as_str()).exists() {
+        relative_path
+    }else{
+        String::from(CONFIG_LINUX_PATH)
+    }
+}
 
 // ----------------------------------------------------------------------------
 
@@ -500,5 +505,17 @@ mod tests {
     #[should_panic(expected = "ScanError")]
     fn test_read_config_panic_not_config() {
         read_config(String::from("README.md"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_get_config_path() {
+        let default_path_windows = "./config/windows/config.yml";
+        let default_path_linux = "./config/linux/config.yml";
+        let default_path_macos = "./config/macos/config.yml";
+        assert_eq!(get_config_path("windows"), default_path_windows);
+        assert_eq!(get_config_path("linux"), default_path_linux);
+        assert_eq!(get_config_path("macos"), default_path_macos);
     }
 }
