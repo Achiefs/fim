@@ -259,6 +259,8 @@ pub fn get_config_path(system: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    // To use files IO operations.
+    use std::{fs, env};
 
     // ------------------------------------------------------------------------
 
@@ -519,5 +521,52 @@ mod tests {
         assert_eq!(get_config_path("windows"), default_path_windows);
         assert_eq!(get_config_path("linux"), default_path_linux);
         assert_eq!(get_config_path("macos"), default_path_macos);
+
+        let path = "./config.yml";
+        fs::rename(default_path_windows, path).unwrap();
+        assert_eq!(get_config_path("windows"), path);
+        fs::rename(path, default_path_windows).unwrap();
+
+        fs::rename(default_path_linux, path).unwrap();
+        assert_eq!(get_config_path("linux"), path);
+        fs::rename(path, default_path_linux).unwrap();
+
+        fs::rename(default_path_macos, path).unwrap();
+        assert_eq!(get_config_path("macos"), path);
+        fs::rename(path, default_path_macos).unwrap();
+
+        let relative_path_windows = "./../../config/windows";
+        let relative_config_windows = "./../../config/windows/config.yml";
+        let relative_path_linux = "./../../config/linux";
+        let relative_config_linux = "./../../config/linux/config.yml";
+        let relative_path_macos = "./../../config/macos";
+        let relative_config_macos = "./../../config/macos/config.yml";
+
+        fs::create_dir_all(relative_path_windows).unwrap();
+        fs::rename(default_path_windows, relative_config_windows).unwrap();
+        assert_eq!(get_config_path("windows"), relative_config_windows);
+        fs::rename(relative_config_windows, default_path_windows).unwrap();
+
+        fs::create_dir_all(relative_path_linux).unwrap();
+        fs::rename(default_path_linux, relative_config_linux).unwrap();
+        assert_eq!(get_config_path("linux"), relative_config_linux);
+        fs::rename(relative_config_linux, default_path_linux).unwrap();
+
+        fs::create_dir_all(relative_path_macos).unwrap();
+        fs::rename(default_path_macos, relative_config_macos).unwrap();
+        assert_eq!(get_config_path("macos"), relative_config_macos);
+        fs::rename(relative_config_macos, default_path_macos).unwrap();
+
+        fs::remove_dir_all("./../../config").unwrap();
+
+        if env::consts::OS == "linux" {
+            let linux_path = "/etc/fim";
+            let config_linux = "/etc/fim/config.yml";
+            fs::create_dir_all(linux_path).unwrap();
+            fs::rename(default_path_linux, config_linux).unwrap();
+            assert_eq!(get_config_path("linux"), config_linux);
+            fs::rename(config_linux, default_path_linux).unwrap();
+            fs::remove_dir_all(linux_path).unwrap();
+        }
     }
 }
