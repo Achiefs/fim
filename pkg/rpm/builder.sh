@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Copyright (C) 2021, Achiefs.
-# Dependencies: rpm-build, tar, gcc
+# Dependencies: rpm-build, tar, gcc, openssl-devel
 set -ex
 
 brand="fim"

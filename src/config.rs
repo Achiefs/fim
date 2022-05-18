@@ -88,8 +88,10 @@ impl Config {
         let insecure = match yaml[0]["events"]["endpoint"]["insecure"].as_bool() {
             Some(value) => value,
             None => {
-                println!("[WARN] events->endpoint->insecure not found in config.yml, using 'false'.");
-                false
+                if events_destination != *"file" {
+                    println!("[WARN] events->endpoint->insecure not found in config.yml, using 'false'.");
+                    false
+                }else{ false }
             }
         };
 
