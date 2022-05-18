@@ -566,7 +566,6 @@ mod tests {
             fs::rename(default_path_linux, config_linux).unwrap();
             assert_eq!(get_config_path("linux"), config_linux);
             fs::rename(config_linux, default_path_linux).unwrap();
-            fs::remove_dir_all(linux_path).unwrap();
         }
     }
 }
