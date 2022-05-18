@@ -307,10 +307,8 @@ mod tests {
 
     #[test]
     fn test_new_config_windows() {
-        let default_path = format!("./config/{}/config.yml", "windows");
         let config = Config::new("windows");
         assert_eq!(config.version, String::from(VERSION));
-        assert_eq!(config.path, default_path);
         assert_eq!(config.events_destination, String::from("file"));
         assert_eq!(config.endpoint_address, String::from("Not_used"));
         assert_eq!(config.endpoint_user, String::from("Not_used"));
@@ -328,10 +326,8 @@ mod tests {
 
     #[test]
     fn test_new_config_linux() {
-        let default_path = format!("./config/{}/config.yml", "linux");
         let config = Config::new("linux");
         assert_eq!(config.version, String::from(VERSION));
-        assert_eq!(config.path, default_path);
         assert_eq!(config.events_destination, String::from("file"));
         assert_eq!(config.endpoint_address, String::from("Not_used"));
         assert_eq!(config.endpoint_user, String::from("Not_used"));
@@ -349,10 +345,8 @@ mod tests {
 
     #[test]
     fn test_new_config_macos() {
-        let default_path = format!("./config/{}/config.yml", "macos");
         let config = Config::new("macos");
         assert_eq!(config.version, String::from(VERSION));
-        assert_eq!(config.path, default_path);
         assert_eq!(config.events_destination, String::from("file"));
         assert_eq!(config.endpoint_address, String::from("Not_used"));
         assert_eq!(config.endpoint_user, String::from("Not_used"));
