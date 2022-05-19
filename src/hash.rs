@@ -22,10 +22,6 @@ pub fn get_checksum(file: String) -> String {
                     debug!("File Not found error ignoring...");
                     String::from("UNKNOWN")
                 },
-                ErrorKind::InvalidData => {
-                    debug!("File data not valid ignoring...");
-                    String::from("UNKNOWN")
-                },
                 _ => {
                     debug!("Error not handled: {:?}", e.kind());
                     String::from("UNKNOWN")
