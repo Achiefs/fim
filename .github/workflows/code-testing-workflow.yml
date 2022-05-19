@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
+      - name: Create config folder
+        run: sudo mkdir -p /etc/fim/ && sudo chown -R runner:runner /etc/fim
       - name: Create events file and folder
         run: sudo mkdir -p /var/lib/fim/ && sudo touch /var/lib/fim/events.json && sudo chown -R runner:runner /var/lib/fim
       - name: Create log file and folder
