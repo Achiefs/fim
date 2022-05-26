@@ -5,6 +5,8 @@ use std::fmt;
 // To handle files
 use std::fs::OpenOptions;
 use std::io::{Write, Error, ErrorKind};
+// Handle time intervals
+use std::time::Duration;
 // Event handling
 use notify::op::Op;
 // To log the program procedure
@@ -93,14 +95,17 @@ impl Event {
         let request_url = format!("{}/{}/_doc/{}", address, index, self.id);
         let client = Client::builder()
             .danger_accept_invalid_certs(insecure)
+            .timeout(Duration::from_secs(30))
             .build().unwrap();
-        let response = client
+        match client
             .post(request_url)
             .basic_auth(user, Some(pass))
             .json(&data)
             .send()
-            .await;
-        debug!("Event send Response: {:?}", response.unwrap().text().await);
+            .await{
+            Ok(response) => debug!("Response received: {:?}", response),
+            Err(e) => debug!("Error on request: {:?}", e)
+        };
     }
 }
 
