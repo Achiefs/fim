@@ -95,7 +95,6 @@ async fn process_event(destination: &str, event: Event, index_name: String, conf
 // Main function where the magic happens
 #[tokio::main]
 async fn main() {
-    //env_logger::init();
     println!("Achiefs File Integrity Monitoring software started!");
     println!("[INFO] Reading config...");
     let config = config::Config::new(env::consts::OS);
