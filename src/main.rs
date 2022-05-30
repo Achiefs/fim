@@ -19,8 +19,6 @@ use uuid::Uuid;
 use itertools::Itertools;
 // To get own process ID
 use std::process;
-// Async calls management
-use futures::executor::block_on;
 
 // Utils functions
 mod utils;
@@ -56,7 +54,7 @@ fn setup_logger(config: config::Config){
 
 // ----------------------------------------------------------------------------
 
-fn create_index(destination: &str, index_name: String, config: config::Config){
+async fn create_index(destination: &str, index_name: String, config: config::Config){
     // Perform actions depending on destination
     match destination {
         config::BOTH_MODE => {
@@ -64,11 +62,11 @@ fn create_index(destination: &str, index_name: String, config: config::Config){
             fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap();
 
             // On start create index (Include check if events won't be ingested by http)
-            block_on(index::create_index( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure) );
+            index::create_index( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
         },
         config::NETWORK_MODE => {
             // On start create index (Include check if events won't be ingested by http)
-            block_on(index::create_index( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure) );
+            index::create_index( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
         },
         _ => {
             println!("[INFO] Events file: {}", config.events_file);
@@ -79,14 +77,14 @@ fn create_index(destination: &str, index_name: String, config: config::Config){
 
 // ----------------------------------------------------------------------------
 
-fn process_event(destination: &str, event: Event, index_name: String, config: config::Config){
+async fn process_event(destination: &str, event: Event, index_name: String, config: config::Config){
     match destination {
         config::BOTH_MODE => {
             event.log_event(config.events_file);
-            block_on(event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure) );
+            event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
         },
         config::NETWORK_MODE => {
-            block_on(event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure) );
+            event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
         },
         _ => event.log_event(config.events_file)
     }
@@ -106,10 +104,7 @@ async fn main() {
     setup_logger(config.clone());
 
     let destination = config.get_events_destination();
-    let current_date = OffsetDateTime::now_utc();
-    let index_name = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
-
-    create_index(destination.as_str(), index_name.clone(), config.clone());
+    let mut create_index_date = OffsetDateTime::now_utc().replace_day(OffsetDateTime::now_utc().day()-1).unwrap();
 
     // Iterating over monitor paths and set watcher on each folder to watch.
     let (tx, rx) = channel();
@@ -132,6 +127,14 @@ async fn main() {
     loop {
         match rx.recv() {
             Ok(raw_event) => {
+                // Check if we have to create new index
+                let current_date = OffsetDateTime::now_utc();
+                let index_name = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
+                if create_index_date.day() != current_date.day() {
+                    create_index(destination.as_str(), index_name.clone(), config.clone()).await;
+                    create_index_date = current_date;
+                }
+
                 // Get the event path and filename
                 debug!("Event registered: {:?}", raw_event);
                 let event_path = Path::new(raw_event.path.as_ref().unwrap().to_str().unwrap());
@@ -182,7 +185,7 @@ async fn main() {
                     };
 
                     debug!("Event received: {:?}", event);
-                    process_event(destination.clone().as_str(), event, index_name.clone(), config.clone());
+                    process_event(destination.clone().as_str(), event, index_name.clone(), config.clone()).await;
                 }else{
                     debug!("Event ignored not stored in alerts");
                 }
@@ -199,6 +202,7 @@ mod tests {
     use super::*;
     use notify::op::Op;
     use std::path::PathBuf;
+    use tokio_test::block_on;
 
     // ------------------------------------------------------------------------
 
@@ -215,7 +219,7 @@ mod tests {
     fn test_create_index() {
         let config = config::Config::new(env::consts::OS);
         fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
-        create_index("file", String::from("fim"), config.clone());
+        block_on(create_index("file", String::from("fim"), config.clone()));
     }
 
     // ------------------------------------------------------------------------
@@ -239,6 +243,6 @@ mod tests {
             pid: 0,
             system: "test".to_string()
         };
-        process_event("file", event, String::from("fim"), config.clone());
+        block_on(process_event("file", event, String::from("fim"), config.clone()));
     }
 }

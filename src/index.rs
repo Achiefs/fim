@@ -10,6 +10,8 @@ use reqwest::header;
 use log::{info, debug};
 // To manage paths
 use std::path::Path;
+// Handle time intervals
+use std::time::Duration;
 
 fn get_template_path() -> String {
     let relative_path = "./../../config/index_template.json";
@@ -35,6 +37,7 @@ pub async fn create_index(name: String, address: String, user: String, pass: Str
     let url = format!("{}/{}", address, name);
 
     let client = Client::builder()
+        .timeout(Duration::from_secs(120))
         .danger_accept_invalid_certs(insecure)
         .build().unwrap();
     let response = client
