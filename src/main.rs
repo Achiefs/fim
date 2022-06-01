@@ -56,7 +56,7 @@ fn setup_logger(config: config::Config){
 
 fn setup_events(destination: &str, config: config::Config){
     // Perform actions depending on destination
-    info!("Destionation selected: {}", destination);
+    info!("Events destination selected: {}", destination);
     match destination {
         config::NETWORK_MODE => {
             debug!("Events folder not created in network mode");
@@ -113,7 +113,7 @@ async fn main() {
     let destination = config.get_events_destination();
     setup_events(destination.as_str(), config.clone());
 
-    let day = if OffsetDateTime::now_utc().day()-1 == 0 { 1 }else{ OffsetDateTime::now_utc().day()-1 };
+    let day = if OffsetDateTime::now_utc().day()-1 == 0 { 2 }else{ OffsetDateTime::now_utc().day()-1 };
     let mut create_index_date = OffsetDateTime::now_utc().replace_day(day).unwrap();
 
     // Iterating over monitor paths and set watcher on each folder to watch.
