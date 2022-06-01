@@ -54,23 +54,31 @@ fn setup_logger(config: config::Config){
 
 // ----------------------------------------------------------------------------
 
+fn setup_events(destination: &str, config: config::Config){
+    // Perform actions depending on destination
+    info!("Destionation selected: {}", destination);
+    match destination {
+        config::NETWORK_MODE => {
+            debug!("Events folder not created in network mode");
+        },
+        _ => {
+            info!("Events file: {}", config.events_file);
+            fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap()
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
+
 async fn create_index(destination: &str, index_name: String, config: config::Config){
     // Perform actions depending on destination
     match destination {
-        config::BOTH_MODE => {
-            println!("[INFO] Events file: {}", config.events_file);
-            fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap();
-
-            // On start create index (Include check if events won't be ingested by http)
-            index::create_index( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
-        },
-        config::NETWORK_MODE => {
+        config::NETWORK_MODE|config::BOTH_MODE => {
             // On start create index (Include check if events won't be ingested by http)
             index::create_index( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
         },
         _ => {
-            println!("[INFO] Events file: {}", config.events_file);
-            fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap()
+            debug!("Index not created in file mode");
         }
     }
 }
@@ -102,9 +110,11 @@ async fn main() {
     println!("[INFO] Log level: {}", config.log_level);
 
     setup_logger(config.clone());
-
     let destination = config.get_events_destination();
-    let mut create_index_date = OffsetDateTime::now_utc().replace_day(OffsetDateTime::now_utc().day()-1).unwrap();
+    setup_events(destination.as_str(), config.clone());
+
+    let day = if OffsetDateTime::now_utc().day()-1 == 0 { 1 }else{ OffsetDateTime::now_utc().day()-1 };
+    let mut create_index_date = OffsetDateTime::now_utc().replace_day(day).unwrap();
 
     // Iterating over monitor paths and set watcher on each folder to watch.
     let (tx, rx) = channel();
@@ -220,6 +230,17 @@ mod tests {
         let config = config::Config::new(env::consts::OS);
         fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
         block_on(create_index("file", String::from("fim"), config.clone()));
+        block_on(create_index("network", String::from("fim"), config.clone()));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_setup_events() {
+        let config = config::Config::new(env::consts::OS);
+        fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
+        setup_events("file", config.clone());
+        setup_events("network", config.clone());
     }
 
     // ------------------------------------------------------------------------
