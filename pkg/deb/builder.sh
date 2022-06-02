@@ -7,7 +7,6 @@ set -ex
 brand="fim"
 target_dir=$(pwd)
 if [ $(uname -i) = "x86_64" ]; then architecture="amd64"; elif [ $(uname -i) = "aarch64" ]; then architecture="arm64"; fi
-architecture="amd64"
 base_dir="${target_dir}/../../"
 version="$(grep -m1 'version' ${base_dir}/Cargo.toml | cut -d' ' -f3 | tr -d '"')"
 release="1"
