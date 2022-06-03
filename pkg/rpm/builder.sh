@@ -6,7 +6,7 @@ set -ex
 
 brand="fim"
 current_dir=$(pwd)
-architecture="x86_64"
+architecture=$(uname -i)
 rpmbuild="/usr/bin/rpmbuild"
 version="$(grep -m1 'version' ../../Cargo.toml | cut -d' ' -f3 | tr -d '"')"
 bin_path="/usr/bin"
