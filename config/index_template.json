@@ -20,18 +20,20 @@
       "number_of_shards": "3",
       "number_of_replicas": "0",
       "auto_expand_replicas": "0-all",
-      "query": [
-        "pid",
-        "timestamp",
-        "file",
-        "hostname",
-        "kind",
-        "node",
-        "version",
-        "checksum",
-        "system",
-        "labels"
-      ]
+      "query": {
+        "default_field": [
+          "pid",
+          "timestamp",
+          "file",
+          "hostname",
+          "kind",
+          "node",
+          "version",
+          "checksum",
+          "system",
+          "labels"
+        ]
+      }
     }
   }
 }

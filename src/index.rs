@@ -28,13 +28,15 @@ fn get_template_path() -> String {
     }
 }
 
-pub async fn create_index(name: String, address: String, user: String, pass: String, insecure: bool){
+// ----------------------------------------------------------------------------
+
+pub async fn push_template(address: String, user: String, pass: String, insecure: bool){
     let template_path = get_template_path();
     info!("Loaded index template from: {}", template_path);
     let file = File::open(template_path).await.unwrap();
     let stream = FramedRead::new(file, BytesCodec::new());
     let body = Body::wrap_stream(stream);
-    let url = format!("{}/{}", address, name);
+    let url = format!("{}/_template/fim", address);
 
     let client = Client::builder()
         .timeout(Duration::from_secs(120))
@@ -48,7 +50,7 @@ pub async fn create_index(name: String, address: String, user: String, pass: Str
         .send()
         .await;
 
-    debug!("Event send Response: {:?}", response.unwrap().text().await);
+    debug!("Push index template response: {:?}", response.unwrap().text().await);
 }
 
 // ----------------------------------------------------------------------------
@@ -58,9 +60,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_create_index() {
-        tokio_test::block_on( create_index(
-            String::from("test"), String::from("https://127.0.0.1:9200"),
+    fn test_push_template() {
+        tokio_test::block_on( push_template(
+            String::from("https://127.0.0.1:9200"),
             String::from("admin"), String::from("admin"), true) );
     }
 
