@@ -1,6 +1,8 @@
 # FIM
-[Join us on Slack](https://join.slack.com/t/filemonitor/shared_invite/zt-1au9t0hf4-yOsW6D3pGPqzzYsAJt9Dvg)
+[![Join us on Slack](https://img.shields.io/badge/Chat-Join%20us%20on%20Slack-blue)](https://join.slack.com/t/filemonitor/shared_invite/zt-1au9t0hf4-yOsW6D3pGPqzzYsAJt9Dvg)
+![GitHub](https://img.shields.io/github/license/Achiefs/fim)
 [![Coverage Status](https://coveralls.io/repos/github/Achiefs/fim/badge.svg)](https://coveralls.io/github/Achiefs/fim)
+[![Tip Me via PayPal](https://img.shields.io/badge/PayPal-tip_me-green?logo=paypal)](https://paypal.me/achiefs)
 
 FIM is a File Integrity Monitoring tool that tracks any event performed over your files.
 It is capable of keeping historical data of your files. It checks the filesystem changes in the background.
