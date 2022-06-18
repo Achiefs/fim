@@ -1,4 +1,5 @@
 # FIM
+[Join us on Slack](https://join.slack.com/t/filemonitor/shared_invite/zt-1au9t0hf4-yOsW6D3pGPqzzYsAJt9Dvg)
 [![Coverage Status](https://coveralls.io/repos/github/Achiefs/fim/badge.svg)](https://coveralls.io/github/Achiefs/fim)
 
 FIM is a File Integrity Monitoring tool that tracks any event performed over your files.
