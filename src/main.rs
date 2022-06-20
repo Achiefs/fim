@@ -70,15 +70,15 @@ fn setup_events(destination: &str, config: config::Config){
 
 // ----------------------------------------------------------------------------
 
-async fn create_index(destination: &str, index_name: String, config: config::Config){
+async fn push_template(destination: &str, config: config::Config){
     // Perform actions depending on destination
     match destination {
         config::NETWORK_MODE|config::BOTH_MODE => {
-            // On start create index (Include check if events won't be ingested by http)
-            index::create_index( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
+            // On start push template (Include check if events won't be ingested by http)
+            index::push_template(config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
         },
         _ => {
-            debug!("Index not created in file mode");
+            debug!("Template not pushed in file mode");
         }
     }
 }
@@ -113,8 +113,8 @@ async fn main() {
     let destination = config.get_events_destination();
     setup_events(destination.as_str(), config.clone());
 
-    let day = if OffsetDateTime::now_utc().day()-1 == 0 { 2 }else{ OffsetDateTime::now_utc().day()-1 };
-    let mut create_index_date = OffsetDateTime::now_utc().replace_day(day).unwrap();
+    // Check if we have to push index template
+    push_template(destination.as_str(), config.clone()).await;
 
     // Iterating over monitor paths and set watcher on each folder to watch.
     let (tx, rx) = channel();
@@ -137,14 +137,6 @@ async fn main() {
     loop {
         match rx.recv() {
             Ok(raw_event) => {
-                // Check if we have to create new index
-                let current_date = OffsetDateTime::now_utc();
-                let index_name = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
-                if create_index_date.day() != current_date.day() {
-                    create_index(destination.as_str(), index_name.clone(), config.clone()).await;
-                    create_index_date = current_date;
-                }
-
                 // Get the event path and filename
                 debug!("Event registered: {:?}", raw_event);
                 let event_path = Path::new(raw_event.path.as_ref().unwrap().to_str().unwrap());
@@ -194,6 +186,9 @@ async fn main() {
                         system: config.system.clone()
                     };
 
+                    let current_date = OffsetDateTime::now_utc();
+                    let index_name = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
+
                     debug!("Event received: {:?}", event);
                     process_event(destination.clone().as_str(), event, index_name.clone(), config.clone()).await;
                 }else{
@@ -226,11 +221,11 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_create_index() {
+    fn test_push_template() {
         let config = config::Config::new(env::consts::OS);
         fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
-        block_on(create_index("file", String::from("fim"), config.clone()));
-        block_on(create_index("network", String::from("fim"), config.clone()));
+        block_on(push_template("file", config.clone()));
+        block_on(push_template("network", config.clone()));
     }
 
     // ------------------------------------------------------------------------
