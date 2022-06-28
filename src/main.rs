@@ -48,8 +48,8 @@ fn setup_logger(config: config::Config){
             .create(true)
             .append(true)
             .open(config.log_file)
-            .expect("Unable to open log file")
-    ).unwrap();
+            .expect("(setup_logger) Unable to open log file")
+    ).expect("(setup_logger) Unable to set up logging, review the log file.");
 }
 
 // ----------------------------------------------------------------------------
