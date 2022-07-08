@@ -31,6 +31,8 @@ mod index;
 // Single event data management
 mod event;
 use event::Event;
+// File reading continuously
+mod logreader;
 
 
 // ----------------------------------------------------------------------------
@@ -86,15 +88,20 @@ async fn push_template(destination: &str, config: config::Config){
 // ----------------------------------------------------------------------------
 
 async fn process_event(destination: &str, event: Event, index_name: String, config: config::Config){
-    match destination {
-        config::BOTH_MODE => {
-            event.log_event(config.events_file);
-            event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
-        },
-        config::NETWORK_MODE => {
-            event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
-        },
-        _ => event.log_event(config.events_file)
+    println!("{:?}", event.path.clone().to_str().unwrap());
+    if String::from(event.path.clone().to_str().unwrap()).contains("audit.log") {
+        logreader::read_log(String::from(logreader::AUDIT_LOG_PATH));
+    } else {
+        match destination {
+            config::BOTH_MODE => {
+                event.log_event(config.events_file);
+                event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
+            },
+            config::NETWORK_MODE => {
+                event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
+            },
+            _ => event.log_event(config.events_file)
+        }
     }
 }
 
@@ -132,6 +139,7 @@ async fn main() {
         };
         watcher.watch(path, RecursiveMode::Recursive).unwrap();
     }
+    watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::NonRecursive).unwrap();
 
     // Main loop, receive any produced event and write it into the events log.
     loop {
@@ -153,17 +161,16 @@ async fn main() {
                         false => event_path.to_str().unwrap().contains(value)
                     }
                 });
-                let index = monitor_index.unwrap();
 
                 if monitor_index.is_some() &&
-                    match monitor_vector[index]["ignore"].as_vec() {
+                    match monitor_vector[monitor_index.unwrap()]["ignore"].as_vec() {
                         Some(igv) => ! igv.to_vec().iter().any(|ignore| event_filename.to_str().unwrap().contains(ignore.as_str().unwrap()) ),
                         None => true
                     }{
 
                     let current_timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
                     let current_hostname = gethostname::gethostname().into_string().unwrap();
-                    let yaml_labels = match config.monitor[index]["labels"].clone().into_vec() {
+                    let yaml_labels = match config.monitor[monitor_index.unwrap()]["labels"].clone().into_vec() {
                         Some(lb) => lb,
                         None => Vec::new()
                     };

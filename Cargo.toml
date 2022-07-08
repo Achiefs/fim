@@ -23,6 +23,7 @@ tokio = { version = "1.17.0", features = ["rt", "rt-multi-thread", "macros"] }
 tokio-util = { version = "0.7.1", features = ["codec"] }
 serde_json = "1.0.79"
 time = "0.3.9"
+rev_lines = "0.2.1"
 
 [dev-dependencies]
 tokio-test = "*"

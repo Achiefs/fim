@@ -13,7 +13,7 @@ use notify::op::Op;
 use log::*;
 // To handle JSON objects
 use serde_json::{json, to_string};
-// To manage Pathbufs
+// To manage paths
 use std::path::PathBuf;
 // To manage HTTP requests
 use reqwest::Client;
