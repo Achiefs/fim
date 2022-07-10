@@ -88,20 +88,15 @@ async fn push_template(destination: &str, config: config::Config){
 // ----------------------------------------------------------------------------
 
 async fn process_event(destination: &str, event: Event, index_name: String, config: config::Config){
-    println!("{:?}", event.path.clone().to_str().unwrap());
-    if String::from(event.path.clone().to_str().unwrap()).contains("audit.log") {
-        logreader::read_log(String::from(logreader::AUDIT_LOG_PATH));
-    } else {
-        match destination {
-            config::BOTH_MODE => {
-                event.log_event(config.events_file);
-                event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
-            },
-            config::NETWORK_MODE => {
-                event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
-            },
-            _ => event.log_event(config.events_file)
-        }
+    match destination {
+        config::BOTH_MODE => {
+            event.log_event(config.events_file);
+            event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
+        },
+        config::NETWORK_MODE => {
+            event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
+        },
+        _ => event.log_event(config.events_file)
     }
 }
 
@@ -139,7 +134,7 @@ async fn main() {
         };
         watcher.watch(path, RecursiveMode::Recursive).unwrap();
     }
-    watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::NonRecursive).unwrap();
+    watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::Recursive).unwrap();
 
     // Main loop, receive any produced event and write it into the events log.
     loop {
@@ -147,6 +142,9 @@ async fn main() {
             Ok(raw_event) => {
                 // Get the event path and filename
                 debug!("Event registered: {:?}", raw_event);
+                if raw_event.path.clone().unwrap().to_str().unwrap() == logreader::AUDIT_LOG_PATH {
+                    let audit_data = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH));
+                }
                 let event_path = Path::new(raw_event.path.as_ref().unwrap().to_str().unwrap());
                 let event_parent_path = event_path.parent().unwrap().to_str().unwrap();
                 let event_filename = event_path.file_name().unwrap();

@@ -3,41 +3,37 @@
 // Global constants definitions
 pub const AUDIT_LOG_PATH: &str = "/var/log/audit/audit.log";
 
-// ----
+// To Read reversed order lines
 use rev_lines::RevLines;
 use std::io::BufReader;
 use std::fs::File;
+// To manage readed data into collection
 use std::collections::HashMap;
-// ----
 
-/*pub struct Audit {
-    pub log_type: String,
-    pub msg: String
-}*/
-
-// Read file to extract last data
-pub fn read_log(file: String) {
+// Read file to extract last data until the Audit ID changes
+pub fn read_log(file: String) ->  {
     let log = File::open(file).unwrap();
     let rev_lines = RevLines::new(BufReader::new(log)).unwrap();
 
-    let mut count = 5;
+    let mut data: Vec<HashMap<String, String>> = Vec::new();
     for line in rev_lines {
-        parse_audit_log(line);
-        count = count - 1;
-        if count == 0 { break; }
+        data.push(parse_audit_log(line));
+
+        if data.first().unwrap()["msg"] != data.last().unwrap()["msg"] { break; }
     }
+    println!("Audit Data: {:?}", data);
 }
 
 // ----------------------------------------------------------------------------
 
-pub fn parse_audit_log(log: String) {
+pub fn parse_audit_log(log: String) -> HashMap<String, String> {
     let fields: Vec<&str> = log.split(' ').collect();
     let map: HashMap<String, String> = fields.iter()
         .map(|f| {
             let obj: Vec<&str> = f.split('=').collect();
             return (String::from(obj[0]), String::from(obj[1]));
         }).collect();
-    println!("{:?}", map);
+    map
 }
 
 // ----------------------------------------------------------------------------
