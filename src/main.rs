@@ -33,6 +33,7 @@ mod event;
 use event::Event;
 // File reading continuously
 mod logreader;
+mod auditevent;
 
 
 // ----------------------------------------------------------------------------
@@ -143,7 +144,8 @@ async fn main() {
                 // Get the event path and filename
                 debug!("Event registered: {:?}", raw_event);
                 if raw_event.path.clone().unwrap().to_str().unwrap() == logreader::AUDIT_LOG_PATH {
-                    let audit_data = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH));
+                    let audit_event = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH));
+                    println!("{:?}", audit_event);
                 }
                 let event_path = Path::new(raw_event.path.as_ref().unwrap().to_str().unwrap());
                 let event_parent_path = event_path.parent().unwrap().to_str().unwrap();
