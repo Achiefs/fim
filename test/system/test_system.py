@@ -22,14 +22,14 @@ def get_last_event():
 def test_file_create():
     c = open(test_file, 'w')
     data = json.loads(get_last_event())
-    assert data['kind'] == "CREATE"
+    assert data['operation'] == "CREATE"
     c.close()
 
 def test_file_write():
     w = open(test_file, 'w')
     w.write("This is a test")
     data = json.loads(get_last_event())
-    assert data['kind'] == "WRITE"
+    assert data['operation'] == "WRITE"
     w.close()
 
 @pytest.mark.skipif(system == "Darwin" or system == "Windows", reason="Cannot run on Darwin or Windows")
@@ -37,19 +37,19 @@ def test_file_close():
     cl = open(test_file, 'w')
     cl.close()
     data = json.loads(get_last_event())
-    assert data['kind'] == "CLOSE_WRITE"
+    assert data['operation'] == "CLOSE_WRITE"
 
 def test_file_rename():
     os.rename(test_file, test_file + '.rmv')
     os.rename(test_file + '.rmv', test_file)
     data = json.loads(get_last_event())
-    assert data['kind'] == "RENAME"
+    assert data['operation'] == "RENAME"
 
 @pytest.mark.skipif(system == "Windows", reason="Cannot run on Windows")
 def test_file_chmod():
     os.chmod(test_file, 0o777)
     data = json.loads(get_last_event())
-    assert data['kind'] == "CHMOD"
+    assert data['operation'] == "CHMOD"
 
 def test_file_rescan():
     # Check https://docs.rs/notify/latest/notify/op/index.html#rescan to apply rescan test
@@ -59,4 +59,4 @@ def test_file_rescan():
 def test_file_remove():
     os.remove(test_file)
     data = json.loads(get_last_event())
-    assert data['kind'] == "REMOVE"
+    assert data['operation'] == "REMOVE"

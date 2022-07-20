@@ -1,5 +1,8 @@
 // Copyright (C) 2021, Achiefs.
 
+// To allow big structs like json on audit events
+#![recursion_limit = "256"]
+
 // To read and write directories and files, env to get Operating system
 use std::{fs, env};
 // To get file system changes
@@ -13,8 +16,6 @@ use std::path::Path;
 // To manage date and time
 use std::time::{SystemTime, UNIX_EPOCH};
 use time::OffsetDateTime;
-// To manage unique event identifier
-use uuid::Uuid;
 // To use intersperse()
 use itertools::Itertools;
 // To get own process ID
@@ -145,61 +146,62 @@ async fn main() {
                 debug!("Event registered: {:?}", raw_event);
                 if raw_event.path.clone().unwrap().to_str().unwrap() == logreader::AUDIT_LOG_PATH {
                     let audit_event = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH));
-                    println!("{:?}", audit_event);
-                }
-                let event_path = Path::new(raw_event.path.as_ref().unwrap().to_str().unwrap());
-                let event_parent_path = event_path.parent().unwrap().to_str().unwrap();
-                let event_filename = event_path.file_name().unwrap();
-
-                // Iterate over monitoring paths to match ignore string and ignore event or not
-                let monitor_vector = config.monitor.clone().to_vec();
-                let monitor_index = monitor_vector.iter().position(|it| {
-                    let path = it["path"].as_str().unwrap();
-                    let value = if path.ends_with('/') || path.ends_with('\\'){ utils::pop(path) }else{ path };
-                    match event_parent_path.contains(value) {
-                        true => true,
-                        false => event_path.to_str().unwrap().contains(value)
-                    }
-                });
-
-                if monitor_index.is_some() &&
-                    match monitor_vector[monitor_index.unwrap()]["ignore"].as_vec() {
-                        Some(igv) => ! igv.to_vec().iter().any(|ignore| event_filename.to_str().unwrap().contains(ignore.as_str().unwrap()) ),
-                        None => true
-                    }{
-
-                    let current_timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
-                    let current_hostname = gethostname::gethostname().into_string().unwrap();
-                    let yaml_labels = match config.monitor[monitor_index.unwrap()]["labels"].clone().into_vec() {
-                        Some(lb) => lb,
-                        None => Vec::new()
-                    };
-                    let current_labels = yaml_labels.to_vec().iter().map(|element| String::from(element.as_str().unwrap()) ).collect();
-                    let operation = raw_event.op.unwrap();
-                    let path = raw_event.path.unwrap().clone();
-
-                    let event = Event {
-                        id: format!("{}", Uuid::new_v4()),
-                        timestamp: current_timestamp,
-                        hostname: current_hostname,
-                        nodename: config.nodename.clone(),
-                        version: String::from(config::VERSION),
-                        operation,
-                        path: path.clone(),
-                        labels: current_labels,
-                        kind: event::get_kind(operation),
-                        checksum: hash::get_checksum( String::from(path.to_str().unwrap()) ),
-                        pid: process::id(),
-                        system: config.system.clone()
-                    };
-
-                    let current_date = OffsetDateTime::now_utc();
-                    let index_name = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
-
-                    debug!("Event received: {:?}", event);
-                    process_event(destination.clone().as_str(), event, index_name.clone(), config.clone()).await;
+                    audit_event.log_event(config.events_file.clone());
                 }else{
-                    debug!("Event ignored not stored in alerts");
+                    let event_path = Path::new(raw_event.path.as_ref().unwrap().to_str().unwrap());
+                    let event_parent_path = event_path.parent().unwrap().to_str().unwrap();
+                    let event_filename = event_path.file_name().unwrap();
+
+                    // Iterate over monitoring paths to match ignore string and ignore event or not
+                    let monitor_vector = config.monitor.clone().to_vec();
+                    let monitor_index = monitor_vector.iter().position(|it| {
+                        let path = it["path"].as_str().unwrap();
+                        let value = if path.ends_with('/') || path.ends_with('\\'){ utils::pop(path) }else{ path };
+                        match event_parent_path.contains(value) {
+                            true => true,
+                            false => event_path.to_str().unwrap().contains(value)
+                        }
+                    });
+
+                    if monitor_index.is_some() &&
+                        match monitor_vector[monitor_index.unwrap()]["ignore"].as_vec() {
+                            Some(igv) => ! igv.to_vec().iter().any(|ignore| event_filename.to_str().unwrap().contains(ignore.as_str().unwrap()) ),
+                            None => true
+                        }{
+
+                        let current_timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
+                        let current_hostname = utils::get_hostname();
+                        let yaml_labels = match config.monitor[monitor_index.unwrap()]["labels"].clone().into_vec() {
+                            Some(lb) => lb,
+                            None => Vec::new()
+                        };
+                        let current_labels = yaml_labels.to_vec().iter().map(|element| String::from(element.as_str().unwrap()) ).collect();
+                        let op = raw_event.op.unwrap();
+                        let path = raw_event.path.unwrap().clone();
+
+                        let event = Event {
+                            id: utils::get_uuid(),
+                            timestamp: current_timestamp,
+                            hostname: current_hostname,
+                            node: config.node.clone(),
+                            version: String::from(config::VERSION),
+                            op,
+                            path: path.clone(),
+                            labels: current_labels,
+                            operation: event::get_op(op),
+                            checksum: hash::get_checksum( String::from(path.to_str().unwrap()) ),
+                            pid: process::id(),
+                            system: config.system.clone()
+                        };
+
+                        let current_date = OffsetDateTime::now_utc();
+                        let index_name = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
+
+                        debug!("Event received: {:?}", event);
+                        process_event(destination.clone().as_str(), event, index_name.clone(), config.clone()).await;
+                    }else{
+                        debug!("Event ignored not stored in alerts");
+                    }
                 }
             },
             Err(e) => error!("Watch error: {:?}", e),
@@ -256,12 +258,12 @@ mod tests {
             id: "Test_id".to_string(),
             timestamp: "Timestamp".to_string(),
             hostname: "Hostname".to_string(),
-            nodename: "FIM".to_string(),
+            node: "FIM".to_string(),
             version: "x.x.x".to_string(),
             operation: Op::CREATE,
             path: PathBuf::new(),
             labels: Vec::new(),
-            kind: "TEST".to_string(),
+            operation: "TEST".to_string(),
             checksum: "UNKNOWN".to_string(),
             pid: 0,
             system: "test".to_string()

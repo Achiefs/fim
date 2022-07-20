@@ -16,9 +16,17 @@ use serde_json::{json, to_string};
 // To manage HTTP requests
 //use reqwest::Client;
 
+// To get configuration constants
+use crate::config;
+
+// ----------------------------------------------------------------------------
+
 pub struct Event {
     pub id: String,
     pub timestamp: String,
+    pub hostname: String,
+    pub node: String,
+    pub version: String,
     pub path: String,
     pub file: String,
     pub operation: String,
@@ -73,7 +81,8 @@ pub struct Event {
     pub suid: String,
     pub egid: String,
     pub fsgid: String,
-    pub exe: String
+    pub exe: String,
+    pub source: String,
 }
 
 impl Event {
@@ -81,6 +90,9 @@ impl Event {
         Event {
             id: String::from(""),
             timestamp: String::from(""),
+            hostname: String::from(""),
+            node: String::from(""),
+            version: String::from(config::VERSION),
             path: String::from(""),
             file: String::from(""),
             operation: String::from(""),
@@ -135,7 +147,8 @@ impl Event {
             suid: String::from(""),
             egid: String::from(""),
             fsgid: String::from(""),
-            exe: String::from("")
+            exe: String::from(""),
+            source: String::from("audit")
         }
     }
 
@@ -144,6 +157,64 @@ impl Event {
         let obj = json!({
             "id": self.id.clone(),
             "timestamp": self.timestamp.clone(),
+            "hostname": self.hostname.clone(),
+            "node": self.node.clone(),
+            "version": self.version.clone(),
+            "path": self.path.clone(),
+            "file": self.file.clone(),
+            "operation": self.operation.clone(),
+            "ogid": self.ogid.clone(),
+            "rdev": self.rdev.clone(),
+            "proctitle": self.proctitle.clone(),
+            "cap_fver": self.cap_fver.clone(),
+            "inode": self.inode.clone(),
+            "cap_fp": self.cap_fp.clone(),
+            "cap_fe": self.cap_fe.clone(),
+            "item": self.item.clone(),
+            "cap_fi": self.cap_fi.clone(),
+            "dev": self.dev.clone(),
+            "mode": self.mode.clone(),
+            "cap_frootid": self.cap_frootid.clone(),
+            "ouid": self.ouid.clone(),
+            "parent_inode": self.parent_inode.clone(),
+            "parent_cap_fe": self.parent_cap_fe.clone(),
+            "parent_cap_frootid": self.parent_cap_frootid.clone(),
+            "parent_ouid": self.parent_ouid.clone(),
+            "parent_item": self.parent_item.clone(),
+            "parent_cap_fver": self.parent_cap_fver.clone(),
+            "parent_mode": self.parent_mode.clone(),
+            "parent_rdev": self.parent_rdev.clone(),
+            "parent_cap_fi": self.parent_cap_fi.clone(),
+            "parent_cap_fp": self.parent_cap_fp.clone(),
+            "parent_dev": self.parent_dev.clone(),
+            "parent_ogid": self.parent_ogid.clone(),
+            "cwd": self.cwd.clone(),
+            "syscall": self.syscall.clone(),
+            "ppid": self.ppid.clone(),
+            "comm": self.comm.clone(),
+            "fsuid": self.fsuid.clone(),
+            "pid": self.pid.clone(),
+            "a0": self.a0.clone(),
+            "a1": self.a1.clone(),
+            "a2": self.a2.clone(),
+            "a3": self.a3.clone(),
+            "arch": self.arch.clone(),
+            "auid": self.auid.clone(),
+            "items": self.items.clone(),
+            "gid": self.gid.clone(),
+            "euid": self.euid.clone(),
+            "sgid": self.sgid.clone(),
+            "uid": self.uid.clone(),
+            "tty": self.tty.clone(),
+            "success": self.success.clone(),
+            "exit": self.exit.clone(),
+            "ses": self.ses.clone(),
+            "key": self.key.clone(),
+            "suid": self.suid.clone(),
+            "egid": self.egid.clone(),
+            "fsgid": self.fsgid.clone(),
+            "exe": self.exe.clone(),
+            "source": self.source.clone()
         });
         to_string(&obj).unwrap()
     }
@@ -157,18 +228,12 @@ impl Event {
             .write(true)
             .append(true)
             .open(file)
-            .expect("(log_event) Unable to open events log file.");
+            .expect("(auditevent::log_event) Unable to open events log file.");
 
-        match self.operation.as_str() {
-            "CREATE"|"WRITE"|"RENAME"|"REMOVE"|"CHMOD" => {
-                writeln!(events_file, "{}", self.format_json() )
-            },
-            _ => {
-                let error_msg = "Event Op not Handled or do not exists";
-                error!("{}", error_msg);
-                Err(Error::new(ErrorKind::InvalidInput, error_msg))
-            },
-        }.expect("(log_event) Error writing event")
+            match writeln!(events_file, "{}", self.format_json()) {
+                Ok(_d) => debug!("Written audit event Log"),
+                Err(e) => error!("Audit event could not be written, Err: [{}]", e)
+            };
     }
 
     // ------------------------------------------------------------------------
@@ -178,11 +243,11 @@ impl Event {
         let data = json!({
             "timestamp": self.timestamp.clone(),
             "hostname": self.hostname.clone(),
-            "node": self.nodename.clone(),
+            "node": self.node.clone(),
             "pid": self.pid.clone(),
             "version": self.version.clone(),
             "labels": self.labels.clone(),
-            "kind": self.kind.clone(),
+            "operation": self.operation.clone(),
             "file": String::from(self.path.clone().to_str().unwrap()),
             "checksum": self.checksum.clone(),
             "system": self.system.clone()
@@ -289,12 +354,12 @@ mod tests {
             id: "Test_id".to_string(),
             timestamp: "Timestamp".to_string(),
             hostname: "Hostname".to_string(),
-            nodename: "FIM".to_string(),
+            node: "FIM".to_string(),
             version: "x.x.x".to_string(),
-            operation: Op::CREATE,
+            op: Op::CREATE,
             path: PathBuf::new(),
             labels: Vec::new(),
-            kind: "TEST".to_string(),
+            operation: "TEST".to_string(),
             checksum: "UNKNOWN".to_string(),
             pid: 0,
             system: "test".to_string()
@@ -305,71 +370,41 @@ mod tests {
 
     #[test]
     fn test_create_event() {
-        let evt = create_test_event();
-        assert_eq!(evt.id, "Test_id".to_string());
-        assert_eq!(evt.timestamp, "Timestamp".to_string());
-        assert_eq!(evt.hostname, "Hostname".to_string());
-        assert_eq!(evt.nodename, "FIM".to_string());
-        assert_eq!(evt.version, "x.x.x".to_string());
-        assert_eq!(evt.operation, Op::CREATE);
-        assert_eq!(evt.path, PathBuf::new());
-        assert_eq!(evt.labels, Vec::<String>::new());
-        assert_eq!(evt.kind, String::from("TEST"));
-        assert_eq!(evt.pid, 0);
-        assert_eq!(evt.system, String::from("test"));
+
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
     fn test_send_event() {
-        let evt = create_test_event();
-        tokio_test::block_on( evt.send(
-            String::from("test"), String::from("https://127.0.0.1:9200"),
-            String::from("admin"), String::from("admin"), true) );
+
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_get_kind(){
-        assert_eq!(get_kind(Op::CREATE), String::from("CREATE"));
-        assert_eq!(get_kind(Op::WRITE), String::from("WRITE"));
-        assert_eq!(get_kind(Op::RENAME), String::from("RENAME"));
-        assert_eq!(get_kind(Op::REMOVE), String::from("REMOVE"));
-        assert_eq!(get_kind(Op::CHMOD), String::from("CHMOD"));
-        assert_eq!(get_kind(Op::CLOSE_WRITE), String::from("CLOSE_WRITE"));
-        assert_eq!(get_kind(Op::RESCAN), String::from("RESCAN"));
-        assert_eq!(get_kind(Op::empty()), String::from("UNKNOWN"));
+    fn test_get_operation(){
+
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
     fn test_event_fmt(){
-        let out = format!("{:?}", create_test_event());
-        assert_eq!(out, "(\"Test_id\", \"\", CREATE)");
+
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
     fn test_format_json() {
-        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"hostname\":\"Hostname\",\"id\":\"Test_id\",\"kind\":\"TEST\",\"labels\":[],\"node\":\"FIM\",\"pid\":0,\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}";
-        assert_eq!(create_test_event().format_json(), expected);
+
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
     fn test_log_event() {
-        let filename = String::from("test_event.json");
-        let evt = create_test_event();
 
-        evt.log_event(filename.clone());
-        let contents = fs::read_to_string(filename.clone());
-        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"hostname\":\"Hostname\",\"id\":\"Test_id\",\"kind\":\"TEST\",\"labels\":[],\"node\":\"FIM\",\"pid\":0,\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}\n";
-        assert_eq!(contents.unwrap(), expected);
-        remove_test_file(filename.clone());
     }
 }*/

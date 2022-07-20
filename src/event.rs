@@ -22,12 +22,12 @@ pub struct Event {
     pub id: String,
     pub timestamp: String,
     pub hostname: String,
-    pub nodename: String,
+    pub node: String,
     pub version: String,
     pub path: PathBuf,
-    pub operation: Op,
+    pub op: Op,
     pub labels: Vec<String>,
-    pub kind: String,
+    pub operation: String,
     pub checksum: String,
     pub pid: u32,
     pub system: String
@@ -40,11 +40,11 @@ impl Event {
             "id": self.id.clone(),
             "timestamp": self.timestamp.clone(),
             "hostname": self.hostname.clone(),
-            "node": self.nodename.clone(),
+            "node": self.node.clone(),
             "pid": self.pid.clone(),
             "version": self.version.clone(),
             "labels": self.labels.clone(),
-            "kind": self.kind.clone(),
+            "operation": self.operation.clone(),
             "file": String::from(self.path.clone().to_str().unwrap()),
             "checksum": self.checksum.clone(),
             "system": self.system.clone()
@@ -63,7 +63,7 @@ impl Event {
             .open(file)
             .expect("(log_event) Unable to open events log file.");
 
-        match self.operation {
+        match self.op {
             Op::CREATE|Op::WRITE|Op::RENAME|Op::REMOVE|Op::CHMOD|Op::CLOSE_WRITE|Op::RESCAN => {
                 writeln!(events_file, "{}", self.format_json() )
             },
@@ -82,11 +82,11 @@ impl Event {
         let data = json!({
             "timestamp": self.timestamp.clone(),
             "hostname": self.hostname.clone(),
-            "node": self.nodename.clone(),
+            "node": self.node.clone(),
             "pid": self.pid.clone(),
             "version": self.version.clone(),
             "labels": self.labels.clone(),
-            "kind": self.kind.clone(),
+            "operation": self.operation.clone(),
             "file": String::from(self.path.clone().to_str().unwrap()),
             "checksum": self.checksum.clone(),
             "system": self.system.clone()
@@ -123,7 +123,7 @@ impl fmt::Debug for Event {
 
 // ----------------------------------------------------------------------------
 
-pub fn get_kind(operation: Op) -> String {
+pub fn get_op(operation: Op) -> String {
     match operation {
         Op::CREATE => { String::from("CREATE") },
         Op::WRITE => { String::from("WRITE") },
@@ -157,12 +157,12 @@ mod tests {
             id: "Test_id".to_string(),
             timestamp: "Timestamp".to_string(),
             hostname: "Hostname".to_string(),
-            nodename: "FIM".to_string(),
+            node: "FIM".to_string(),
             version: "x.x.x".to_string(),
-            operation: Op::CREATE,
+            op: Op::CREATE,
             path: PathBuf::new(),
             labels: Vec::new(),
-            kind: "TEST".to_string(),
+            operation: "TEST".to_string(),
             checksum: "UNKNOWN".to_string(),
             pid: 0,
             system: "test".to_string()
@@ -177,12 +177,12 @@ mod tests {
         assert_eq!(evt.id, "Test_id".to_string());
         assert_eq!(evt.timestamp, "Timestamp".to_string());
         assert_eq!(evt.hostname, "Hostname".to_string());
-        assert_eq!(evt.nodename, "FIM".to_string());
+        assert_eq!(evt.node, "FIM".to_string());
         assert_eq!(evt.version, "x.x.x".to_string());
-        assert_eq!(evt.operation, Op::CREATE);
+        assert_eq!(evt.op, Op::CREATE);
         assert_eq!(evt.path, PathBuf::new());
         assert_eq!(evt.labels, Vec::<String>::new());
-        assert_eq!(evt.kind, String::from("TEST"));
+        assert_eq!(evt.operation, String::from("TEST"));
         assert_eq!(evt.pid, 0);
         assert_eq!(evt.system, String::from("test"));
     }
@@ -200,15 +200,15 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_get_kind(){
-        assert_eq!(get_kind(Op::CREATE), String::from("CREATE"));
-        assert_eq!(get_kind(Op::WRITE), String::from("WRITE"));
-        assert_eq!(get_kind(Op::RENAME), String::from("RENAME"));
-        assert_eq!(get_kind(Op::REMOVE), String::from("REMOVE"));
-        assert_eq!(get_kind(Op::CHMOD), String::from("CHMOD"));
-        assert_eq!(get_kind(Op::CLOSE_WRITE), String::from("CLOSE_WRITE"));
-        assert_eq!(get_kind(Op::RESCAN), String::from("RESCAN"));
-        assert_eq!(get_kind(Op::empty()), String::from("UNKNOWN"));
+    fn test_get_op(){
+        assert_eq!(get_op(Op::CREATE), String::from("CREATE"));
+        assert_eq!(get_op(Op::WRITE), String::from("WRITE"));
+        assert_eq!(get_op(Op::RENAME), String::from("RENAME"));
+        assert_eq!(get_op(Op::REMOVE), String::from("REMOVE"));
+        assert_eq!(get_op(Op::CHMOD), String::from("CHMOD"));
+        assert_eq!(get_op(Op::CLOSE_WRITE), String::from("CLOSE_WRITE"));
+        assert_eq!(get_op(Op::RESCAN), String::from("RESCAN"));
+        assert_eq!(get_op(Op::empty()), String::from("UNKNOWN"));
     }
 
     // ------------------------------------------------------------------------
@@ -223,7 +223,7 @@ mod tests {
 
     #[test]
     fn test_format_json() {
-        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"hostname\":\"Hostname\",\"id\":\"Test_id\",\"kind\":\"TEST\",\"labels\":[],\"node\":\"FIM\",\"pid\":0,\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}";
+        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"hostname\":\"Hostname\",\"id\":\"Test_id\",\"operation\":\"TEST\",\"labels\":[],\"node\":\"FIM\",\"pid\":0,\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}";
         assert_eq!(create_test_event().format_json(), expected);
     }
 
@@ -236,7 +236,7 @@ mod tests {
 
         evt.log_event(filename.clone());
         let contents = fs::read_to_string(filename.clone());
-        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"hostname\":\"Hostname\",\"id\":\"Test_id\",\"kind\":\"TEST\",\"labels\":[],\"node\":\"FIM\",\"pid\":0,\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}\n";
+        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"hostname\":\"Hostname\",\"id\":\"Test_id\",\"operation\":\"TEST\",\"labels\":[],\"node\":\"FIM\",\"pid\":0,\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}\n";
         assert_eq!(contents.unwrap(), expected);
         remove_test_file(filename.clone());
     }

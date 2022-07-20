@@ -1,7 +1,7 @@
 // Copyright (C) 2021, Achiefs.
 
 // Global constants definitions
-pub const VERSION: &str = "0.3.2";
+pub const VERSION: &str = "0.4.0";
 pub const NETWORK_MODE: &str = "NETWORK";
 pub const FILE_MODE: &str = "FILE";
 pub const BOTH_MODE: &str = "BOTH";
@@ -29,7 +29,7 @@ pub struct Config {
     pub endpoint_pass: String,
     pub events_file: String,
     pub monitor: Array,
-    pub nodename: String,
+    pub node: String,
     pub log_file: String,
     pub log_level: String,
     pub system: String,
@@ -48,7 +48,7 @@ impl Config {
             endpoint_pass: self.endpoint_pass.clone(),
             events_file: self.events_file.clone(),
             monitor: self.monitor.clone(),
-            nodename: self.nodename.clone(),
+            node: self.node.clone(),
             log_file: self.log_file.clone(),
             log_level: self.log_level.clone(),
             system: self.system.clone(),
@@ -143,11 +143,11 @@ impl Config {
             }
         };
 
-        // Manage null value on nodename value
-        let nodename = match yaml[0]["nodename"].as_str() {
+        // Manage null value on node value
+        let node = match yaml[0]["node"].as_str() {
             Some(value) => String::from(value),
             None => {
-                println!("[WARN] nodename not found in config.yml, using 'FIM'.");
+                println!("[WARN] node not found in config.yml, using 'FIM'.");
                 String::from("FIM")
             }
         };
@@ -179,7 +179,7 @@ impl Config {
             endpoint_pass,
             events_file,
             monitor,
-            nodename,
+            node,
             log_file,
             log_level,
             system: String::from(system),
@@ -274,7 +274,7 @@ mod tests {
             endpoint_pass: String::from("test"),
             events_file: String::from("test"),
             monitor: Array::new(),
-            nodename: String::from("test"),
+            node: String::from("test"),
             log_file: String::from("./test.log"),
             log_level: String::from(filter),
             system: String::from("test"),
@@ -296,7 +296,7 @@ mod tests {
         assert_eq!(config.endpoint_pass, cloned.endpoint_pass);
         assert_eq!(config.events_file, cloned.events_file);
         assert_eq!(config.monitor, cloned.monitor);
-        assert_eq!(config.nodename, cloned.nodename);
+        assert_eq!(config.node, cloned.node);
         assert_eq!(config.log_file, cloned.log_file);
         assert_eq!(config.log_level, cloned.log_level);
         assert_eq!(config.system, cloned.system);
@@ -315,7 +315,7 @@ mod tests {
         assert_eq!(config.endpoint_pass, String::from("Not_used"));
         assert_eq!(config.events_file, String::from("C:\\ProgramData\\fim\\events.json"));
         // monitor
-        assert_eq!(config.nodename, String::from("FIM"));
+        assert_eq!(config.node, String::from("FIM"));
         assert_eq!(config.log_file, String::from("C:\\ProgramData\\fim\\fim.log"));
         assert_eq!(config.log_level, String::from("info"));
         assert_eq!(config.system, String::from("windows"));
@@ -334,7 +334,7 @@ mod tests {
         assert_eq!(config.endpoint_pass, String::from("Not_used"));
         assert_eq!(config.events_file, String::from("/var/lib/fim/events.json"));
         // monitor
-        assert_eq!(config.nodename, String::from("FIM"));
+        assert_eq!(config.node, String::from("FIM"));
         assert_eq!(config.log_file, String::from("/var/log/fim/fim.log"));
         assert_eq!(config.log_level, String::from("info"));
         assert_eq!(config.system, String::from("linux"));
@@ -353,7 +353,7 @@ mod tests {
         assert_eq!(config.endpoint_pass, String::from("Not_used"));
         assert_eq!(config.events_file, String::from("/var/lib/fim/events.json"));
         // monitor
-        assert_eq!(config.nodename, String::from("FIM"));
+        assert_eq!(config.node, String::from("FIM"));
         assert_eq!(config.log_file, String::from("/var/log/fim/fim.log"));
         assert_eq!(config.log_level, String::from("info"));
         assert_eq!(config.system, String::from("macos"));
@@ -451,7 +451,7 @@ mod tests {
     fn test_read_config_unix() {
         let yaml = read_config(String::from("config/linux/config.yml"));
 
-        assert_eq!(yaml[0]["nodename"].as_str().unwrap(), "FIM");
+        assert_eq!(yaml[0]["node"].as_str().unwrap(), "FIM");
         assert_eq!(yaml[0]["events"]["destination"].as_str().unwrap(), "file");
         assert_eq!(yaml[0]["events"]["file"].as_str().unwrap(), "/var/lib/fim/events.json");
 
@@ -474,7 +474,7 @@ mod tests {
     fn test_read_config_windows() {
         let yaml = read_config(String::from("config/windows/config.yml"));
 
-        assert_eq!(yaml[0]["nodename"].as_str().unwrap(), "FIM");
+        assert_eq!(yaml[0]["node"].as_str().unwrap(), "FIM");
         assert_eq!(yaml[0]["events"]["destination"].as_str().unwrap(), "file");
         assert_eq!(yaml[0]["events"]["file"].as_str().unwrap(), "C:\\ProgramData\\fim\\events.json");
 

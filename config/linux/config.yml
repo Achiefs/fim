@@ -1,4 +1,4 @@
-nodename: "FIM"
+node: "FIM"
 
 # Events configuration, where to store produced events
 events:

@@ -12,6 +12,12 @@ use std::collections::HashMap;
 
 // Single event data management
 use crate::auditevent::Event;
+// To manage common functions
+use crate::utils;
+// To get configuration constants
+use crate::config;
+
+// ----------------------------------------------------------------------------
 
 // Read file to extract last data until the Audit ID changes
 pub fn read_log(file: String) -> Event {
@@ -36,6 +42,9 @@ pub fn read_log(file: String) -> Event {
             id: "0123456".to_string(),
             proctitle: proctitle_data["proctitle"].clone(),
             timestamp: proctitle_data["msg"].clone(),
+            hostname: utils::get_hostname(),
+            node: String::from(""),
+            version: String::from(config::VERSION),
             operation: path_data["nametype"].clone(),
             path: parent_path_data["name"].clone(),
             file: path_data["name"].clone(),
@@ -51,7 +60,7 @@ pub fn read_log(file: String) -> Event {
             mode: path_data["mode"].clone(),
             cap_frootid: path_data["cap_frootid"].clone(),
             ouid: path_data["ouid"].clone(),
-            
+
             parent_inode: parent_path_data["inode"].clone(),
             parent_cap_fe: parent_path_data["cap_fe"].clone(),
             parent_cap_frootid: parent_path_data["cap_frootid"].clone(),
@@ -90,7 +99,8 @@ pub fn read_log(file: String) -> Event {
             suid: syscall_data["suid"].clone(),
             egid: syscall_data["egid"].clone(),
             fsgid: syscall_data["fsgid"].clone(),
-            exe: syscall_data["exe"].clone()
+            exe: syscall_data["exe"].clone(),
+            source: String::from("audit")
         }
     }else{
         Event::new()
