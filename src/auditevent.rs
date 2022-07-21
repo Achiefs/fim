@@ -4,7 +4,7 @@
 use std::fmt;
 // To handle files
 use std::fs::OpenOptions;
-use std::io::{Write, Error, ErrorKind};
+use std::io::Write;
 // Handle time intervals
 //use std::time::Duration;
 // To log the program procedure
@@ -29,10 +29,15 @@ pub struct Event {
     pub version: String,
     pub path: String,
     pub file: String,
+    pub labels: Vec<String>,
     pub operation: String,
+    pub checksum: String,
+    pub fpid: u32,
+    pub system: String,
+    pub command: String,
+
     pub ogid: String,
     pub rdev: String,
-
     pub proctitle: String,
     pub cap_fver: String,
     pub inode: String,
@@ -95,10 +100,15 @@ impl Event {
             version: String::from(config::VERSION),
             path: String::from(""),
             file: String::from(""),
+            labels: Vec::<String>::new(),
             operation: String::from(""),
+            checksum: String::from(""),
+            fpid: 0,
+            system: String::from(""),
+            command: String::from(""),
+
             ogid: String::from(""),
             rdev: String::from(""),
-
             proctitle: String::from(""),
             cap_fver: String::from(""),
             inode: String::from(""),
@@ -162,7 +172,13 @@ impl Event {
             "version": self.version.clone(),
             "path": self.path.clone(),
             "file": self.file.clone(),
+            "labels": self.labels.clone(),
             "operation": self.operation.clone(),
+            "checksum": self.checksum.clone(),
+            "fpid": self.fpid.clone(),
+            "system": self.system.clone(),
+            "command": self.command.clone(),
+
             "ogid": self.ogid.clone(),
             "rdev": self.rdev.clone(),
             "proctitle": self.proctitle.clone(),

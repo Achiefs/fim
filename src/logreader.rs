@@ -16,6 +16,8 @@ use crate::auditevent::Event;
 use crate::utils;
 // To get configuration constants
 use crate::config;
+// To get manage checksums and conversions
+use crate::hash;
 
 // ----------------------------------------------------------------------------
 
@@ -30,7 +32,6 @@ pub fn read_log(file: String) -> Event {
 
         if data.first().unwrap()["msg"] != data.last().unwrap()["msg"] { break; }
     }
-    //println!("Audit Data: {:?}", data);
     if data.len() == 6 {
         let proctitle_data = data[0].clone();
         let path_data = data[1].clone();
@@ -39,15 +40,22 @@ pub fn read_log(file: String) -> Event {
         let syscall_data = data[4].clone();
 
         Event{
-            id: "0123456".to_string(),
+            id: utils::get_uuid(),
             proctitle: proctitle_data["proctitle"].clone(),
+            command: hash::hex_to_ascii(proctitle_data["proctitle"].clone()),
             timestamp: proctitle_data["msg"].clone(),
             hostname: utils::get_hostname(),
             node: String::from(""),
             version: String::from(config::VERSION),
+            labels: Vec::<String>::new(),
             operation: path_data["nametype"].clone(),
             path: parent_path_data["name"].clone(),
             file: path_data["name"].clone(),
+            checksum: String::from(""),
+            fpid: utils::get_pid(),
+            system: utils::get_os(),
+
+
             ogid: path_data["ogid"].clone(),
             rdev: path_data["rdev"].clone(),
             cap_fver: path_data["cap_fver"].clone(),

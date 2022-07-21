@@ -3,8 +3,8 @@
 // To allow big structs like json on audit events
 #![recursion_limit = "256"]
 
-// To read and write directories and files, env to get Operating system
-use std::{fs, env};
+// To read and write directories and files
+use std::fs;
 // To get file system changes
 use notify::{RecommendedWatcher, Watcher, RecursiveMode};
 use std::sync::mpsc::channel;
@@ -18,8 +18,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use time::OffsetDateTime;
 // To use intersperse()
 use itertools::Itertools;
-// To get own process ID
-use std::process;
+
 
 // Utils functions
 mod utils;
@@ -109,7 +108,7 @@ async fn process_event(destination: &str, event: Event, index_name: String, conf
 async fn main() {
     println!("Achiefs File Integrity Monitoring software started!");
     println!("[INFO] Reading config...");
-    let config = config::Config::new(env::consts::OS);
+    let config = config::Config::new(&utils::get_os());
     println!("[INFO] Log file: {}", config.log_file);
     println!("[INFO] Log level: {}", config.log_level);
 
@@ -190,7 +189,7 @@ async fn main() {
                             labels: current_labels,
                             operation: event::get_op(op),
                             checksum: hash::get_checksum( String::from(path.to_str().unwrap()) ),
-                            pid: process::id(),
+                            fpid: utils::get_pid(),
                             system: config.system.clone()
                         };
 
@@ -222,7 +221,7 @@ mod tests {
 
     #[test]
     fn test_setup_logger() {
-        let config = config::Config::new(env::consts::OS);
+        let config = config::Config::new(utils::get_os());
         fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap();
         setup_logger(config.clone());
     }
@@ -231,7 +230,7 @@ mod tests {
 
     #[test]
     fn test_push_template() {
-        let config = config::Config::new(env::consts::OS);
+        let config = config::Config::new(utils::get_os());
         fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
         block_on(push_template("file", config.clone()));
         block_on(push_template("network", config.clone()));
@@ -241,7 +240,7 @@ mod tests {
 
     #[test]
     fn test_setup_events() {
-        let config = config::Config::new(env::consts::OS);
+        let config = config::Config::new(utils::get_os());
         fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
         setup_events("file", config.clone());
         setup_events("network", config.clone());
@@ -251,7 +250,7 @@ mod tests {
 
     #[test]
     fn test_process_event(){
-        let config = config::Config::new(env::consts::OS);
+        let config = config::Config::new(utils::get_os());
         fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap();
         fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
         let event = Event {
@@ -265,7 +264,7 @@ mod tests {
             labels: Vec::new(),
             operation: "TEST".to_string(),
             checksum: "UNKNOWN".to_string(),
-            pid: 0,
+            fpid: 0,
             system: "test".to_string()
         };
         block_on(process_event("file", event, String::from("fim"), config.clone()));

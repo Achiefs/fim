@@ -1,11 +1,13 @@
 // Copyright (C) 2021, Achiefs.
 
 // To get file checksums
-use hex::encode;
+use hex::{encode, decode};
 use sha3::{Sha3_512, Digest};
 use std::io::ErrorKind;
 // To log the program process
 use log::*;
+
+use std::str;
 
 // To calculate file content hash in sha512 format (SHA3 implementation)
 pub fn get_checksum(file: String) -> String {
@@ -29,6 +31,14 @@ pub fn get_checksum(file: String) -> String {
             }
         },
     }
+}
+
+// ----------------------------------------------------------------------------
+
+pub fn hex_to_ascii(hex: String) -> String {
+    let bytes = decode(hex).unwrap();
+    String::from(str::from_utf8(&bytes).unwrap())
+        .replace('\u{0000}', " ")
 }
 
 // ----------------------------------------------------------------------------

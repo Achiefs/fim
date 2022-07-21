@@ -3,7 +3,7 @@
   "index_patterns": [ "fim-*" ],
   "mappings": {
     "properties": {
-      "pid": { "type": "integer" },
+      "fpid": { "type": "integer" },
       "timestamp": { "type": "date" },
       "file": { "type": "keyword" },
       "hostname": { "type": "keyword" },
@@ -22,7 +22,7 @@
       "auto_expand_replicas": "0-all",
       "query": {
         "default_field": [
-          "pid",
+          "fpid",
           "timestamp",
           "file",
           "hostname",

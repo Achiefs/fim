@@ -29,7 +29,7 @@ pub struct Event {
     pub labels: Vec<String>,
     pub operation: String,
     pub checksum: String,
-    pub pid: u32,
+    pub fpid: u32,
     pub system: String
 }
 
@@ -41,7 +41,7 @@ impl Event {
             "timestamp": self.timestamp.clone(),
             "hostname": self.hostname.clone(),
             "node": self.node.clone(),
-            "pid": self.pid.clone(),
+            "fpid": self.fpid.clone(),
             "version": self.version.clone(),
             "labels": self.labels.clone(),
             "operation": self.operation.clone(),
@@ -83,7 +83,7 @@ impl Event {
             "timestamp": self.timestamp.clone(),
             "hostname": self.hostname.clone(),
             "node": self.node.clone(),
-            "pid": self.pid.clone(),
+            "fpid": self.fpid.clone(),
             "version": self.version.clone(),
             "labels": self.labels.clone(),
             "operation": self.operation.clone(),
@@ -164,7 +164,7 @@ mod tests {
             labels: Vec::new(),
             operation: "TEST".to_string(),
             checksum: "UNKNOWN".to_string(),
-            pid: 0,
+            fpid: 0,
             system: "test".to_string()
         }
     }
@@ -183,7 +183,7 @@ mod tests {
         assert_eq!(evt.path, PathBuf::new());
         assert_eq!(evt.labels, Vec::<String>::new());
         assert_eq!(evt.operation, String::from("TEST"));
-        assert_eq!(evt.pid, 0);
+        assert_eq!(evt.fpid, 0);
         assert_eq!(evt.system, String::from("test"));
     }
 
@@ -223,7 +223,7 @@ mod tests {
 
     #[test]
     fn test_format_json() {
-        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"hostname\":\"Hostname\",\"id\":\"Test_id\",\"operation\":\"TEST\",\"labels\":[],\"node\":\"FIM\",\"pid\":0,\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}";
+        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"hostname\":\"Hostname\",\"id\":\"Test_id\",\"operation\":\"TEST\",\"labels\":[],\"node\":\"FIM\",\"fpid\":0,\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}";
         assert_eq!(create_test_event().format_json(), expected);
     }
 
@@ -236,7 +236,7 @@ mod tests {
 
         evt.log_event(filename.clone());
         let contents = fs::read_to_string(filename.clone());
-        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"hostname\":\"Hostname\",\"id\":\"Test_id\",\"operation\":\"TEST\",\"labels\":[],\"node\":\"FIM\",\"pid\":0,\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}\n";
+        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"hostname\":\"Hostname\",\"id\":\"Test_id\",\"operation\":\"TEST\",\"labels\":[],\"node\":\"FIM\",\"fpid\":0,\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}\n";
         assert_eq!(contents.unwrap(), expected);
         remove_test_file(filename.clone());
     }
