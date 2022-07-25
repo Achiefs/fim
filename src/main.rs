@@ -136,6 +136,7 @@ async fn main() {
         watcher.watch(path, RecursiveMode::Recursive).unwrap();
     }
     watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::Recursive).unwrap();
+    let mut last_msg = String::from("0");
 
     // Main loop, receive any produced event and write it into the events log.
     loop {
@@ -145,9 +146,12 @@ async fn main() {
                 debug!("Event registered: {:?}", raw_event);
                 if raw_event.path.clone().unwrap().to_str().unwrap() == logreader::AUDIT_LOG_PATH {
                     let audit_event = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH));
-                    audit_event.log_event(config.events_file.clone());
+                    if last_msg != audit_event.timestamp {
+                        audit_event.log_event(config.events_file.clone());
+                        last_msg = audit_event.timestamp;
+                    }
                 }else{
-                    let event_path = Path::new(raw_event.path.as_ref().unwrap().to_str().unwrap());
+                    /*let event_path = Path::new(raw_event.path.as_ref().unwrap().to_str().unwrap());
                     let event_parent_path = event_path.parent().unwrap().to_str().unwrap();
                     let event_filename = event_path.file_name().unwrap();
 
@@ -200,7 +204,7 @@ async fn main() {
                         process_event(destination.clone().as_str(), event, index_name.clone(), config.clone()).await;
                     }else{
                         debug!("Event ignored not stored in alerts");
-                    }
+                    }*/
                 }
             },
             Err(e) => error!("Watch error: {:?}", e),

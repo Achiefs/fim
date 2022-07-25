@@ -15,6 +15,8 @@ use serde_json::{json, to_string};
 //use std::path::PathBuf;
 // To manage HTTP requests
 //use reqwest::Client;
+// To use HashMap
+use std::collections::HashMap;
 
 // To get configuration constants
 use crate::config;
@@ -49,18 +51,7 @@ pub struct Event {
     pub mode: String,
     pub cap_frootid: String,
     pub ouid: String,
-    pub parent_inode: String,
-    pub parent_cap_fe: String,
-    pub parent_cap_frootid: String,
-    pub parent_ouid: String,
-    pub parent_item: String,
-    pub parent_cap_fver: String,
-    pub parent_mode: String,
-    pub parent_rdev: String,
-    pub parent_cap_fi: String,
-    pub parent_cap_fp: String,
-    pub parent_dev: String,
-    pub parent_ogid: String,
+    pub parent: HashMap<String, String>,
     pub cwd: String,
     pub syscall: String,
     pub ppid: String,
@@ -92,6 +83,20 @@ pub struct Event {
 
 impl Event {
     pub fn new() -> Self {
+        let parent = HashMap::from([
+            (String::from("inode"), String::from("")),
+            (String::from("cap_fe"), String::from("")),
+            (String::from("cap_frootid"), String::from("")),
+            (String::from("ouid"), String::from("")),
+            (String::from("item"), String::from("")),
+            (String::from("cap_fver"), String::from("")),
+            (String::from("mode"), String::from("")),
+            (String::from("rdev"), String::from("")),
+            (String::from("cap_fi"), String::from("")),
+            (String::from("cap_fp"), String::from("")),
+            (String::from("dev"), String::from("")),
+            (String::from("ogid"), String::from("")),
+        ]);
         Event {
             id: String::from(""),
             timestamp: String::from(""),
@@ -120,18 +125,7 @@ impl Event {
             mode: String::from(""),
             cap_frootid: String::from(""),
             ouid: String::from(""),
-            parent_inode: String::from(""),
-            parent_cap_fe: String::from(""),
-            parent_cap_frootid: String::from(""),
-            parent_ouid: String::from(""),
-            parent_item: String::from(""),
-            parent_cap_fver: String::from(""),
-            parent_mode: String::from(""),
-            parent_rdev: String::from(""),
-            parent_cap_fi: String::from(""),
-            parent_cap_fp: String::from(""),
-            parent_dev: String::from(""),
-            parent_ogid: String::from(""),
+            parent: parent,
             cwd: String::from(""),
             syscall: String::from(""),
             ppid: String::from(""),
@@ -192,18 +186,7 @@ impl Event {
             "mode": self.mode.clone(),
             "cap_frootid": self.cap_frootid.clone(),
             "ouid": self.ouid.clone(),
-            "parent_inode": self.parent_inode.clone(),
-            "parent_cap_fe": self.parent_cap_fe.clone(),
-            "parent_cap_frootid": self.parent_cap_frootid.clone(),
-            "parent_ouid": self.parent_ouid.clone(),
-            "parent_item": self.parent_item.clone(),
-            "parent_cap_fver": self.parent_cap_fver.clone(),
-            "parent_mode": self.parent_mode.clone(),
-            "parent_rdev": self.parent_rdev.clone(),
-            "parent_cap_fi": self.parent_cap_fi.clone(),
-            "parent_cap_fp": self.parent_cap_fp.clone(),
-            "parent_dev": self.parent_dev.clone(),
-            "parent_ogid": self.parent_ogid.clone(),
+            "parent": self.parent.clone(),
             "cwd": self.cwd.clone(),
             "syscall": self.syscall.clone(),
             "ppid": self.ppid.clone(),
@@ -291,61 +274,50 @@ impl Event {
 impl fmt::Debug for Event {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
         f.debug_struct("")
-          .field("id", &self.id)
-          .field("path", &self.path)
-          .field("operation", &self.operation)
-          .field("file", &self.file)
-          .field("timestamp", &self.timestamp)
-          .field("proctitle", &self.proctitle)
-          .field("cap_fver", &self.cap_fver)
-          .field("inode", &self.inode)
-          .field("cap_fp", &self.cap_fp)
-          .field("cap_fe", &self.cap_fe)
-          .field("item", &self.item)
-          .field("cap_fi", &self.cap_fi)
-          .field("dev", &self.dev)
-          .field("mode", &self.mode)
-          .field("cap_frootid", &self.cap_frootid)
-          .field("ouid", &self.ouid)
-          .field("parent_inode", &self.parent_inode)
-          .field("parent_cap_fe", &self.parent_cap_fe)
-          .field("parent_cap_frootid", &self.parent_cap_frootid)
-          .field("parent_ouid", &self.parent_ouid)
-          .field("parent_item", &self.parent_item)
-          .field("parent_cap_fver", &self.parent_cap_fver)
-          .field("parent_mode", &self.parent_mode)
-          .field("parent_rdev", &self.parent_rdev)
-          .field("parent_cap_fi", &self.parent_cap_fi)
-          .field("parent_cap_fp", &self.parent_cap_fp)
-          .field("parent_dev", &self.parent_dev)
-          .field("parent_ogid", &self.parent_ogid)
-          .field("cwd", &self.cwd)
-          .field("syscall", &self.syscall)
-          .field("ppid", &self.ppid)
-          .field("comm", &self.comm)
-          .field("fsuid", &self.fsuid)
-          .field("pid", &self.pid)
-          .field("a0", &self.a0)
-          .field("a1", &self.a1)
-          .field("a2", &self.a2)
-          .field("a3", &self.a3)
-          .field("arch", &self.arch)
-          .field("auid", &self.auid)
-          .field("items", &self.items)
-          .field("gid", &self.gid)
-          .field("euid", &self.euid)
-          .field("sgid", &self.sgid)
-          .field("uid", &self.uid)
-          .field("tty", &self.tty)
-          .field("success", &self.success)
-          .field("exit", &self.exit)
-          .field("ses", &self.ses)
-          .field("key", &self.key)
-          .field("suid", &self.suid)
-          .field("egid", &self.egid)
-          .field("fsgid", &self.fsgid)
-          .field("exe", &self.exe)
-          .finish()
+            .field("id", &self.id)
+            .field("path", &self.path)
+            .field("operation", &self.operation)
+            .field("file", &self.file)
+            .field("timestamp", &self.timestamp)
+            .field("proctitle", &self.proctitle)
+            .field("cap_fver", &self.cap_fver)
+            .field("inode", &self.inode)
+            .field("cap_fp", &self.cap_fp)
+            .field("cap_fe", &self.cap_fe)
+            .field("item", &self.item)
+            .field("cap_fi", &self.cap_fi)
+            .field("dev", &self.dev)
+            .field("mode", &self.mode)
+            .field("cap_frootid", &self.cap_frootid)
+            .field("ouid", &self.ouid)
+            .field("parent", &self.parent)
+            .field("cwd", &self.cwd)
+            .field("syscall", &self.syscall)
+            .field("ppid", &self.ppid)
+            .field("comm", &self.comm)
+            .field("fsuid", &self.fsuid)
+            .field("pid", &self.pid)
+            .field("a0", &self.a0)
+            .field("a1", &self.a1)
+            .field("a2", &self.a2)
+            .field("a3", &self.a3)
+            .field("arch", &self.arch)
+            .field("auid", &self.auid)
+            .field("items", &self.items)
+            .field("gid", &self.gid)
+            .field("euid", &self.euid)
+            .field("sgid", &self.sgid)
+            .field("uid", &self.uid)
+            .field("tty", &self.tty)
+            .field("success", &self.success)
+            .field("exit", &self.exit)
+            .field("ses", &self.ses)
+            .field("key", &self.key)
+            .field("suid", &self.suid)
+            .field("egid", &self.egid)
+            .field("fsgid", &self.fsgid)
+            .field("exe", &self.exe)
+            .finish()
     }
 }
 

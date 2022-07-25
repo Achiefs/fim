@@ -28,16 +28,29 @@ pub fn read_log(file: String) -> Event {
 
     let mut data: Vec<HashMap<String, String>> = Vec::new();
     for line in rev_lines {
-        data.push(parse_audit_log(line));
-
-        if data.first().unwrap()["msg"] != data.last().unwrap()["msg"] { break; }
+        if data.is_empty() {
+            data.push(parse_audit_log(line));
+        }else{
+            let line_info = parse_audit_log(line);
+            if line_info["msg"] == data.last().unwrap()["msg"] {
+                data.push(line_info);
+            }else{ break; }
+        }
     }
-    if data.len() == 6 {
+    if data.last().unwrap()["type"] == "SYSCALL" {
         let proctitle_data = data[0].clone();
         let path_data = data[1].clone();
-        let parent_path_data = data[2].clone();
-        let cwd_data = data[3].clone();
-        let syscall_data = data[4].clone();
+
+        let parent_path_data = if data[data.len()-3].clone()["type"] == "PATH" {
+            data[data.len()-3].clone()
+        }else{
+            HashMap::new()
+        };
+        let position = if parent_path_data.is_empty() { data.len()-3
+        }else{ data.len()-2 };
+        //let parent_path_data = data[data.len()-3].clone();
+        let cwd_data = data[position].clone();
+        let syscall_data = data[position+1].clone();
 
         let command = if proctitle_data["proctitle"].contains("\"") {
             proctitle_data["proctitle"].clone()
@@ -48,15 +61,15 @@ pub fn read_log(file: String) -> Event {
         Event{
             id: utils::get_uuid(),
             proctitle: proctitle_data["proctitle"].clone(),
-            command: command,
+            command: command.replace('\"', ""),
             timestamp: proctitle_data["msg"].clone(),
             hostname: utils::get_hostname(),
             node: String::from(""),
             version: String::from(config::VERSION),
             labels: Vec::<String>::new(),
             operation: path_data["nametype"].clone(),
-            path: parent_path_data["name"].clone(),
-            file: path_data["name"].clone(),
+            path: parent_path_data["name"].clone().replace('\"', ""),
+            file: path_data["name"].clone().replace('\"', ""),
             checksum: hash::get_checksum(format!("{}/{}", parent_path_data["name"].clone(), path_data["name"].clone())),
             fpid: utils::get_pid(),
             system: utils::get_os(),
@@ -75,23 +88,12 @@ pub fn read_log(file: String) -> Event {
             cap_frootid: path_data["cap_frootid"].clone(),
             ouid: path_data["ouid"].clone(),
 
-            parent_inode: parent_path_data["inode"].clone(),
-            parent_cap_fe: parent_path_data["cap_fe"].clone(),
-            parent_cap_frootid: parent_path_data["cap_frootid"].clone(),
-            parent_ouid: parent_path_data["ouid"].clone(),
-            parent_item: parent_path_data["item"].clone(),
-            parent_cap_fver: parent_path_data["cap_fver"].clone(),
-            parent_mode: parent_path_data["mode"].clone(),
-            parent_rdev: parent_path_data["rdev"].clone(),
-            parent_cap_fi: parent_path_data["cap_fi"].clone(),
-            parent_cap_fp: parent_path_data["cap_fp"].clone(),
-            parent_dev: parent_path_data["dev"].clone(),
-            parent_ogid: parent_path_data["ogid"].clone(),
-            cwd: cwd_data["cwd"].clone(),
+            parent: parent_path_data,
+            cwd: cwd_data["cwd"].clone().replace('\"', ""),
 
             syscall: syscall_data["syscall"].clone(),
             ppid: syscall_data["ppid"].clone(),
-            comm: syscall_data["comm"].clone(),
+            comm: syscall_data["comm"].clone().replace('\"', ""),
             fsuid: syscall_data["fsuid"].clone(),
             pid: syscall_data["pid"].clone(),
             a0: syscall_data["a0"].clone(),
@@ -109,11 +111,11 @@ pub fn read_log(file: String) -> Event {
             success: syscall_data["success"].clone(),
             exit: syscall_data["exit"].clone(),
             ses: syscall_data["ses"].clone(),
-            key: syscall_data["key"].clone(),
+            key: syscall_data["key"].clone().replace('\"', ""),
             suid: syscall_data["suid"].clone(),
             egid: syscall_data["egid"].clone(),
             fsgid: syscall_data["fsgid"].clone(),
-            exe: syscall_data["exe"].clone(),
+            exe: syscall_data["exe"].clone().replace('\"', ""),
             source: String::from("audit")
         }
     }else{
