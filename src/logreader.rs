@@ -39,10 +39,16 @@ pub fn read_log(file: String) -> Event {
         let cwd_data = data[3].clone();
         let syscall_data = data[4].clone();
 
+        let command = if proctitle_data["proctitle"].contains("\"") {
+            proctitle_data["proctitle"].clone()
+        }else{
+            hash::hex_to_ascii(proctitle_data["proctitle"].clone())
+        };
+
         Event{
             id: utils::get_uuid(),
             proctitle: proctitle_data["proctitle"].clone(),
-            command: hash::hex_to_ascii(proctitle_data["proctitle"].clone()),
+            command: command,
             timestamp: proctitle_data["msg"].clone(),
             hostname: utils::get_hostname(),
             node: String::from(""),
@@ -51,7 +57,7 @@ pub fn read_log(file: String) -> Event {
             operation: path_data["nametype"].clone(),
             path: parent_path_data["name"].clone(),
             file: path_data["name"].clone(),
-            checksum: String::from(""),
+            checksum: hash::get_checksum(format!("{}/{}", parent_path_data["name"].clone(), path_data["name"].clone())),
             fpid: utils::get_pid(),
             system: utils::get_os(),
 
