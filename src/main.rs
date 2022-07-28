@@ -133,7 +133,11 @@ async fn main() {
             },
             None => info!("Ignore for '{}' not set", path)
         };
-        watcher.watch(path, RecursiveMode::Recursive).unwrap();
+        let audit: bool = match m["audit"].as_bool() {
+            None => false,
+            Some(b) => b
+        };
+        if !audit { watcher.watch(path, RecursiveMode::Recursive).unwrap(); }
     }
     watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::Recursive).unwrap();
     let mut last_msg = String::from("0");
@@ -151,7 +155,7 @@ async fn main() {
                         last_msg = audit_event.timestamp;
                     }
                 }else{
-                    /*let event_path = Path::new(raw_event.path.as_ref().unwrap().to_str().unwrap());
+                    let event_path = Path::new(raw_event.path.as_ref().unwrap().to_str().unwrap());
                     let event_parent_path = event_path.parent().unwrap().to_str().unwrap();
                     let event_filename = event_path.file_name().unwrap();
 
@@ -204,7 +208,7 @@ async fn main() {
                         process_event(destination.clone().as_str(), event, index_name.clone(), config.clone()).await;
                     }else{
                         debug!("Event ignored not stored in alerts");
-                    }*/
+                    }
                 }
             },
             Err(e) => error!("Watch error: {:?}", e),

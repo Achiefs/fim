@@ -58,11 +58,16 @@ pub fn read_log(file: String) -> Event {
             hash::hex_to_ascii(proctitle_data["proctitle"].clone())
         };
 
+        let clean_timestamp: String = String::from(proctitle_data["msg"].clone()
+            .replace("audit(", "")
+            .replace(".", "")
+            .split(":").collect::<Vec<&str>>()[0]); // Getting the 13 digits timestamp
+
         Event{
             id: utils::get_uuid(),
             proctitle: proctitle_data["proctitle"].clone(),
             command: command.replace('\"', ""),
-            timestamp: proctitle_data["msg"].clone(),
+            timestamp: clean_timestamp,
             hostname: utils::get_hostname(),
             node: String::from(""),
             version: String::from(config::VERSION),
