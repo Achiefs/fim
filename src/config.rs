@@ -5,6 +5,7 @@ pub const VERSION: &str = "0.4.0";
 pub const NETWORK_MODE: &str = "NETWORK";
 pub const FILE_MODE: &str = "FILE";
 pub const BOTH_MODE: &str = "BOTH";
+pub const MACHINE_ID_PATH: &str = "/etc/machine-id";
 const CONFIG_LINUX_PATH: &str = "/etc/fim/config.yml";
 
 // To parse files in yaml format
@@ -17,6 +18,8 @@ use std::io::Write;
 use std::path::Path;
 // To set log filter level
 use simplelog::LevelFilter;
+// To manage common functions
+use crate::utils;
 
 // ----------------------------------------------------------------------------
 
@@ -147,8 +150,14 @@ impl Config {
         let node = match yaml[0]["node"].as_str() {
             Some(value) => String::from(value),
             None => {
-                println!("[WARN] node not found in config.yml, using 'FIM'.");
-                String::from("FIM")
+                match system {
+                    "linux" => utils::get_machine_id(),
+                    "macos" => utils::get_machine_id(),
+                    _ => {
+                        println!("[WARN] node not found in config.yml, using hostname.");
+                        utils::get_hostname()
+                    }
+                }
             }
         };
 

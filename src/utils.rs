@@ -6,6 +6,11 @@ use uuid::Uuid;
 use std::process;
 // To get Operating system
 use std::env;
+// To use files IO operations.
+use std::fs::File;
+use std::io::Read;
+// To get config constants
+use crate::config;
 
 // ----------------------------------------------------------------------------
 
@@ -37,6 +42,27 @@ pub fn get_pid() -> u32 {
 
 pub fn get_os() -> String {
     env::consts::OS.to_string()
+}
+
+// ----------------------------------------------------------------------------
+
+pub fn read_file(path: String) -> String {
+    let mut file = File::open(path.clone()).expect(
+        format!("Unable to open file {}", path.clone()).as_str()
+    );
+    let mut contents = String::new();
+
+    file.read_to_string(&mut contents).expect(
+        format!("Unable to read file {}", path.clone()).as_str()
+    );
+    contents
+}
+
+// ----------------------------------------------------------------------------
+
+// Only supported in Linux
+pub fn get_machine_id() -> String {
+    read_file(String::from(config::MACHINE_ID_PATH))
 }
 
 // ----------------------------------------------------------------------------

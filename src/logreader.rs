@@ -16,13 +16,13 @@ use crate::auditevent::Event;
 use crate::utils;
 // To get configuration constants
 use crate::config;
-// To get manage checksums and conversions
+// To manage checksums and conversions
 use crate::hash;
 
 // ----------------------------------------------------------------------------
 
 // Read file to extract last data until the Audit ID changes
-pub fn read_log(file: String) -> Event {
+pub fn read_log(file: String, config: config::Config) -> Event {
     let log = File::open(file).unwrap();
     let rev_lines = RevLines::new(BufReader::new(log)).unwrap();
 
@@ -48,7 +48,6 @@ pub fn read_log(file: String) -> Event {
         };
         let position = if parent_path_data.is_empty() { data.len()-3
         }else{ data.len()-2 };
-        //let parent_path_data = data[data.len()-3].clone();
         let cwd_data = data[position].clone();
         let syscall_data = data[position+1].clone();
 
@@ -69,9 +68,9 @@ pub fn read_log(file: String) -> Event {
             command: command.replace('\"', ""),
             timestamp: clean_timestamp,
             hostname: utils::get_hostname(),
-            node: String::from(""),
+            node: config.node.clone(),
             version: String::from(config::VERSION),
-            labels: Vec::<String>::new(),
+            labels: Vec::<String>::new(), //////////// search labels
             operation: path_data["nametype"].clone(),
             path: parent_path_data["name"].clone().replace('\"', ""),
             file: path_data["name"].clone().replace('\"', ""),

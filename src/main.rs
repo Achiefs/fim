@@ -149,7 +149,7 @@ async fn main() {
                 // Get the event path and filename
                 debug!("Event registered: {:?}", raw_event);
                 if raw_event.path.clone().unwrap().to_str().unwrap() == logreader::AUDIT_LOG_PATH {
-                    let audit_event = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH));
+                    let audit_event = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone());
                     if last_msg != audit_event.timestamp {
                         audit_event.log_event(config.events_file.clone());
                         last_msg = audit_event.timestamp;

@@ -6,7 +6,7 @@ use sha3::{Sha3_512, Digest};
 use std::io::ErrorKind;
 // To log the program process
 use log::*;
-
+// To manage hex to ascii conversion
 use std::str;
 
 // To calculate file content hash in sha512 format (SHA3 implementation)
