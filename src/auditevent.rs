@@ -85,7 +85,7 @@ pub struct Event {
 
 impl Event {
     pub fn new() -> Self {
-        let empty = empty.clone();
+        let empty = String::from("");
         let parent = HashMap::from([
             (String::from("inode"), empty.clone()),
             (String::from("cap_fe"), empty.clone()),

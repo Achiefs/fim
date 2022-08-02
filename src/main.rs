@@ -148,44 +148,48 @@ async fn main() {
             Ok(raw_event) => {
                 // Get the event path and filename
                 debug!("Event registered: {:?}", raw_event);
-                if raw_event.path.clone().unwrap().to_str().unwrap() == logreader::AUDIT_LOG_PATH {
-                    let audit_event = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone());
-                    if last_msg != audit_event.timestamp {
-                        audit_event.log_event(config.events_file.clone());
-                        last_msg = audit_event.timestamp;
+
+                let event_path = Path::new(raw_event.path.as_ref().unwrap().to_str().unwrap());
+                let event_parent_path = event_path.parent().unwrap().to_str().unwrap();
+                let event_filename = event_path.file_name().unwrap();
+
+                // Iterate over monitoring paths to match ignore string and ignore event or not
+                let monitor_vector = config.monitor.clone().to_vec();
+                let monitor_index = monitor_vector.iter().position(|it| {
+                    let path = it["path"].as_str().unwrap();
+                    let value = if path.ends_with('/') || path.ends_with('\\'){ utils::pop(path) }else{ path };
+                    match event_parent_path.contains(value) {
+                        true => true,
+                        false => event_path.to_str().unwrap().contains(value)
                     }
-                }else{
-                    let event_path = Path::new(raw_event.path.as_ref().unwrap().to_str().unwrap());
-                    let event_parent_path = event_path.parent().unwrap().to_str().unwrap();
-                    let event_filename = event_path.file_name().unwrap();
+                });
 
-                    // Iterate over monitoring paths to match ignore string and ignore event or not
-                    let monitor_vector = config.monitor.clone().to_vec();
-                    let monitor_index = monitor_vector.iter().position(|it| {
-                        let path = it["path"].as_str().unwrap();
-                        let value = if path.ends_with('/') || path.ends_with('\\'){ utils::pop(path) }else{ path };
-                        match event_parent_path.contains(value) {
-                            true => true,
-                            false => event_path.to_str().unwrap().contains(value)
+
+                if monitor_index.is_some() &&
+                    match monitor_vector[monitor_index.unwrap()]["ignore"].as_vec() {
+                        Some(igv) => ! igv.to_vec().iter().any(|ignore| event_filename.to_str().unwrap().contains(ignore.as_str().unwrap()) ),
+                        None => true
+                }{
+
+                    let current_date = OffsetDateTime::now_utc();
+                    let index_name = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
+                    let current_timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
+                    let current_hostname = utils::get_hostname();
+                    let yaml_labels = match config.monitor[monitor_index.unwrap()]["labels"].clone().into_vec() {
+                        Some(lb) => lb,
+                        None => Vec::new()
+                    };
+                    let current_labels = yaml_labels.to_vec().iter().map(|element| String::from(element.as_str().unwrap()) ).collect();
+                    let op = raw_event.op.unwrap();
+                    let path = raw_event.path.clone().unwrap();
+
+                    if raw_event.path.clone().unwrap().to_str().unwrap() == logreader::AUDIT_LOG_PATH {
+                        let audit_event = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone());
+                        if last_msg != audit_event.timestamp {
+                            audit_event.log_event(config.events_file.clone());
+                            last_msg = audit_event.timestamp;
                         }
-                    });
-
-                    if monitor_index.is_some() &&
-                        match monitor_vector[monitor_index.unwrap()]["ignore"].as_vec() {
-                            Some(igv) => ! igv.to_vec().iter().any(|ignore| event_filename.to_str().unwrap().contains(ignore.as_str().unwrap()) ),
-                            None => true
-                        }{
-
-                        let current_timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
-                        let current_hostname = utils::get_hostname();
-                        let yaml_labels = match config.monitor[monitor_index.unwrap()]["labels"].clone().into_vec() {
-                            Some(lb) => lb,
-                            None => Vec::new()
-                        };
-                        let current_labels = yaml_labels.to_vec().iter().map(|element| String::from(element.as_str().unwrap()) ).collect();
-                        let op = raw_event.op.unwrap();
-                        let path = raw_event.path.unwrap().clone();
-
+                    }else{
                         let event = Event {
                             id: utils::get_uuid(),
                             timestamp: current_timestamp,
@@ -201,17 +205,12 @@ async fn main() {
                             system: config.system.clone()
                         };
 
-                        let current_date = OffsetDateTime::now_utc();
-                        let index_name = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
-
                         debug!("Event received: {:?}", event);
                         process_event(destination.clone().as_str(), event, index_name.clone(), config.clone()).await;
-                    }else{
-                        debug!("Event ignored not stored in alerts");
                     }
-                }
+                }else{ debug!("Event ignored not stored in alerts"); }
             },
-            Err(e) => error!("Watch error: {:?}", e),
+            Err(e) => error!("Watch error: {:?}", e)
         }
     }
 }
