@@ -232,6 +232,42 @@ impl Config {
         }
     }
 
+    // ------------------------------------------------------------------------
+
+    pub fn get_index(&self, raw_path: &str) -> usize {
+        let event_path = Path::new(raw_path);
+        let event_parent_path = event_path.parent().unwrap().to_str().unwrap();
+
+        // Iterate over monitoring paths to match ignore string and ignore event or not
+        let vector = self.monitor.clone().to_vec();
+        vector.iter().position(|it| {
+            let path = it["path"].as_str().unwrap();
+            let value = if path.ends_with('/') || path.ends_with('\\'){ utils::pop(path) }else{ path };
+            match event_parent_path.contains(value) {
+                true => true,
+                false => event_path.to_str().unwrap().contains(value)
+            }
+        }).unwrap()
+    }
+
+    // ------------------------------------------------------------------------
+
+    pub fn get_labels(&self, index: usize) -> Vec<String> {
+        match self.monitor[index]["labels"].clone().into_vec() {
+            Some(labels) => labels,
+            None => Vec::new()
+        }.to_vec().iter().map(|element| String::from(element.as_str().unwrap()) ).collect()
+    }
+
+    // ------------------------------------------------------------------------
+
+    pub fn match_ignore(&self, index: usize, filename: &str) -> bool {
+        match self.monitor[index]["ignore"].as_vec() {
+            Some(igv) => ! igv.to_vec().iter().any(|ignore| filename.contains(ignore.as_str().unwrap()) ),
+            None => true
+        }
+    }
+
 }
 
 // ----------------------------------------------------------------------------

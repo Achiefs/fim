@@ -62,6 +62,10 @@ pub fn read_log(file: String, config: config::Config) -> Event {
             .replace(".", "")
             .split(":").collect::<Vec<&str>>()[0]); // Getting the 13 digits timestamp
 
+        let event_path = parent_path_data["name"].clone().replace('\"', "");
+        let index = config.get_index(event_path.as_str());
+        let labels = config.get_labels(index);
+
         Event{
             id: utils::get_uuid(),
             proctitle: proctitle_data["proctitle"].clone(),
@@ -70,9 +74,9 @@ pub fn read_log(file: String, config: config::Config) -> Event {
             hostname: utils::get_hostname(),
             node: config.node.clone(),
             version: String::from(config::VERSION),
-            labels: Vec::<String>::new(), //////////// search labels
+            labels,
             operation: path_data["nametype"].clone(),
-            path: parent_path_data["name"].clone().replace('\"', ""),
+            path: event_path,
             file: path_data["name"].clone().replace('\"', ""),
             checksum: hash::get_checksum(format!("{}/{}", parent_path_data["name"].clone(), path_data["name"].clone())),
             fpid: utils::get_pid(),

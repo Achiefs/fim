@@ -100,7 +100,7 @@ impl Event {
             (String::from("dev"), empty.clone()),
             (String::from("ogid"), empty.clone()),
         ]);
-        
+
         Event {
             id: utils::get_uuid(),
             timestamp: empty.clone(),
@@ -159,6 +159,69 @@ impl Event {
             source: String::from("audit")
         }
     }
+
+    // ------------------------------------------------------------------------
+
+    pub fn clone(&self) -> Self {
+        Event {
+            id: self.id.clone(),
+            timestamp: self.timestamp.clone(),
+            hostname: self.hostname.clone(),
+            node: self.node.clone(),
+            version: self.version.clone(),
+            path: self.path.clone(),
+            file: self.file.clone(),
+            labels: self.labels.clone(),
+            operation: self.operation.clone(),
+            checksum: self.checksum.clone(),
+            fpid: self.fpid.clone(),
+            system: self.system.clone(),
+            command: self.command.clone(),
+            ogid: self.ogid.clone(),
+            rdev: self.rdev.clone(),
+            proctitle: self.proctitle.clone(),
+            cap_fver: self.cap_fver.clone(),
+            inode: self.inode.clone(),
+            cap_fp: self.cap_fp.clone(),
+            cap_fe: self.cap_fe.clone(),
+            item: self.item.clone(),
+            cap_fi: self.cap_fi.clone(),
+            dev: self.dev.clone(),
+            mode: self.mode.clone(),
+            cap_frootid: self.cap_frootid.clone(),
+            ouid: self.ouid.clone(),
+            parent: self.parent.clone(),
+            cwd: self.cwd.clone(),
+            syscall: self.syscall.clone(),
+            ppid: self.ppid.clone(),
+            comm: self.comm.clone(),
+            fsuid: self.fsuid.clone(),
+            pid: self.pid.clone(),
+            a0: self.a0.clone(),
+            a1: self.a1.clone(),
+            a2: self.a2.clone(),
+            a3: self.a3.clone(),
+            arch: self.arch.clone(),
+            auid: self.auid.clone(),
+            items: self.items.clone(),
+            gid: self.gid.clone(),
+            euid: self.euid.clone(),
+            sgid: self.sgid.clone(),
+            uid: self.uid.clone(),
+            tty: self.tty.clone(),
+            success: self.success.clone(),
+            exit: self.exit.clone(),
+            ses: self.ses.clone(),
+            key: self.key.clone(),
+            suid: self.suid.clone(),
+            egid: self.egid.clone(),
+            fsgid: self.fsgid.clone(),
+            exe: self.exe.clone(),
+            source: self.source.clone(),
+        }
+    }
+
+    // ------------------------------------------------------------------------
 
     // Get formatted string with all required data
     fn format_json(&self) -> String {
