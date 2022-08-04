@@ -11,6 +11,8 @@ use std::fs::File;
 use std::io::Read;
 // To get config constants
 use crate::config;
+// To manage paths
+use std::path::Path;
 
 // ----------------------------------------------------------------------------
 
@@ -63,6 +65,12 @@ pub fn read_file(path: String) -> String {
 // Only supported in Linux
 pub fn get_machine_id() -> String {
     read_file(String::from(config::MACHINE_ID_PATH))
+}
+
+// ----------------------------------------------------------------------------
+
+pub fn get_filename_path(path: &str) -> String {
+    String::from(Path::new(path).file_name().unwrap().to_str().unwrap())
 }
 
 // ----------------------------------------------------------------------------

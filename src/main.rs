@@ -133,13 +133,11 @@ async fn main() {
             },
             None => info!("Ignore for '{}' not set", path)
         };
-        let audit: bool = match m["audit"].as_bool() {
-            None => false,
-            Some(b) => b
-        };
-        if !audit { watcher.watch(path, RecursiveMode::Recursive).unwrap(); }
+        watcher.watch(path, RecursiveMode::Recursive).unwrap();
     }
-    watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::Recursive).unwrap();
+    if ! config.audit.is_empty() {
+        watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::Recursive).unwrap();
+    }
     let mut last_msg = String::from("0");
 
     // Main loop, receive any produced event and write it into the events log.
@@ -147,12 +145,10 @@ async fn main() {
         match rx.recv() {
             Ok(raw_event) => {
                 // Get the event path and filename
-                debug!("Event registered: {:?}", raw_event);
+                debug!("Event received: {:?}", raw_event);
 
                 let event_path = Path::new(raw_event.path.as_ref().unwrap().to_str().unwrap());
                 let event_filename = event_path.file_name().unwrap();
-                let index = config.get_index(event_path.to_str().unwrap());
-                let labels = config.get_labels(index);
 
                 let current_date = OffsetDateTime::now_utc();
                 let index_name = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
@@ -163,31 +159,42 @@ async fn main() {
 
                 if raw_event.path.clone().unwrap().to_str().unwrap() == logreader::AUDIT_LOG_PATH {
                     let audit_event = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone());
+                    let index = config.get_index(audit_event.clone().path.as_str(), 
+                        utils::get_filename_path(audit_event.clone().file.as_str()).as_str(), config.audit.clone().to_vec());
+                    let _labels = config.get_labels(index);
+
                     if last_msg != audit_event.timestamp {
-                        audit_event.clone().log_event(config.events_file.clone());
+                        if config.audit[index]["path"].as_str().unwrap().contains(&audit_event.clone().path) &&
+                            config.audit[index]["path"].as_str().unwrap().contains(&audit_event.clone().file) {
+                            audit_event.clone().log_event(config.events_file.clone());
+                        }
                         last_msg = audit_event.clone().timestamp;
                     }
-                    debug!("Event received: {:?}", audit_event.clone());
-                }else if config.match_ignore(index, event_filename.to_str().unwrap()) {
-                    let event = Event {
-                        id: utils::get_uuid(),
-                        timestamp: current_timestamp,
-                        hostname: current_hostname,
-                        node: config.node.clone(),
-                        version: String::from(config::VERSION),
-                        op,
-                        path: path.clone(),
-                        labels,
-                        operation: event::get_op(op),
-                        checksum: hash::get_checksum( String::from(path.to_str().unwrap()) ),
-                        fpid: utils::get_pid(),
-                        system: config.system.clone()
-                    };
+                    debug!("Event processed: {:?}", audit_event.clone());
+                }else {
+                    let index = config.get_index(event_path.to_str().unwrap(), event_filename.to_str().unwrap(), config.monitor.clone().to_vec());
+                    let labels = config.get_labels(index);
+                    if ! config.match_ignore(index, event_filename.to_str().unwrap()){
+                        let event = Event {
+                            id: utils::get_uuid(),
+                            timestamp: current_timestamp,
+                            hostname: current_hostname,
+                            node: config.node.clone(),
+                            version: String::from(config::VERSION),
+                            op,
+                            path: path.clone(),
+                            labels,
+                            operation: event::get_op(op),
+                            checksum: hash::get_checksum( String::from(path.to_str().unwrap()) ),
+                            fpid: utils::get_pid(),
+                            system: config.system.clone()
+                        };
 
-                    debug!("Event received: {:?}", event);
-                    process_event(destination.clone().as_str(), event, index_name.clone(), config.clone()).await;
-                }else{
-                    debug!("Event ignored not stored in alerts");
+                        debug!("Event processed: {:?}", event);
+                        process_event(destination.clone().as_str(), event, index_name.clone(), config.clone()).await;
+                    }else{
+                        debug!("Event ignored not stored in alerts");
+                    }
                 }
             },
             Err(e) => error!("Watch error: {:?}", e)

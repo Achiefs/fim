@@ -32,6 +32,7 @@ pub struct Config {
     pub endpoint_pass: String,
     pub events_file: String,
     pub monitor: Array,
+    pub audit: Array,
     pub node: String,
     pub log_file: String,
     pub log_level: String,
@@ -51,6 +52,7 @@ impl Config {
             endpoint_pass: self.endpoint_pass.clone(),
             events_file: self.events_file.clone(),
             monitor: self.monitor.clone(),
+            audit: self.audit.clone(),
             node: self.node.clone(),
             log_file: self.log_file.clone(),
             log_level: self.log_level.clone(),
@@ -146,6 +148,12 @@ impl Config {
             }
         };
 
+        // Manage null value on audit value
+        let audit = match yaml[0]["audit"].as_vec() {
+            Some(value) => value.to_vec(),
+            None => { Vec::new() }
+        };
+
         // Manage null value on node value
         let node = match yaml[0]["node"].as_str() {
             Some(value) => String::from(value),
@@ -188,6 +196,7 @@ impl Config {
             endpoint_pass,
             events_file,
             monitor,
+            audit,
             node,
             log_file,
             log_level,
@@ -234,16 +243,25 @@ impl Config {
 
     // ------------------------------------------------------------------------
 
-    pub fn get_index(&self, raw_path: &str) -> usize {
+    pub fn get_index(&self, raw_path: &str, filename: &str, vector: Vec<Yaml>) -> usize {
         let event_path = Path::new(raw_path);
+        let str_path = event_path.to_str().unwrap();
         let event_parent_path = event_path.parent().unwrap().to_str().unwrap();
 
         // Iterate over monitoring paths to match ignore string and ignore event or not
-        let vector = self.monitor.clone().to_vec();
         vector.iter().position(|it| {
-            let path = it["path"].as_str().unwrap();
-            let value = if path.ends_with('/') || path.ends_with('\\'){ utils::pop(path) }else{ path };
-            match event_parent_path.contains(value) {
+            let config_path = it["path"].as_str().unwrap();
+            let value = if config_path.ends_with('/') || config_path.ends_with('\\'){ utils::pop(config_path) }else{ config_path };
+            println!("CONFIG PATH: {}", config_path);
+            println!("VALUE: {}", value);
+            println!("EVENT_PATH: {:?}", event_path);
+            println!("PARENT_PATH: {}", event_parent_path);
+            let path = if event_path.is_file(){ String::from(event_path.to_str().unwrap())
+            }else{
+                if event_path.ends_with("/"){ format!("{}{}", str_path, filename)
+                }else{ format!("{}/{}", str_path, filename) }
+            };
+            match path.contains(value) {
                 true => true,
                 false => event_path.to_str().unwrap().contains(value)
             }
@@ -263,8 +281,8 @@ impl Config {
 
     pub fn match_ignore(&self, index: usize, filename: &str) -> bool {
         match self.monitor[index]["ignore"].as_vec() {
-            Some(igv) => ! igv.to_vec().iter().any(|ignore| filename.contains(ignore.as_str().unwrap()) ),
-            None => true
+            Some(igv) => igv.to_vec().iter().any(|ignore| filename.contains(ignore.as_str().unwrap()) ),
+            None => false
         }
     }
 
@@ -319,6 +337,7 @@ mod tests {
             endpoint_pass: String::from("test"),
             events_file: String::from("test"),
             monitor: Array::new(),
+            audit: Array::new(),
             node: String::from("test"),
             log_file: String::from("./test.log"),
             log_level: String::from(filter),
@@ -341,6 +360,7 @@ mod tests {
         assert_eq!(config.endpoint_pass, cloned.endpoint_pass);
         assert_eq!(config.events_file, cloned.events_file);
         assert_eq!(config.monitor, cloned.monitor);
+        assert_eq!(config.audit, cloned.audit);
         assert_eq!(config.node, cloned.node);
         assert_eq!(config.log_file, cloned.log_file);
         assert_eq!(config.log_level, cloned.log_level);
@@ -360,6 +380,7 @@ mod tests {
         assert_eq!(config.endpoint_pass, String::from("Not_used"));
         assert_eq!(config.events_file, String::from("C:\\ProgramData\\fim\\events.json"));
         // monitor
+        // audit
         assert_eq!(config.node, String::from("FIM"));
         assert_eq!(config.log_file, String::from("C:\\ProgramData\\fim\\fim.log"));
         assert_eq!(config.log_level, String::from("info"));
@@ -379,6 +400,7 @@ mod tests {
         assert_eq!(config.endpoint_pass, String::from("Not_used"));
         assert_eq!(config.events_file, String::from("/var/lib/fim/events.json"));
         // monitor
+        // audit
         assert_eq!(config.node, String::from("FIM"));
         assert_eq!(config.log_file, String::from("/var/log/fim/fim.log"));
         assert_eq!(config.log_level, String::from("info"));
@@ -398,6 +420,7 @@ mod tests {
         assert_eq!(config.endpoint_pass, String::from("Not_used"));
         assert_eq!(config.events_file, String::from("/var/lib/fim/events.json"));
         // monitor
+        // audit
         assert_eq!(config.node, String::from("FIM"));
         assert_eq!(config.log_file, String::from("/var/log/fim/fim.log"));
         assert_eq!(config.log_level, String::from("info"));

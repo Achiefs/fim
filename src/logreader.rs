@@ -63,7 +63,8 @@ pub fn read_log(file: String, config: config::Config) -> Event {
             .split(":").collect::<Vec<&str>>()[0]); // Getting the 13 digits timestamp
 
         let event_path = parent_path_data["name"].clone().replace('\"', "");
-        let index = config.get_index(event_path.as_str());
+        let file = utils::get_filename_path(path_data["name"].clone().replace('\"', "").as_str());
+        let index = config.get_index(event_path.as_str(), file.clone().as_str(), config.audit.clone().to_vec());
         let labels = config.get_labels(index);
 
         Event{
@@ -77,7 +78,7 @@ pub fn read_log(file: String, config: config::Config) -> Event {
             labels,
             operation: path_data["nametype"].clone(),
             path: event_path,
-            file: path_data["name"].clone().replace('\"', ""),
+            file,
             checksum: hash::get_checksum(format!("{}/{}", parent_path_data["name"].clone(), path_data["name"].clone())),
             fpid: utils::get_pid(),
             system: utils::get_os(),
