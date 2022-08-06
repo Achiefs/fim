@@ -77,7 +77,7 @@ pub fn read_log(file: String, config: config::Config) -> Event {
             version: String::from(config::VERSION),
             labels,
             operation: path_data["nametype"].clone(),
-            path: event_path,
+            path: utils::clean_path(&event_path),
             file,
             checksum: hash::get_checksum(format!("{}/{}", parent_path_data["name"].clone(), path_data["name"].clone())),
             fpid: utils::get_pid(),

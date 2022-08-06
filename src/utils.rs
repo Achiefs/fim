@@ -75,6 +75,12 @@ pub fn get_filename_path(path: &str) -> String {
 
 // ----------------------------------------------------------------------------
 
+pub fn clean_path(path: &str) -> String {
+    String::from(if path.ends_with('/') || path.ends_with('\\'){ pop(path) }else{ path })
+}
+
+// ----------------------------------------------------------------------------
+
 #[cfg(test)]
 mod tests {
     use super::*;

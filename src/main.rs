@@ -164,8 +164,9 @@ async fn main() {
                     let _labels = config.get_labels(index);
 
                     if last_msg != audit_event.timestamp {
-                        if config.audit[index]["path"].as_str().unwrap().contains(&audit_event.clone().path) &&
-                            config.audit[index]["path"].as_str().unwrap().contains(&audit_event.clone().file) {
+                        println!("yaml path: {}", utils::clean_path(config.audit[index]["path"].as_str().unwrap()));
+                        println!("event path: {}", audit_event.clone().path);
+                        if utils::clean_path(config.audit[index]["path"].as_str().unwrap()).contains(&audit_event.clone().path) {
                             audit_event.clone().log_event(config.events_file.clone());
                         }
                         last_msg = audit_event.clone().timestamp;
