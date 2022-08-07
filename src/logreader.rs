@@ -62,15 +62,15 @@ pub fn read_log(file: String, config: config::Config) -> Event {
             .replace(".", "")
             .split(":").collect::<Vec<&str>>()[0]); // Getting the 13 digits timestamp
 
-        let event_path = parent_path_data["name"].clone().replace('\"', "");
-        let file = utils::get_filename_path(path_data["name"].clone().replace('\"', "").as_str());
+        let event_path = parent_path_data["name"].clone();
+        let file = utils::get_filename_path(path_data["name"].clone().as_str());
         let index = config.get_index(event_path.as_str(), file.clone().as_str(), config.audit.clone().to_vec());
         let labels = config.get_labels(index);
 
         Event{
             id: utils::get_uuid(),
             proctitle: proctitle_data["proctitle"].clone(),
-            command: command.replace('\"', ""),
+            command: command,
             timestamp: clean_timestamp,
             hostname: utils::get_hostname(),
             node: config.node.clone(),
@@ -98,11 +98,11 @@ pub fn read_log(file: String, config: config::Config) -> Event {
             ouid: path_data["ouid"].clone(),
 
             parent: parent_path_data,
-            cwd: cwd_data["cwd"].clone().replace('\"', ""),
+            cwd: cwd_data["cwd"].clone(),
 
             syscall: syscall_data["syscall"].clone(),
             ppid: syscall_data["ppid"].clone(),
-            comm: syscall_data["comm"].clone().replace('\"', ""),
+            comm: syscall_data["comm"].clone(),
             fsuid: syscall_data["fsuid"].clone(),
             pid: syscall_data["pid"].clone(),
             a0: syscall_data["a0"].clone(),
@@ -120,11 +120,11 @@ pub fn read_log(file: String, config: config::Config) -> Event {
             success: syscall_data["success"].clone(),
             exit: syscall_data["exit"].clone(),
             ses: syscall_data["ses"].clone(),
-            key: syscall_data["key"].clone().replace('\"', ""),
+            key: syscall_data["key"].clone(),
             suid: syscall_data["suid"].clone(),
             egid: syscall_data["egid"].clone(),
             fsgid: syscall_data["fsgid"].clone(),
-            exe: syscall_data["exe"].clone().replace('\"', ""),
+            exe: syscall_data["exe"].clone(),
             source: String::from("audit")
         }
     }else{
@@ -139,7 +139,7 @@ pub fn parse_audit_log(log: String) -> HashMap<String, String> {
     let map: HashMap<String, String> = fields.iter()
         .map(|f| {
             let obj: Vec<&str> = f.split('=').collect();
-            return (String::from(obj[0]), String::from(obj[1]));
+            return (String::from(obj[0]), String::from(obj[1]).replace('\"', ""));
         }).collect();
     map
 }
