@@ -236,7 +236,7 @@ mod tests {
 
     #[test]
     fn test_setup_logger() {
-        let config = config::Config::new(utils::get_os());
+        let config = config::Config::new(&utils::get_os());
         fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap();
         setup_logger(config.clone());
     }
@@ -245,7 +245,7 @@ mod tests {
 
     #[test]
     fn test_push_template() {
-        let config = config::Config::new(utils::get_os());
+        let config = config::Config::new(&utils::get_os());
         fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
         block_on(push_template("file", config.clone()));
         block_on(push_template("network", config.clone()));
@@ -255,7 +255,7 @@ mod tests {
 
     #[test]
     fn test_setup_events() {
-        let config = config::Config::new(utils::get_os());
+        let config = config::Config::new(&utils::get_os());
         fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
         setup_events("file", config.clone());
         setup_events("network", config.clone());
@@ -265,7 +265,7 @@ mod tests {
 
     #[test]
     fn test_process_event(){
-        let config = config::Config::new(utils::get_os());
+        let config = config::Config::new(&utils::get_os());
         fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap();
         fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
         let event = Event {
@@ -274,7 +274,7 @@ mod tests {
             hostname: "Hostname".to_string(),
             node: "FIM".to_string(),
             version: "x.x.x".to_string(),
-            operation: Op::CREATE,
+            op: Op::CREATE,
             path: PathBuf::new(),
             labels: Vec::new(),
             operation: "TEST".to_string(),
