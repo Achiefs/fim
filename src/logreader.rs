@@ -53,7 +53,7 @@ pub fn read_log(file: String, config: config::Config) -> Event {
         let cwd_data = data[position].clone();
         let syscall_data = data[position+1].clone();
 
-        let command = if proctitle_data["proctitle"].contains("\"") {
+        let command = if proctitle_data["proctitle"].contains('\"') {
             proctitle_data["proctitle"].clone()
         }else{
             hash::hex_to_ascii(proctitle_data["proctitle"].clone())
@@ -62,20 +62,20 @@ pub fn read_log(file: String, config: config::Config) -> Event {
         let clean_timestamp: String = String::from(proctitle_data["msg"].clone()
             .replace("audit(", "")
             .replace(".", "")
-            .split(":").collect::<Vec<&str>>()[0]); // Getting the 13 digits timestamp
+            .split(':').collect::<Vec<&str>>()[0]); // Getting the 13 digits timestamp
 
         let event_path = parent_path_data["name"].clone();
         let file = utils::get_filename_path(path_data["name"].clone().as_str());
-        let index = config.get_index(event_path.as_str(), file.clone().as_str(), config.audit.clone().to_vec());
+        let index = config.get_index(event_path.as_str(), file.as_str(), config.audit.clone().to_vec());
         let labels = config.get_labels(index, config.audit.clone());
 
         Event{
             id: utils::get_uuid(),
             proctitle: proctitle_data["proctitle"].clone(),
-            command: command,
+            command,
             timestamp: clean_timestamp,
             hostname: utils::get_hostname(),
-            node: config.node.clone(),
+            node: config.node,
             version: String::from(config::VERSION),
             labels,
             operation: path_data["nametype"].clone(),
@@ -142,7 +142,7 @@ pub fn parse_audit_log(log: String) -> HashMap<String, String> {
     let map: HashMap<String, String> = fields.iter()
         .map(|f| {
             let obj: Vec<&str> = f.split('=').collect();
-            return (String::from(obj[0]), String::from(obj[1]).replace('\"', ""));
+            (String::from(obj[0]), String::from(obj[1]).replace('\"', ""))
         }).collect();
     map
 }

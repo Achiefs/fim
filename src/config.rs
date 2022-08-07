@@ -252,10 +252,8 @@ impl Config {
             let config_path = it["path"].as_str().unwrap();
             let value = if config_path.ends_with('/') || config_path.ends_with('\\'){ utils::pop(config_path) }else{ config_path };
             let path = if event_path.is_file(){ String::from(event_path.to_str().unwrap())
-            }else{
-                if event_path.ends_with("/"){ format!("{}{}", str_path, filename)
-                }else{ format!("{}/{}", str_path, filename) }
-            };
+            }else if event_path.ends_with("/"){ format!("{}{}", str_path, filename)
+            }else{ format!("{}/{}", str_path, filename) };
             match path.contains(value) {
                 true => true,
                 false => event_path.to_str().unwrap().contains(value)

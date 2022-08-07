@@ -129,7 +129,7 @@ impl Event {
             mode: empty.clone(),
             cap_frootid: empty.clone(),
             ouid: empty.clone(),
-            parent: parent,
+            parent,
             cwd: empty.clone(),
             syscall: empty.clone(),
             ppid: empty.clone(),
@@ -155,7 +155,7 @@ impl Event {
             suid: empty.clone(),
             egid: empty.clone(),
             fsgid: empty.clone(),
-            exe: empty.clone(),
+            exe: empty,
             source: String::from("audit")
         }
     }
@@ -174,7 +174,7 @@ impl Event {
             labels: self.labels.clone(),
             operation: self.operation.clone(),
             checksum: self.checksum.clone(),
-            fpid: self.fpid.clone(),
+            fpid: self.fpid,
             system: self.system.clone(),
             command: self.command.clone(),
             ogid: self.ogid.clone(),
@@ -224,7 +224,7 @@ impl Event {
     // ------------------------------------------------------------------------
 
     pub fn is_empty(&self) -> bool {
-        if self.path == String::from("") { true } else { false}
+        self.path == *""
     }
 
     // ------------------------------------------------------------------------

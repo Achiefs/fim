@@ -49,14 +49,10 @@ pub fn get_os() -> String {
 // ----------------------------------------------------------------------------
 
 pub fn read_file(path: String) -> String {
-    let mut file = File::open(path.clone()).expect(
-        format!("Unable to open file {}", path.clone()).as_str()
-    );
+    let mut file = File::open(path).unwrap();
     let mut contents = String::new();
 
-    file.read_to_string(&mut contents).expect(
-        format!("Unable to read file {}", path.clone()).as_str()
-    );
+    file.read_to_string(&mut contents).unwrap();
     contents
 }
 
