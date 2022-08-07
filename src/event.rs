@@ -4,7 +4,8 @@
 use std::fmt;
 // To handle files
 use std::fs::OpenOptions;
-use std::io::{Write, Error, ErrorKind};
+use std::io::Write;
+//use std::io::{Write, Error, ErrorKind};
 // Handle time intervals
 use std::time::Duration;
 // Event handling
@@ -65,14 +66,17 @@ impl Event {
 
         match self.op {
             Op::CREATE|Op::WRITE|Op::RENAME|Op::REMOVE|Op::CHMOD|Op::CLOSE_WRITE|Op::RESCAN => {
-                writeln!(events_file, "{}", self.format_json() )
+                match writeln!(events_file, "{}", self.format_json() ) {
+                    Ok(_d) => debug!("Event log written"),
+                    Err(e) => error!("Event could not be written, Err: [{}]", e)
+                };
             },
             _ => {
                 let error_msg = "Event Op not Handled or do not exists";
                 error!("{}", error_msg);
-                Err(Error::new(ErrorKind::InvalidInput, error_msg))
+                //Err(Error::new(ErrorKind::InvalidInput, error_msg));
             },
-        }.expect("(log_event) Error writing event")
+        };
     }
 
     // ------------------------------------------------------------------------

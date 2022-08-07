@@ -122,20 +122,34 @@ async fn main() {
     // Iterating over monitor paths and set watcher on each folder to watch.
     let (tx, rx) = channel();
     let mut watcher: RecommendedWatcher = Watcher::new_raw(tx).unwrap();
-    for m in config.monitor.clone() {
-        let path = m["path"].as_str().unwrap();
-        info!("Monitoring path: {}", path);
-        match m["ignore"].as_vec() {
-            Some(ig) => {
-                let ignore_list_vec  = ig.iter().map(|e| { e.as_str().unwrap() });
-                let ignore_list : String = Itertools::intersperse(ignore_list_vec, ", ").collect();
-                info!("Ignoring files with: {} inside {}", ignore_list, path);
-            },
-            None => info!("Ignore for '{}' not set", path)
-        };
-        watcher.watch(path, RecursiveMode::Recursive).unwrap();
+    if ! config.monitor.is_empty() {
+        for element in config.monitor.clone() {
+            let path = element["path"].as_str().unwrap();
+            info!("Monitoring path: {}", path);
+            match element["ignore"].as_vec() {
+                Some(ig) => {
+                    let ignore_list_vec  = ig.iter().map(|e| { e.as_str().unwrap() });
+                    let ignore_list : String = Itertools::intersperse(ignore_list_vec, ", ").collect();
+                    info!("Ignoring files with: {} inside {}", ignore_list, path);
+                },
+                None => info!("Ignore for '{}' not set", path)
+            };
+            watcher.watch(path, RecursiveMode::Recursive).unwrap();
+        }
     }
     if ! config.audit.is_empty() {
+        for element in config.audit.clone() {
+            let path = element["path"].as_str().unwrap();
+            info!("Monitoring audit path: {}", path);
+            match element["ignore"].as_vec() {
+                Some(ig) => {
+                    let ignore_list_vec  = ig.iter().map(|e| { e.as_str().unwrap() });
+                    let ignore_list : String = Itertools::intersperse(ignore_list_vec, ", ").collect();
+                    info!("Ignoring files with: {} inside {}", ignore_list, path);
+                },
+                None => info!("Ignore for '{}' not set", path)
+            };
+        }
         watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::Recursive).unwrap();
     }
     let mut last_msg = String::from("0");
@@ -164,7 +178,6 @@ async fn main() {
                         let index = config.get_index(audit_event.clone().path.as_str(),
                             utils::get_filename_path(audit_event.clone().file.as_str()).as_str(),
                             config.audit.clone().to_vec());
-                        //let _labels = config.get_labels(index);
 
                         if utils::clean_path(config.audit[index]["path"].as_str().unwrap())
                             .contains(&audit_event.clone().path) &&

@@ -303,7 +303,7 @@ impl Event {
             .expect("(auditevent::log_event) Unable to open events log file.");
 
             match writeln!(events_file, "{}", self.format_json()) {
-                Ok(_d) => debug!("Written audit event Log"),
+                Ok(_d) => debug!("Audit event log written"),
                 Err(e) => error!("Audit event could not be written, Err: [{}]", e)
             };
     }
