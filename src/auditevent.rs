@@ -223,6 +223,12 @@ impl Event {
 
     // ------------------------------------------------------------------------
 
+    pub fn is_empty(&self) -> bool {
+        if self.path == String::from("") { true } else { false}
+    }
+
+    // ------------------------------------------------------------------------
+
     // Get formatted string with all required data
     fn format_json(&self) -> String {
         let obj = json!({

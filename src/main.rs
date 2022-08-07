@@ -159,23 +159,30 @@ async fn main() {
 
                 if raw_event.path.clone().unwrap().to_str().unwrap() == logreader::AUDIT_LOG_PATH {
                     let audit_event = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone());
-                    let index = config.get_index(audit_event.clone().path.as_str(), 
-                        utils::get_filename_path(audit_event.clone().file.as_str()).as_str(), config.audit.clone().to_vec());
-                    let _labels = config.get_labels(index);
 
-                    if last_msg != audit_event.timestamp {
-                        println!("yaml path: {}", utils::clean_path(config.audit[index]["path"].as_str().unwrap()));
-                        println!("event path: {}", audit_event.clone().path);
-                        if utils::clean_path(config.audit[index]["path"].as_str().unwrap()).contains(&audit_event.clone().path) {
+                    if last_msg != audit_event.timestamp && ! audit_event.is_empty() {
+                        let index = config.get_index(audit_event.clone().path.as_str(),
+                            utils::get_filename_path(audit_event.clone().file.as_str()).as_str(),
+                            config.audit.clone().to_vec());
+                        //let _labels = config.get_labels(index);
+
+                        if utils::clean_path(config.audit[index]["path"].as_str().unwrap())
+                            .contains(&audit_event.clone().path) &&
+                            ! config.match_ignore(index,
+                                audit_event.clone().file.as_str(),
+                                config.audit.clone()) {
                             audit_event.clone().log_event(config.events_file.clone());
+                        }else{
+                            debug!("Event ignored not stored in alerts");
                         }
                         last_msg = audit_event.clone().timestamp;
                     }
                     debug!("Event processed: {:?}", audit_event.clone());
                 }else {
                     let index = config.get_index(event_path.to_str().unwrap(), event_filename.to_str().unwrap(), config.monitor.clone().to_vec());
-                    let labels = config.get_labels(index);
-                    if ! config.match_ignore(index, event_filename.to_str().unwrap()){
+                    let labels = config.get_labels(index, config.monitor.clone());
+                    if ! config.match_ignore(index,
+                        event_filename.to_str().unwrap(), config.monitor.clone()){
                         let event = Event {
                             id: utils::get_uuid(),
                             timestamp: current_timestamp,

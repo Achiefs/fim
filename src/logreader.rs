@@ -9,6 +9,8 @@ use std::io::BufReader;
 use std::fs::File;
 // To manage readed data into collection
 use std::collections::HashMap;
+// To log the program process
+use log::debug;
 
 // Single event data management
 use crate::auditevent::Event;
@@ -65,7 +67,7 @@ pub fn read_log(file: String, config: config::Config) -> Event {
         let event_path = parent_path_data["name"].clone();
         let file = utils::get_filename_path(path_data["name"].clone().as_str());
         let index = config.get_index(event_path.as_str(), file.clone().as_str(), config.audit.clone().to_vec());
-        let labels = config.get_labels(index);
+        let labels = config.get_labels(index, config.audit.clone());
 
         Event{
             id: utils::get_uuid(),
@@ -128,6 +130,7 @@ pub fn read_log(file: String, config: config::Config) -> Event {
             source: String::from("audit")
         }
     }else{
+        debug!("Event not related with a file");
         Event::new()
     }
 }

@@ -246,16 +246,11 @@ impl Config {
     pub fn get_index(&self, raw_path: &str, filename: &str, vector: Vec<Yaml>) -> usize {
         let event_path = Path::new(raw_path);
         let str_path = event_path.to_str().unwrap();
-        let event_parent_path = event_path.parent().unwrap().to_str().unwrap();
 
         // Iterate over monitoring paths to match ignore string and ignore event or not
         vector.iter().position(|it| {
             let config_path = it["path"].as_str().unwrap();
             let value = if config_path.ends_with('/') || config_path.ends_with('\\'){ utils::pop(config_path) }else{ config_path };
-            println!("CONFIG PATH: {}", config_path);
-            println!("VALUE: {}", value);
-            println!("EVENT_PATH: {:?}", event_path);
-            println!("PARENT_PATH: {}", event_parent_path);
             let path = if event_path.is_file(){ String::from(event_path.to_str().unwrap())
             }else{
                 if event_path.ends_with("/"){ format!("{}{}", str_path, filename)
@@ -270,8 +265,8 @@ impl Config {
 
     // ------------------------------------------------------------------------
 
-    pub fn get_labels(&self, index: usize) -> Vec<String> {
-        match self.monitor[index]["labels"].clone().into_vec() {
+    pub fn get_labels(&self, index: usize, array: Array) -> Vec<String> {
+        match array[index]["labels"].clone().into_vec() {
             Some(labels) => labels,
             None => Vec::new()
         }.to_vec().iter().map(|element| String::from(element.as_str().unwrap()) ).collect()
@@ -279,8 +274,8 @@ impl Config {
 
     // ------------------------------------------------------------------------
 
-    pub fn match_ignore(&self, index: usize, filename: &str) -> bool {
-        match self.monitor[index]["ignore"].as_vec() {
+    pub fn match_ignore(&self, index: usize, filename: &str, array: Array) -> bool {
+        match array[index]["ignore"].as_vec() {
             Some(igv) => igv.to_vec().iter().any(|ignore| filename.contains(ignore.as_str().unwrap()) ),
             None => false
         }
