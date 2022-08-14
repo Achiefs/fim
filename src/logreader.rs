@@ -3,14 +3,14 @@
 // Global constants definitions
 pub const AUDIT_LOG_PATH: &str = "/var/log/audit/audit.log";
 
-// To Read reversed order lines
-use rev_lines::RevLines;
-use std::io::BufReader;
+// To manage file reading
+use std::io::{BufReader, SeekFrom};
+use std::io::prelude::*;
 use std::fs::File;
 // To manage readed data into collection
 use std::collections::HashMap;
 // To log the program process
-use log::debug;
+use log::{debug, error};
 
 // Single event data management
 use crate::auditevent::Event;
@@ -18,121 +18,40 @@ use crate::auditevent::Event;
 use crate::utils;
 // To get configuration constants
 use crate::config;
-// To manage checksums and conversions
-use crate::hash;
 
 // ----------------------------------------------------------------------------
 
 // Read file to extract last data until the Audit ID changes
-pub fn read_log(file: String, config: config::Config) -> Event {
+pub fn read_log(file: String, config: config::Config, position: u64) -> (Vec<Event>, u64) {
+    let mut events: Vec<Event> = Vec::new();
     let log = File::open(file).unwrap();
-    let rev_lines = RevLines::new(BufReader::new(log)).unwrap();
+    let end_position = utils::get_file_end(AUDIT_LOG_PATH);
+    let mut buff = BufReader::new(log);
+    match buff.seek(SeekFrom::Current(position as i64)) {
+        Ok(p) => debug!("Seek audit log file, position: {}, end: {}", p, end_position),
+        Err(e) => error!("{}", e)
+    };
 
+    // I have added a way to read from last registered position until the end
     let mut data: Vec<HashMap<String, String>> = Vec::new();
-    for line in rev_lines {
+    for result in buff.take(end_position-position).lines() {    
+        let line = result.unwrap();
         if data.is_empty() {
-            data.push(parse_audit_log(line));
+            data.push(parse_audit_log(line.clone()));
         }else{
-            let line_info = parse_audit_log(line);
+            let line_info = parse_audit_log(line.clone());
             if line_info["msg"] == data.last().unwrap()["msg"] {
                 data.push(line_info);
-            }else{ break; }
+            }
+        }
+        if data.last().unwrap()["type"] == "PROCTITLE" {
+            // We need to skip the event generation of events not monitored by FIM
+            // It could be achieved coding a method to check if given path is monitored
+            events.push(Event::new_from(data, config.clone()));
+            data = Vec::new();
         }
     }
-    if data.last().unwrap()["type"] == "SYSCALL" {
-        let proctitle_data = data[0].clone();
-        let path_data = data[1].clone();
-
-        let parent_path_data = if data[data.len()-3].clone()["type"] == "PATH" {
-            data[data.len()-3].clone()
-        }else{
-            HashMap::new()
-        };
-        let position = if parent_path_data.is_empty() { data.len()-3
-        }else{ data.len()-2 };
-        let cwd_data = data[position].clone();
-        let syscall_data = data[position+1].clone();
-
-        let command = if proctitle_data["proctitle"].contains('\"') {
-            proctitle_data["proctitle"].clone()
-        }else{
-            hash::hex_to_ascii(proctitle_data["proctitle"].clone())
-        };
-
-        let clean_timestamp: String = String::from(proctitle_data["msg"].clone()
-            .replace("audit(", "")
-            .replace(".", "")
-            .split(':').collect::<Vec<&str>>()[0]); // Getting the 13 digits timestamp
-
-        let event_path = parent_path_data["name"].clone();
-        let file = utils::get_filename_path(path_data["name"].clone().as_str());
-        let index = config.get_index(event_path.as_str(), file.as_str(), config.audit.clone().to_vec());
-        let labels = config.get_labels(index, config.audit.clone());
-
-        Event{
-            id: utils::get_uuid(),
-            proctitle: proctitle_data["proctitle"].clone(),
-            command,
-            timestamp: clean_timestamp,
-            hostname: utils::get_hostname(),
-            node: config.node,
-            version: String::from(config::VERSION),
-            labels,
-            operation: path_data["nametype"].clone(),
-            path: utils::clean_path(&event_path),
-            file,
-            checksum: hash::get_checksum(format!("{}/{}", parent_path_data["name"].clone(), path_data["name"].clone())),
-            fpid: utils::get_pid(),
-            system: utils::get_os(),
-
-
-            ogid: path_data["ogid"].clone(),
-            rdev: path_data["rdev"].clone(),
-            cap_fver: path_data["cap_fver"].clone(),
-            inode: path_data["inode"].clone(),
-            cap_fp: path_data["cap_fp"].clone(),
-            cap_fe: path_data["cap_fe"].clone(),
-            item: path_data["item"].clone(),
-            cap_fi: path_data["cap_fi"].clone(),
-            dev: path_data["dev"].clone(),
-            mode: path_data["mode"].clone(),
-            cap_frootid: path_data["cap_frootid"].clone(),
-            ouid: path_data["ouid"].clone(),
-
-            parent: parent_path_data,
-            cwd: cwd_data["cwd"].clone(),
-
-            syscall: syscall_data["syscall"].clone(),
-            ppid: syscall_data["ppid"].clone(),
-            comm: syscall_data["comm"].clone(),
-            fsuid: syscall_data["fsuid"].clone(),
-            pid: syscall_data["pid"].clone(),
-            a0: syscall_data["a0"].clone(),
-            a1: syscall_data["a1"].clone(),
-            a2: syscall_data["a2"].clone(),
-            a3: syscall_data["a3"].clone(),
-            arch: syscall_data["arch"].clone(),
-            auid: syscall_data["auid"].clone(),
-            items: syscall_data["items"].clone(),
-            gid: syscall_data["gid"].clone(),
-            euid: syscall_data["euid"].clone(),
-            sgid: syscall_data["sgid"].clone(),
-            uid: syscall_data["uid"].clone(),
-            tty: syscall_data["tty"].clone(),
-            success: syscall_data["success"].clone(),
-            exit: syscall_data["exit"].clone(),
-            ses: syscall_data["ses"].clone(),
-            key: syscall_data["key"].clone(),
-            suid: syscall_data["suid"].clone(),
-            egid: syscall_data["egid"].clone(),
-            fsgid: syscall_data["fsgid"].clone(),
-            exe: syscall_data["exe"].clone(),
-            source: String::from("audit")
-        }
-    }else{
-        debug!("Event not related with a file");
-        Event::new()
-    }
+    (events, end_position)
 }
 
 // ----------------------------------------------------------------------------

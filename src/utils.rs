@@ -8,7 +8,8 @@ use std::process;
 use std::env;
 // To use files IO operations.
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, SeekFrom};
+use std::io::prelude::*;
 // To get config constants
 use crate::config;
 // To manage paths
@@ -73,6 +74,19 @@ pub fn get_filename_path(path: &str) -> String {
 
 pub fn clean_path(path: &str) -> String {
     String::from(if path.ends_with('/') || path.ends_with('\\'){ pop(path) }else{ path })
+}
+
+// ----------------------------------------------------------------------------
+
+pub fn get_file_end(file: &str) -> u64 {
+    let mut f = File::open(file).unwrap();
+    f.seek(SeekFrom::End(0)).unwrap()
+}
+
+// ----------------------------------------------------------------------------
+
+pub fn ends_with(string: &str, end: char) -> bool {
+    return String::from(string).pop().unwrap() == end
 }
 
 // ----------------------------------------------------------------------------

@@ -152,7 +152,7 @@ async fn main() {
         }
         watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::Recursive).unwrap();
     }
-    let mut last_msg = String::from("0");
+    let mut last_position = utils::get_file_end(logreader::AUDIT_LOG_PATH);
 
     // Main loop, receive any produced event and write it into the events log.
     loop {
@@ -172,27 +172,36 @@ async fn main() {
                 let path = raw_event.path.clone().unwrap();
 
                 if raw_event.path.clone().unwrap().to_str().unwrap() == logreader::AUDIT_LOG_PATH {
-                    let audit_event = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone());
+                    let (events, position) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone(), last_position);
+                    last_position = position;
+                    debug!("Events read from audit log, position: {}", last_position);
 
-                    if last_msg != audit_event.timestamp && ! audit_event.is_empty() {
-                        let index = config.get_index(audit_event.clone().path.as_str(),
-                            utils::get_filename_path(audit_event.clone().file.as_str()).as_str(),
-                            config.audit.clone().to_vec());
+                    for audit_event in events {
+                        if ! audit_event.is_empty() {
+                            let index = config.get_index(audit_event.clone().path.as_str(),
+                                utils::get_filename_path(audit_event.clone().file.as_str()).as_str(),
+                                audit_event.clone().cwd.as_str(),
+                                config.audit.clone().to_vec());
 
-                        if utils::clean_path(config.audit[index]["path"].as_str().unwrap())
-                            .contains(&audit_event.clone().path) &&
-                            ! config.match_ignore(index,
-                                audit_event.clone().file.as_str(),
-                                config.audit.clone()) {
-                            audit_event.clone().log_event(config.events_file.clone());
-                        }else{
-                            debug!("Event ignored not stored in alerts");
+                            if index != usize::MAX {
+                                let path = utils::clean_path(config.audit[index]["path"].as_str().unwrap());
+                                if path.contains(&audit_event.clone().path) ||
+                                    path.contains(&audit_event.clone().cwd) &&
+                                    ! config.match_ignore(index,
+                                        audit_event.clone().file.as_str(),
+                                        config.audit.clone()) {
+                                    audit_event.clone().log_event(config.events_file.clone());
+                                }else{
+                                    debug!("Event ignored not stored in alerts");
+                                }
+                            }else{
+                                debug!("Event not monitored by FIM");
+                            }
                         }
-                        last_msg = audit_event.clone().timestamp;
+                        debug!("Event processed: {:?}", audit_event.clone());
                     }
-                    debug!("Event processed: {:?}", audit_event.clone());
                 }else {
-                    let index = config.get_index(event_path.to_str().unwrap(), event_filename.to_str().unwrap(), config.monitor.clone().to_vec());
+                    let index = config.get_index(event_path.to_str().unwrap(), event_filename.to_str().unwrap(), "", config.monitor.clone().to_vec());
                     let labels = config.get_labels(index, config.monitor.clone());
                     if ! config.match_ignore(index,
                         event_filename.to_str().unwrap(), config.monitor.clone()){

@@ -243,22 +243,31 @@ impl Config {
 
     // ------------------------------------------------------------------------
 
-    pub fn get_index(&self, raw_path: &str, filename: &str, vector: Vec<Yaml>) -> usize {
+    pub fn get_index(&self, raw_path: &str, filename: &str, cwd: &str, vector: Vec<Yaml>) -> usize {
         let event_path = Path::new(raw_path);
-        let str_path = event_path.to_str().unwrap();
+        let str_path = raw_path;
 
         // Iterate over monitoring paths to match ignore string and ignore event or not
-        vector.iter().position(|it| {
+        match vector.iter().position(|it| {
             let config_path = it["path"].as_str().unwrap();
-            let value = if config_path.ends_with('/') || config_path.ends_with('\\'){ utils::pop(config_path) }else{ config_path };
-            let path = if event_path.is_file(){ String::from(event_path.to_str().unwrap())
-            }else if event_path.ends_with("/"){ format!("{}{}", str_path, filename)
+            let value = utils::clean_path(config_path);
+            let path = if event_path.is_file(){ String::from(raw_path)
+            }else if raw_path == "./" { String::from(cwd)
+            }else if utils::ends_with(raw_path, '/'){ format!("{}{}", str_path, filename)
             }else{ format!("{}/{}", str_path, filename) };
-            match path.contains(value) {
+            println!("RAW_EVENT_PATH: {}", raw_path);
+            println!("CONFIG_PATH: {}", config_path);
+            println!("STR_PATH: {}", str_path);
+            println!("VALUE: {}", value);
+            println!("PATH: {}", path);
+            match path.contains(&value) {
                 true => true,
-                false => event_path.to_str().unwrap().contains(value)
+                false => event_path.to_str().unwrap().contains(&value)
             }
-        }).unwrap()
+        }){
+            Some(pos) => pos,
+            None => usize::MAX
+        }
     }
 
     // ------------------------------------------------------------------------
