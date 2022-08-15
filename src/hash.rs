@@ -36,6 +36,7 @@ pub fn get_checksum(file: String) -> String {
 // ----------------------------------------------------------------------------
 
 pub fn hex_to_ascii(hex: String) -> String {
+    debug!("HEX: {}", hex);
     let bytes = decode(hex).unwrap();
     String::from(str::from_utf8(&bytes).unwrap())
         .replace('\u{0000}', " ")

@@ -243,26 +243,17 @@ impl Config {
 
     // ------------------------------------------------------------------------
 
-    pub fn get_index(&self, raw_path: &str, filename: &str, cwd: &str, vector: Vec<Yaml>) -> usize {
-        let event_path = Path::new(raw_path);
-        let str_path = raw_path;
+    pub fn get_index(&self, raw_path: &str, cwd: &str, vector: Vec<Yaml>) -> usize {
+        //let event_path = Path::new(raw_path);
+        //let str_path = raw_path;
 
+        
         // Iterate over monitoring paths to match ignore string and ignore event or not
         match vector.iter().position(|it| {
-            let config_path = it["path"].as_str().unwrap();
-            let value = utils::clean_path(config_path);
-            let path = if event_path.is_file(){ String::from(raw_path)
-            }else if raw_path == "./" { String::from(cwd)
-            }else if utils::ends_with(raw_path, '/'){ format!("{}{}", str_path, filename)
-            }else{ format!("{}/{}", str_path, filename) };
-            println!("RAW_EVENT_PATH: {}", raw_path);
-            println!("CONFIG_PATH: {}", config_path);
-            println!("STR_PATH: {}", str_path);
-            println!("VALUE: {}", value);
-            println!("PATH: {}", path);
-            match path.contains(&value) {
-                true => true,
-                false => event_path.to_str().unwrap().contains(&value)
+            if raw_path == "./" || raw_path == "." {
+                match_path(cwd, it["path"].as_str().unwrap())
+            }else{
+                match_path(raw_path, it["path"].as_str().unwrap())
             }
         }){
             Some(pos) => pos,
@@ -286,6 +277,47 @@ impl Config {
             Some(igv) => igv.to_vec().iter().any(|ignore| filename.contains(ignore.as_str().unwrap()) ),
             None => false
         }
+    }
+
+    // ------------------------------------------------------------------------
+
+    // Returns if a given path and filename is in the configuration paths
+    pub fn path_in(&self, raw_path: &str, cwd: &str, vector: Vec<Yaml>) -> bool {
+        // Iterate over monitoring paths to match ignore string and ignore event or not
+        match vector.iter().any(|it| {
+            if raw_path == "./" || raw_path == "." {
+                match_path(cwd, it["path"].as_str().unwrap())
+            }else{
+                match_path(raw_path, it["path"].as_str().unwrap())
+            }
+        }){
+            true => true,
+            false => false
+        }
+    }
+
+}
+
+// ------------------------------------------------------------------------
+
+// Return if a path match with given one
+pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
+    let event_path = Path::new(raw_path);
+    let value = utils::clean_path(compare_path);
+    let filename = if event_path.is_file(){
+        event_path.file_name().unwrap().to_str().unwrap()
+    }else{ "" };
+
+    let path = if event_path.is_file(){ String::from(raw_path)
+    }else if utils::ends_with(raw_path, '/'){ format!("{}{}", raw_path, filename)
+    }else{ format!("{}/{}", raw_path, filename) };
+    println!("RAW_EVENT_PATH: {}", raw_path);
+    println!("COMPARE_PATH: {}", compare_path);
+    println!("VALUE: {}", value);
+    println!("PATH: {}", path);
+    match path.contains(&value) {
+        true => true,
+        false => event_path.to_str().unwrap().contains(&value)
     }
 
 }

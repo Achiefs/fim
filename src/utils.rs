@@ -17,8 +17,9 @@ use std::path::Path;
 
 // ----------------------------------------------------------------------------
 
-pub fn pop(value: &str) -> &str {
-    let mut chars = value.chars();
+// Function to pop last char of a given String
+pub fn pop(string: &str) -> &str {
+    let mut chars = string.chars();
     chars.next_back();
     chars.as_str()
 }
@@ -49,6 +50,7 @@ pub fn get_os() -> String {
 
 // ----------------------------------------------------------------------------
 
+// Function to read file from begin to end
 pub fn read_file(path: String) -> String {
     let mut file = File::open(path).unwrap();
     let mut contents = String::new();
@@ -59,25 +61,28 @@ pub fn read_file(path: String) -> String {
 
 // ----------------------------------------------------------------------------
 
-// Only supported in Linux
+// (Only supported in Linux) Function to get machine id of the host
 pub fn get_machine_id() -> String {
     read_file(String::from(config::MACHINE_ID_PATH))
 }
 
 // ----------------------------------------------------------------------------
 
+// Function to get file name of a given path
 pub fn get_filename_path(path: &str) -> String {
     String::from(Path::new(path).file_name().unwrap().to_str().unwrap())
 }
 
 // ----------------------------------------------------------------------------
 
+// Function to clean trailing slash of a path
 pub fn clean_path(path: &str) -> String {
     String::from(if path.ends_with('/') || path.ends_with('\\'){ pop(path) }else{ path })
 }
 
 // ----------------------------------------------------------------------------
 
+// Function to get the last byte of a given file
 pub fn get_file_end(file: &str) -> u64 {
     let mut f = File::open(file).unwrap();
     f.seek(SeekFrom::End(0)).unwrap()
@@ -85,8 +90,9 @@ pub fn get_file_end(file: &str) -> u64 {
 
 // ----------------------------------------------------------------------------
 
+// Function to determine if a String ends with given char or not
 pub fn ends_with(string: &str, end: char) -> bool {
-    return String::from(string).pop().unwrap() == end
+    String::from(string).pop().unwrap() == end
 }
 
 // ----------------------------------------------------------------------------

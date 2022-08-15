@@ -171,22 +171,25 @@ async fn main() {
                 let op = raw_event.op.unwrap();
                 let path = raw_event.path.clone().unwrap();
 
+                // If the event comes from audit.log
                 if raw_event.path.clone().unwrap().to_str().unwrap() == logreader::AUDIT_LOG_PATH {
+                    // Getting events from audit.log
                     let (events, position) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone(), last_position);
                     last_position = position;
                     debug!("Events read from audit log, position: {}", last_position);
 
                     for audit_event in events {
                         if ! audit_event.is_empty() {
+                            // Getting the position of event in config (match ignore and labels)
                             let index = config.get_index(audit_event.clone().path.as_str(),
-                                utils::get_filename_path(audit_event.clone().file.as_str()).as_str(),
                                 audit_event.clone().cwd.as_str(),
                                 config.audit.clone().to_vec());
 
                             if index != usize::MAX {
                                 let path = utils::clean_path(config.audit[index]["path"].as_str().unwrap());
-                                if path.contains(&audit_event.clone().path) ||
-                                    path.contains(&audit_event.clone().cwd) &&
+                                // If the path of event contains monitored path will log the event!
+                                if (path.contains(&audit_event.clone().path) ||
+                                    path.contains(&audit_event.clone().cwd)) &&
                                     ! config.match_ignore(index,
                                         audit_event.clone().file.as_str(),
                                         config.audit.clone()) {
@@ -201,7 +204,7 @@ async fn main() {
                         debug!("Event processed: {:?}", audit_event.clone());
                     }
                 }else {
-                    let index = config.get_index(event_path.to_str().unwrap(), event_filename.to_str().unwrap(), "", config.monitor.clone().to_vec());
+                    let index = config.get_index(event_path.to_str().unwrap(), "", config.monitor.clone().to_vec());
                     let labels = config.get_labels(index, config.monitor.clone());
                     if ! config.match_ignore(index,
                         event_filename.to_str().unwrap(), config.monitor.clone()){

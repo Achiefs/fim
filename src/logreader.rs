@@ -19,6 +19,9 @@ use crate::utils;
 // To get configuration constants
 use crate::config;
 
+// Defined type to simplify syntax
+type SHashMap = HashMap<String, String>;
+
 // ----------------------------------------------------------------------------
 
 // Read file to extract last data until the Audit ID changes
@@ -32,7 +35,7 @@ pub fn read_log(file: String, config: config::Config, position: u64) -> (Vec<Eve
         Err(e) => error!("{}", e)
     };
 
-    // I have added a way to read from last registered position until the end
+    // Read from last registered position until the end
     let mut data: Vec<HashMap<String, String>> = Vec::new();
     for result in buff.take(end_position-position).lines() {    
         let line = result.unwrap();
@@ -44,14 +47,29 @@ pub fn read_log(file: String, config: config::Config, position: u64) -> (Vec<Eve
                 data.push(line_info);
             }
         }
-        if data.last().unwrap()["type"] == "PROCTITLE" {
-            // We need to skip the event generation of events not monitored by FIM
-            // It could be achieved coding a method to check if given path is monitored
-            events.push(Event::new_from(data, config.clone()));
-            data = Vec::new();
+        if data.last().unwrap()["type"] == "PROCTITLE" && data.first().unwrap()["type"] == "SYSCALL" {
+            // Skip the event generation of events not monitored by FIM
+            let (syscall, cwd, parent, path, proctitle) = extract_fields(data.clone());
+            if config.path_in(parent["name"].as_str(), cwd["cwd"].as_str(), config.audit.clone().to_vec()) {
+                events.push(Event::new_from(syscall, cwd, parent, path, proctitle, config.clone()));
+                data = Vec::new();
+            }
         }
     }
     (events, end_position)
+}
+
+// ----------------------------------------------------------------------------
+
+pub fn extract_fields(data: Vec<HashMap<String, String>>) -> (SHashMap,
+    SHashMap, SHashMap, SHashMap, SHashMap) {
+    (data[0].clone(),
+    data[1].clone(), 
+    if data[2].clone()["type"] == "PATH" {
+        data[2].clone()
+    }else{ HashMap::new() },
+    data[data.len()-2].clone(),
+    data[data.len()-1].clone())
 }
 
 // ----------------------------------------------------------------------------
