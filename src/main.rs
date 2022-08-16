@@ -18,6 +18,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use time::OffsetDateTime;
 // To use intersperse()
 use itertools::Itertools;
+// To run commands
+use std::process::Command;
 
 
 // Utils functions
@@ -137,9 +139,17 @@ async fn main() {
             watcher.watch(path, RecursiveMode::Recursive).unwrap();
         }
     }
-    if ! config.audit.is_empty() {
+    let mut last_position = 0;
+    if ! config.audit.is_empty() && utils::get_os() == "linux" {
         for element in config.audit.clone() {
             let path = element["path"].as_str().unwrap();
+            match Command::new("auditctl")
+                .args(["-w", path, "-k", "fim", "-p", "wa"])
+                .output()
+                {
+                    Ok(d) => debug!("Auditctl command info: {:?}", d),
+                    Err(e) => error!("Auditctl command error: {}", e)
+                };
             info!("Monitoring audit path: {}", path);
             match element["ignore"].as_vec() {
                 Some(ig) => {
@@ -151,9 +161,9 @@ async fn main() {
             };
         }
         watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::Recursive).unwrap();
+        last_position = utils::get_file_end(logreader::AUDIT_LOG_PATH)
     }
-    let mut last_position = utils::get_file_end(logreader::AUDIT_LOG_PATH);
-
+    
     // Main loop, receive any produced event and write it into the events log.
     loop {
         match rx.recv() {

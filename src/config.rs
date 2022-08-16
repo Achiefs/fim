@@ -311,10 +311,10 @@ pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
     let path = if event_path.is_file(){ String::from(raw_path)
     }else if utils::ends_with(raw_path, '/'){ format!("{}{}", raw_path, filename)
     }else{ format!("{}/{}", raw_path, filename) };
-    println!("RAW_EVENT_PATH: {}", raw_path);
-    println!("COMPARE_PATH: {}", compare_path);
-    println!("VALUE: {}", value);
-    println!("PATH: {}", path);
+    //println!("RAW_EVENT_PATH: {}", raw_path);
+    //println!("COMPARE_PATH: {}", compare_path);
+    //println!("VALUE: {}", value);
+    //println!("PATH: {}", path);
     match path.contains(&value) {
         true => true,
         false => event_path.to_str().unwrap().contains(&value)
