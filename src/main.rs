@@ -161,7 +161,22 @@ async fn main() {
             };
         }
         watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::Recursive).unwrap();
-        last_position = utils::get_file_end(logreader::AUDIT_LOG_PATH)
+        last_position = utils::get_file_end(logreader::AUDIT_LOG_PATH);
+        // Added way to remove audit rules introduced by FIM
+        let cconfig = config.clone();
+        ctrlc::set_handler(move || {
+            for element in &cconfig.audit {
+                let path = element["path"].as_str().unwrap();
+                match Command::new("auditctl")
+                    .args(["-W", path, "-k", "fim", "-p", "wa"])
+                    .output()
+                    {
+                        Ok(d) => debug!("Auditctl command info: {:?}", d),
+                        Err(e) => error!("Auditctl command error: {}", e)
+                    };
+            }
+            std::process::exit(0);
+        }).expect("Error setting Ctrl-C handler");
     }
     
     // Main loop, receive any produced event and write it into the events log.
@@ -259,7 +274,7 @@ mod tests {
     #[test]
     fn test_setup_logger() {
         let config = config::Config::new(&utils::get_os());
-        fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap();
+        fs::create_dir_all(&Path::new(&config.events_file).parent().unwrap()).unwrap();
         setup_logger(config.clone());
     }
 

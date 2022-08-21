@@ -326,7 +326,7 @@ pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
 
 // To read the Yaml configuration file
 pub fn read_config(path: String) -> Vec<Yaml> {
-    let mut file = File::open(path).expect("Unable to open file");
+    let mut file = File::open(path.clone()).expect(&format!("(read_config): Unable to open file '{}'", path));
     let mut contents = String::new();
 
     file.read_to_string(&mut contents)
@@ -357,7 +357,7 @@ pub fn get_config_path(system: &str) -> String {
 mod tests {
     use super::*;
     // To use files IO operations.
-    use std::{fs, env};
+    //use std::{fs, env};
 
     // ------------------------------------------------------------------------
 
@@ -609,8 +609,10 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    #[test]
+    /*#[test]
     fn test_get_config_path() {
+        tearup("0");
+        tearup("1");
         let default_path_windows = "./config/windows/config.yml";
         let default_path_linux = "./config/linux/config.yml";
         let default_path_macos = "./config/macos/config.yml";
@@ -663,5 +665,7 @@ mod tests {
             assert_eq!(get_config_path("linux"), config_linux);
             fs::rename(config_linux, default_path_linux).unwrap();
         }
-    }
+        teardown("0");
+        teardown("1");
+    }*/
 }
