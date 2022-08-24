@@ -32,7 +32,7 @@ mod config;
 mod index;
 // Single event data management
 mod event;
-use event::Event;
+//use crate::event;
 // File reading continuously
 mod logreader;
 mod auditevent;
@@ -90,18 +90,22 @@ async fn push_template(destination: &str, config: config::Config){
 
 // ----------------------------------------------------------------------------
 
-async fn process_event(destination: &str, event: Event, index_name: String, config: config::Config){
+/*async fn process_event(destination: &str, event: event::Event, index_name: String, config: config::Config){
     match destination {
         config::BOTH_MODE => {
             event.log_event(config.events_file);
             event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
+            /*.await{
+                Ok(response) => debug!("Response received: {:?}", response),
+                Err(e) => debug!("Error on request: {:?}", e)
+            }*/
         },
         config::NETWORK_MODE => {
             event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
         },
         _ => event.log_event(config.events_file)
     }
-}
+}*/
 
 // ----------------------------------------------------------------------------
 
@@ -218,7 +222,8 @@ async fn main() {
                                     ! config.match_ignore(index,
                                         audit_event.clone().file.as_str(),
                                         config.audit.clone()) {
-                                    audit_event.clone().log_event(config.events_file.clone());
+                                    //audit_event.clone().log_event(config.events_file.clone());
+                                    audit_event.process_event(destination.clone().as_str(), index_name.clone(), config.clone()).await;
                                 }else{
                                     debug!("Event ignored not stored in alerts");
                                 }
@@ -233,7 +238,7 @@ async fn main() {
                     let labels = config.get_labels(index, config.monitor.clone());
                     if ! config.match_ignore(index,
                         event_filename.to_str().unwrap(), config.monitor.clone()){
-                        let event = Event {
+                        let event = event::Event {
                             id: utils::get_uuid(),
                             timestamp: current_timestamp,
                             hostname: current_hostname,
@@ -249,7 +254,7 @@ async fn main() {
                         };
 
                         debug!("Event processed: {:?}", event);
-                        process_event(destination.clone().as_str(), event, index_name.clone(), config.clone()).await;
+                        event.process_event(destination.clone().as_str(), index_name.clone(), config.clone()).await;
                     }else{
                         debug!("Event ignored not stored in alerts");
                     }
@@ -300,7 +305,7 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    #[test]
+    /*#[test]
     fn test_process_event(){
         let config = config::Config::new(&utils::get_os());
         fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap();
@@ -320,5 +325,5 @@ mod tests {
             system: "test".to_string()
         };
         block_on(process_event("file", event, String::from("fim"), config.clone()));
-    }
+    }*/
 }

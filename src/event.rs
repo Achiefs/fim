@@ -19,6 +19,9 @@ use std::path::PathBuf;
 // To manage HTTP requests
 use reqwest::Client;
 
+// To get configuration constants
+use crate::config;
+
 pub struct Event {
     pub id: String,
     pub timestamp: String,
@@ -74,7 +77,6 @@ impl Event {
             _ => {
                 let error_msg = "Event Op not Handled or do not exists";
                 error!("{}", error_msg);
-                //Err(Error::new(ErrorKind::InvalidInput, error_msg));
             },
         };
     }
@@ -106,11 +108,28 @@ impl Event {
             .basic_auth(user, Some(pass))
             .json(&data)
             .send()
-            .await{
+            .await {
             Ok(response) => debug!("Response received: {:?}", response),
             Err(e) => debug!("Error on request: {:?}", e)
         };
     }
+
+    // ------------------------------------------------------------------------
+
+    // Function to manage event destination
+    pub async fn process_event(&self, destination: &str, index_name: String, config: config::Config){
+        match destination {
+            config::BOTH_MODE => {
+                self.log_event(config.events_file);
+                self.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
+            },
+            config::NETWORK_MODE => {
+                self.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
+            },
+            _ => self.log_event(config.events_file)
+        }
+    }
+
 }
 
 // ----------------------------------------------------------------------------

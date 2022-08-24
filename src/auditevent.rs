@@ -6,7 +6,7 @@ use std::fmt;
 use std::fs::OpenOptions;
 use std::io::Write;
 // Handle time intervals
-//use std::time::Duration;
+use std::time::Duration;
 // To log the program procedure
 use log::*;
 // To handle JSON objects
@@ -14,9 +14,10 @@ use serde_json::{json, to_string};
 // To manage paths
 //use std::path::PathBuf;
 // To manage HTTP requests
-//use reqwest::Client;
+use reqwest::Client;
 // To use HashMap
 use std::collections::HashMap;
+
 
 // To get configuration constants
 use crate::config;
@@ -233,15 +234,12 @@ impl Event {
 
     // ------------------------------------------------------------------------
 
-    pub fn is_empty(&self) -> bool {
-        self.path == *""
-    }
+    pub fn is_empty(&self) -> bool { self.path == *"" }
 
     // ------------------------------------------------------------------------
 
-    // Get formatted string with all required data
-    fn format_json(&self) -> String {
-        let obj = json!({
+    fn get_json(&self) -> serde_json::Value {
+        json!({
             "id": self.id.clone(),
             "timestamp": self.timestamp.clone(),
             "hostname": self.hostname.clone(),
@@ -297,9 +295,13 @@ impl Event {
             "fsgid": self.fsgid.clone(),
             "exe": self.exe.clone(),
             "source": self.source.clone()
-        });
-        to_string(&obj).unwrap()
+        })
     }
+
+    // ------------------------------------------------------------------------
+
+    // Get formatted string with all required data
+    fn format_json(&self) -> String { to_string(&self.get_json()).unwrap() }
 
     // ------------------------------------------------------------------------
 
@@ -321,19 +323,8 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to send events through network
-    /*pub async fn send(&self, index: String, address: String, user: String, pass: String, insecure: bool) {
-        let data = json!({
-            "timestamp": self.timestamp.clone(),
-            "hostname": self.hostname.clone(),
-            "node": self.node.clone(),
-            "pid": self.pid.clone(),
-            "version": self.version.clone(),
-            "labels": self.labels.clone(),
-            "operation": self.operation.clone(),
-            "file": String::from(self.path.clone().to_str().unwrap()),
-            "checksum": self.checksum.clone(),
-            "system": self.system.clone()
-        });
+    pub async fn send(&self, index: String, address: String, user: String, pass: String, insecure: bool) {
+        let data = self.get_json();
 
         let request_url = format!("{}/{}/_doc/{}", address, index, self.id);
         let client = Client::builder()
@@ -349,7 +340,23 @@ impl Event {
             Ok(response) => debug!("Response received: {:?}", response),
             Err(e) => debug!("Error on request: {:?}", e)
         };
-    }*/
+    }
+
+    // ------------------------------------------------------------------------
+
+    // Function to manage event destination
+    pub async fn process_event(&self, destination: &str, index_name: String, config: config::Config){
+        match destination {
+            config::BOTH_MODE => {
+                self.log_event(config.events_file);
+                self.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
+            },
+            config::NETWORK_MODE => {
+                self.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
+            },
+            _ => self.log_event(config.events_file)
+        }
+    }
 }
 
 // ----------------------------------------------------------------------------
