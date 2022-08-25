@@ -142,16 +142,18 @@ impl Config {
         // Manage null value on monitor value
         let monitor = match yaml[0]["monitor"].as_vec() {
             Some(value) => value.to_vec(),
-            None => {
-                println!("[ERROR] monitor not found in config.yml.");
-                panic!("monitor not found in config.yml.");
-            }
+            None => Vec::new()
         };
 
         // Manage null value on audit value
         let audit = match yaml[0]["audit"].as_vec() {
             Some(value) => value.to_vec(),
-            None => { Vec::new() }
+            None => {
+                if monitor.len() == 0 {
+                    panic!("Neither monitor or audit section found in config.yml.");
+                };
+                Vec::new()
+            }
         };
 
         // Manage null value on node value
@@ -244,10 +246,6 @@ impl Config {
     // ------------------------------------------------------------------------
 
     pub fn get_index(&self, raw_path: &str, cwd: &str, vector: Vec<Yaml>) -> usize {
-        //let event_path = Path::new(raw_path);
-        //let str_path = raw_path;
-
-        
         // Iterate over monitoring paths to match ignore string and ignore event or not
         match vector.iter().position(|it| {
             if raw_path == "./" || raw_path == "." {

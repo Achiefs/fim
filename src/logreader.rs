@@ -63,13 +63,24 @@ pub fn read_log(file: String, config: config::Config, position: u64) -> (Vec<Eve
 
 pub fn extract_fields(data: Vec<HashMap<String, String>>) -> (SHashMap,
     SHashMap, SHashMap, SHashMap, SHashMap) {
-    (data[0].clone(),
-    data[1].clone(), 
-    if data[2].clone()["type"] == "PATH" {
-        data[2].clone()
-    }else{ HashMap::new() },
-    data[data.len()-2].clone(),
-    data[data.len()-1].clone())
+    let syscall = data[0].clone()["syscall"].clone();
+    if syscall == "266" || syscall == "86" {
+        (data[0].clone(),
+        data[1].clone(), 
+        if data[3].clone()["type"] == "PATH" {
+            data[3].clone()
+        }else{ HashMap::new() },
+        data[data.len()-2].clone(),
+        data[data.len()-1].clone())
+    }else{
+        (data[0].clone(),
+        data[1].clone(), 
+        if data[2].clone()["type"] == "PATH" {
+            data[2].clone()
+        }else{ HashMap::new() },
+        data[data.len()-2].clone(),
+        data[data.len()-1].clone())
+    }
 }
 
 // ----------------------------------------------------------------------------
