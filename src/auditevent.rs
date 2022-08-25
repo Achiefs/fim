@@ -92,7 +92,8 @@ impl Event {
         path: HashMap<String, String>, proctitle: HashMap<String, String>,
         config: config::Config) -> Self {
 
-        let command = if proctitle["proctitle"].contains('/') {
+        let command = if proctitle["proctitle"].contains('/') || 
+            proctitle["proctitle"].contains("bash") {
             proctitle["proctitle"].clone()
         }else{
             hash::hex_to_ascii(proctitle["proctitle"].clone())
