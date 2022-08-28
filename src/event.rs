@@ -59,13 +59,13 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to write the received events to file
-    pub fn log_event(&self, file: String){
+    pub fn log(&self, file: String){
         let mut events_file = OpenOptions::new()
             .create(true)
             .write(true)
             .append(true)
             .open(file)
-            .expect("(log_event) Unable to open events log file.");
+            .expect("(log) Unable to open events log file.");
 
         match self.op {
             Op::CREATE|Op::WRITE|Op::RENAME|Op::REMOVE|Op::CHMOD|Op::CLOSE_WRITE|Op::RESCAN => {
@@ -117,16 +117,16 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to manage event destination
-    pub async fn process_event(&self, destination: &str, index_name: String, config: config::Config){
+    pub async fn process(&self, destination: &str, index_name: String, config: config::Config){
         match destination {
             config::BOTH_MODE => {
-                self.log_event(config.events_file);
+                self.log(config.events_file);
                 self.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
             },
             config::NETWORK_MODE => {
                 self.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
             },
-            _ => self.log_event(config.events_file)
+            _ => self.log(config.events_file)
         }
     }
 
@@ -253,11 +253,11 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_log_event() {
+    fn test_log() {
         let filename = String::from("test_event.json");
         let evt = create_test_event();
 
-        evt.log_event(filename.clone());
+        evt.log(filename.clone());
         let contents = fs::read_to_string(filename.clone());
         let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"fpid\":0,\"hostname\":\"Hostname\",\"id\":\"Test_id\",\"labels\":[],\"node\":\"FIM\",\"operation\":\"TEST\",\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}\n";
         assert_eq!(contents.unwrap(), expected);

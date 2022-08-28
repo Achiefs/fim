@@ -11,8 +11,6 @@ use std::time::Duration;
 use log::*;
 // To handle JSON objects
 use serde_json::{json, to_string};
-// To manage paths
-//use std::path::PathBuf;
 // To manage HTTP requests
 use reqwest::Client;
 // To use HashMap
@@ -307,13 +305,13 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to write the received events to file
-    pub fn log_event(&self, file: String){
+    pub fn log(&self, file: String){
         let mut events_file = OpenOptions::new()
             .create(true)
             .write(true)
             .append(true)
             .open(file)
-            .expect("(auditevent::log_event) Unable to open events log file.");
+            .expect("(auditevent::log) Unable to open events log file.");
 
             match writeln!(events_file, "{}", self.format_json()) {
                 Ok(_d) => debug!("Audit event log written"),
@@ -346,16 +344,16 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to manage event destination
-    pub async fn process_event(&self, destination: &str, index_name: String, config: config::Config){
+    pub async fn process(&self, destination: &str, index_name: String, config: config::Config){
         match destination {
             config::BOTH_MODE => {
-                self.log_event(config.events_file);
+                self.log(config.events_file);
                 self.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
             },
             config::NETWORK_MODE => {
                 self.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
             },
-            _ => self.log_event(config.events_file)
+            _ => self.log(config.events_file)
         }
     }
 }
@@ -414,76 +412,205 @@ impl fmt::Debug for Event {
 
 // ----------------------------------------------------------------------------
 
-/*#[cfg(test)]
+#[cfg(test)]
 mod tests {
     use super::*;
-    use crate::event::Event;
-    use notify::op::Op;
-    use std::path::PathBuf;
-    use std::fs;
+    use crate::auditevent::Event;
+    //use std::fs;
 
     // ------------------------------------------------------------------------
 
-    fn remove_test_file(filename: String) {
+    /*fn remove_test_file(filename: String) {
         fs::remove_file(filename).unwrap()
+    }*/
+
+    fn create_empty_event() -> Event {
+        Event {
+            id: String::from(""), timestamp: String::from(""),
+            hostname: String::from(""), node: String::from(""),
+            version: String::from(""), path: String::from(""),
+            file: String::from(""), labels: Vec::new(),
+            operation: String::from(""), checksum: String::from(""), fpid: 0,
+            system: String::from(""), command: String::from(""),
+            ogid: String::from(""), rdev: String::from(""),
+            proctitle: String::from(""), cap_fver: String::from(""),
+            inode: String::from(""), cap_fp: String::from(""),
+            cap_fe: String::from(""), item: String::from(""),
+            cap_fi: String::from(""), dev: String::from(""),
+            mode: String::from(""), cap_frootid: String::from(""),
+            ouid: String::from(""), parent: HashMap::new(),
+            cwd: String::from(""), syscall: String::from(""),
+            ppid: String::from(""), comm: String::from(""),
+            fsuid: String::from(""), pid: String::from(""),
+            a0: String::from(""), a1: String::from(""),
+            a2: String::from(""), a3: String::from(""),
+            arch: String::from(""), auid: String::from(""),
+            items: String::from(""), gid: String::from(""),
+            euid: String::from(""), sgid: String::from(""),
+            uid: String::from(""), tty: String::from(""),
+            success: String::from(""), exit: String::from(""),
+            ses: String::from(""), key: String::from(""),
+            suid: String::from(""), egid: String::from(""),
+            fsgid: String::from(""), exe: String::from(""),
+            source: String::from("")
+        }
     }
 
     fn create_test_event() -> Event {
         Event {
-            id: "Test_id".to_string(),
-            timestamp: "Timestamp".to_string(),
-            hostname: "Hostname".to_string(),
-            node: "FIM".to_string(),
-            version: "x.x.x".to_string(),
-            op: Op::CREATE,
-            path: PathBuf::new(),
-            labels: Vec::new(),
-            operation: "TEST".to_string(),
-            checksum: "UNKNOWN".to_string(),
-            pid: 0,
-            system: "test".to_string()
+            id: String::from("ID"), timestamp: String::from("TIMESTAMP"),
+            hostname: String::from("HOSTNAME"), node: String::from("NODE"),
+            version: String::from("VERSION"), path: String::from("PATH"),
+            file: String::from("FILE"), labels: Vec::new(),
+            operation: String::from("OPERATION"), checksum: String::from("CHECKSUM"),
+            fpid: 0,
+            system: String::from("SYSTEM"), command: String::from("COMMAND"),
+            ogid: String::from("OGID"), rdev: String::from("RDEV"),
+            proctitle: String::from("PROCTITLE"), cap_fver: String::from("CAP_FVER"),
+            inode: String::from("INODE"), cap_fp: String::from("CAP_FP"),
+            cap_fe: String::from("CAP_FE"), item: String::from("ITEM"),
+            cap_fi: String::from("CAP_FI"), dev: String::from("DEV"),
+            mode: String::from("MODE"), cap_frootid: String::from("CAP_FROOTID"),
+            ouid: String::from("OUID"), parent: HashMap::new(),
+            cwd: String::from("CWD"), syscall: String::from("SYSCALL"),
+            ppid: String::from("PPID"), comm: String::from("COMM"),
+            fsuid: String::from("FSUID"), pid: String::from("PID"),
+            a0: String::from("A0"), a1: String::from("A1"),
+            a2: String::from("A2"), a3: String::from("A3"),
+            arch: String::from("ARCH"), auid: String::from("AUID"),
+            items: String::from("ITEMS"), gid: String::from("GID"),
+            euid: String::from("EUID"), sgid: String::from("SGID"),
+            uid: String::from("UID"), tty: String::from("TTY"),
+            success: String::from("SUCCESS"), exit: String::from("EXIT"),
+            ses: String::from("SES"), key: String::from("KEY"),
+            suid: String::from("SUID"), egid: String::from("EGID"),
+            fsgid: String::from("FSGID"), exe: String::from("EXE"),
+            source: String::from("SOURCE")
         }
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_create_event() {
+    fn test_new_from() {
 
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_send_event() {
-
+    fn test_is_empty() {
+        let empty = create_empty_event();
+        let event = create_test_event();
+        assert_eq!(empty.is_empty(), true);
+        assert_eq!(event.is_empty(), false);
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_get_operation(){
-
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    fn test_event_fmt(){
-
+    fn test_get_json(){
+        let event = create_test_event().get_json();
+        assert_eq!(event["id"], "ID");
+        assert_eq!(event["timestamp"], "TIMESTAMP");
+        assert_eq!(event["hostname"], "HOSTNAME");
+        assert_eq!(event["node"], "NODE");
+        assert_eq!(event["version"], "VERSION");
+        assert_eq!(event["path"], "PATH");
+        assert_eq!(event["file"], "FILE");
+        //assert_eq!(event["labels"], Vec::<String>::new());
+        assert_eq!(event["operation"], "OPERATION");
+        assert_eq!(event["checksum"], "CHECKSUM");
+        assert_eq!(event["fpid"], 0 as i8);
+        assert_eq!(event["system"], "SYSTEM");
+        assert_eq!(event["command"], "COMMAND");
+        assert_eq!(event["ogid"], "OGID");
+        assert_eq!(event["rdev"], "RDEV");
+        assert_eq!(event["proctitle"], "PROCTITLE");
+        assert_eq!(event["cap_fver"], "CAP_FVER");
+        assert_eq!(event["inode"], "INODE");
+        assert_eq!(event["cap_fp"], "CAP_FP");
+        assert_eq!(event["cap_fe"], "CAP_FE");
+        assert_eq!(event["item"], "ITEM");
+        assert_eq!(event["cap_fi"], "CAP_FI");
+        assert_eq!(event["dev"], "DEV");
+        assert_eq!(event["mode"], "MODE");
+        assert_eq!(event["cap_frootid"], "CAP_FROOTID");
+        assert_eq!(event["ouid"], "OUID");
+        //assert_eq!(event["parent"], HashMap::new());
+        assert_eq!(event["cwd"], "CWD");
+        assert_eq!(event["syscall"], "SYSCALL");
+        assert_eq!(event["ppid"], "PPID");
+        assert_eq!(event["comm"], "COMM");
+        assert_eq!(event["fsuid"], "FSUID");
+        assert_eq!(event["pid"], "PID");
+        assert_eq!(event["a0"], "A0");
+        assert_eq!(event["a1"], "A1");
+        assert_eq!(event["a2"], "A2");
+        assert_eq!(event["a3"], "A3");
+        assert_eq!(event["arch"], "ARCH");
+        assert_eq!(event["auid"], "AUID");
+        assert_eq!(event["items"], "ITEMS");
+        assert_eq!(event["gid"], "GID");
+        assert_eq!(event["euid"], "EUID");
+        assert_eq!(event["sgid"], "SGID");
+        assert_eq!(event["uid"], "UID");
+        assert_eq!(event["tty"], "TTY");
+        assert_eq!(event["success"], "SUCCESS");
+        assert_eq!(event["exit"], "EXIT");
+        assert_eq!(event["ses"], "SES");
+        assert_eq!(event["key"], "KEY");
+        assert_eq!(event["suid"], "SUID");
+        assert_eq!(event["egid"], "EGID");
+        assert_eq!(event["fsgid"], "FSGID");
+        assert_eq!(event["exe"], "EXE");
+        assert_eq!(event["source"], "SOURCE");
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
     fn test_format_json() {
-
+        let json = create_test_event().format_json();
+        let string = String::from("{\"a0\":\"A0\",\"a1\":\"A1\",\"a2\":\"A2\",\
+            \"a3\":\"A3\",\"arch\":\"ARCH\",\"auid\":\"AUID\",\"cap_fe\":\"CAP_FE\",\
+            \"cap_fi\":\"CAP_FI\",\"cap_fp\":\"CAP_FP\",\
+            \"cap_frootid\":\"CAP_FROOTID\",\"cap_fver\":\"CAP_FVER\",\
+            \"checksum\":\"CHECKSUM\",\"comm\":\"COMM\",\"command\":\"COMMAND\",\
+            \"cwd\":\"CWD\",\"dev\":\"DEV\",\"egid\":\"EGID\",\"euid\":\"EUID\",\
+            \"exe\":\"EXE\",\"exit\":\"EXIT\",\"file\":\"FILE\",\"fpid\":0,\
+            \"fsgid\":\"FSGID\",\"fsuid\":\"FSUID\",\"gid\":\"GID\",\
+            \"hostname\":\"HOSTNAME\",\"id\":\"ID\",\"inode\":\"INODE\",\
+            \"item\":\"ITEM\",\"items\":\"ITEMS\",\"key\":\"KEY\",\"labels\":[],\
+            \"mode\":\"MODE\",\"node\":\"NODE\",\"ogid\":\"OGID\",\
+            \"operation\":\"OPERATION\",\"ouid\":\"OUID\",\"parent\":{},\
+            \"path\":\"PATH\",\"pid\":\"PID\",\"ppid\":\"PPID\",\
+            \"proctitle\":\"PROCTITLE\",\"rdev\":\"RDEV\",\"ses\":\"SES\",\
+            \"sgid\":\"SGID\",\"source\":\"SOURCE\",\"success\":\"SUCCESS\",\
+            \"suid\":\"SUID\",\"syscall\":\"SYSCALL\",\"system\":\"SYSTEM\",\
+            \"timestamp\":\"TIMESTAMP\",\"tty\":\"TTY\",\"uid\":\"UID\",\
+            \"version\":\"VERSION\"}");
+        assert_eq!(json, string);
     }
 
     // ------------------------------------------------------------------------
 
-    #[test]
-    fn test_log_event() {
+    //#[test]
+    //fn test_log() {}
 
-    }
-}*/
+    // ------------------------------------------------------------------------
+
+    //#[test]
+    //fn test_send() {   }
+
+    // ------------------------------------------------------------------------
+
+    //#[test]
+    //fn test_process() {   }
+
+    // ------------------------------------------------------------------------
+
+    //#[test]
+    //fn test_event_fmt(){   }
+
+}

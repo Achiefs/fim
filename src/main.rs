@@ -93,7 +93,7 @@ async fn push_template(destination: &str, config: config::Config){
 /*async fn process_event(destination: &str, event: event::Event, index_name: String, config: config::Config){
     match destination {
         config::BOTH_MODE => {
-            event.log_event(config.events_file);
+            event.log(config.events_file);
             event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
             /*.await{
                 Ok(response) => debug!("Response received: {:?}", response),
@@ -103,7 +103,7 @@ async fn push_template(destination: &str, config: config::Config){
         config::NETWORK_MODE => {
             event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
         },
-        _ => event.log_event(config.events_file)
+        _ => event.log(config.events_file)
     }
 }*/
 
@@ -222,8 +222,8 @@ async fn main() {
                                     ! config.match_ignore(index,
                                         audit_event.clone().file.as_str(),
                                         config.audit.clone()) {
-                                    //audit_event.clone().log_event(config.events_file.clone());
-                                    audit_event.process_event(destination.clone().as_str(), index_name.clone(), config.clone()).await;
+                                    //audit_event.clone().log(config.events_file.clone());
+                                    audit_event.process(destination.clone().as_str(), index_name.clone(), config.clone()).await;
                                 }else{
                                     debug!("Event ignored not stored in alerts");
                                 }
@@ -254,7 +254,7 @@ async fn main() {
                         };
 
                         debug!("Event processed: {:?}", event);
-                        event.process_event(destination.clone().as_str(), index_name.clone(), config.clone()).await;
+                        event.process(destination.clone().as_str(), index_name.clone(), config.clone()).await;
                     }else{
                         debug!("Event ignored not stored in alerts");
                     }
@@ -270,8 +270,8 @@ async fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use notify::op::Op;
-    use std::path::PathBuf;
+    //use notify::op::Op;
+    //use std::path::PathBuf;
     use tokio_test::block_on;
 
     // ------------------------------------------------------------------------
