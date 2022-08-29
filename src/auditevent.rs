@@ -85,12 +85,12 @@ pub struct Event {
 }
 
 impl Event {
-    pub fn new_from(syscall: HashMap<String, String>,
-        cwd: HashMap<String, String>, parent: HashMap<String, String>, 
+    pub fn from(syscall: HashMap<String, String>,
+        cwd: HashMap<String, String>, parent: HashMap<String, String>,
         path: HashMap<String, String>, proctitle: HashMap<String, String>,
         config: config::Config) -> Self {
 
-        let command = if proctitle["proctitle"].contains('/') || 
+        let command = if proctitle["proctitle"].contains('/') ||
             proctitle["proctitle"].contains("bash") {
             proctitle["proctitle"].clone()
         }else{
@@ -416,6 +416,8 @@ impl fmt::Debug for Event {
 mod tests {
     use super::*;
     use crate::auditevent::Event;
+    use crate::config::Config;
+    use tokio_test::block_on;
     //use std::fs;
 
     // ------------------------------------------------------------------------
@@ -491,10 +493,8 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    #[test]
-    fn test_new_from() {
-
-    }
+    //#[test]
+    //fn test_from() {}
 
     // ------------------------------------------------------------------------
 
@@ -605,12 +605,34 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    //#[test]
-    //fn test_process() {   }
+    #[test]
+    fn test_process() {
+        let config = Config::new(&utils::get_os());
+        let event = create_test_event();
+
+        block_on(event.process(config::NETWORK_MODE, String::from("test"), config.clone()));
+        block_on(event.process(config::FILE_MODE, String::from("test2"), config.clone()));
+        block_on(event.process(config::BOTH_MODE, String::from("test3"), config.clone()));
+    }
 
     // ------------------------------------------------------------------------
 
-    //#[test]
-    //fn test_event_fmt(){   }
+    #[test]
+    fn test_event_fmt(){
+        let out = format!("{:?}", create_test_event());
+        let expected = " { id: \"ID\", path: \"PATH\", operation: \"OPERATION\", \
+            file: \"FILE\", timestamp: \"TIMESTAMP\", proctitle: \"PROCTITLE\", \
+            cap_fver: \"CAP_FVER\", inode: \"INODE\", cap_fp: \"CAP_FP\", \
+            cap_fe: \"CAP_FE\", item: \"ITEM\", cap_fi: \"CAP_FI\", dev: \"DEV\", \
+            mode: \"MODE\", cap_frootid: \"CAP_FROOTID\", ouid: \"OUID\", \
+            parent: {}, cwd: \"CWD\", syscall: \"SYSCALL\", ppid: \"PPID\", \
+            comm: \"COMM\", fsuid: \"FSUID\", pid: \"PID\", a0: \"A0\", \
+            a1: \"A1\", a2: \"A2\", a3: \"A3\", arch: \"ARCH\", auid: \"AUID\", \
+            items: \"ITEMS\", gid: \"GID\", euid: \"EUID\", sgid: \"SGID\", \
+            uid: \"UID\", tty: \"TTY\", success: \"SUCCESS\", exit: \"EXIT\", \
+            ses: \"SES\", key: \"KEY\", suid: \"SUID\", egid: \"EGID\", \
+            fsgid: \"FSGID\", exe: \"EXE\" }";
+        assert_eq!(out, expected);
+    }
 
 }

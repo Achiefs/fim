@@ -246,7 +246,10 @@ mod tests {
 
     #[test]
     fn test_format_json() {
-        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"fpid\":0,\"hostname\":\"Hostname\",\"id\":\"Test_id\",\"labels\":[],\"node\":\"FIM\",\"operation\":\"TEST\",\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}";
+        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"fpid\":0,\
+            \"hostname\":\"Hostname\",\"id\":\"Test_id\",\"labels\":[],\
+            \"node\":\"FIM\",\"operation\":\"TEST\",\"system\":\"test\",\
+            \"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}";
         assert_eq!(create_test_event().format_json(), expected);
     }
 
@@ -259,7 +262,10 @@ mod tests {
 
         evt.log(filename.clone());
         let contents = fs::read_to_string(filename.clone());
-        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"fpid\":0,\"hostname\":\"Hostname\",\"id\":\"Test_id\",\"labels\":[],\"node\":\"FIM\",\"operation\":\"TEST\",\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}\n";
+        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"fpid\":0,\
+            \"hostname\":\"Hostname\",\"id\":\"Test_id\",\"labels\":[],\
+            \"node\":\"FIM\",\"operation\":\"TEST\",\"system\":\"test\",\
+            \"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}\n";
         assert_eq!(contents.unwrap(), expected);
         remove_test_file(filename.clone());
     }

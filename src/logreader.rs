@@ -37,7 +37,7 @@ pub fn read_log(file: String, config: config::Config, position: u64) -> (Vec<Eve
 
     // Read from last registered position until the end
     let mut data: Vec<HashMap<String, String>> = Vec::new();
-    for result in buff.take(end_position-position).lines() {    
+    for result in buff.take(end_position-position).lines() {
         let line = result.unwrap();
         if data.is_empty() {
             data.push(parse_audit_log(line.clone()));
@@ -51,7 +51,7 @@ pub fn read_log(file: String, config: config::Config, position: u64) -> (Vec<Eve
             // Skip the event generation of events not monitored by FIM
             let (syscall, cwd, parent, path, proctitle) = extract_fields(data.clone());
             if config.path_in(parent["name"].as_str(), cwd["cwd"].as_str(), config.audit.clone().to_vec()) {
-                events.push(Event::new_from(syscall, cwd, parent, path, proctitle, config.clone()));
+                events.push(Event::from(syscall, cwd, parent, path, proctitle, config.clone()));
                 data = Vec::new();
             }
         }
@@ -66,7 +66,7 @@ pub fn extract_fields(data: Vec<HashMap<String, String>>) -> (SHashMap,
     let syscall = data[0].clone()["syscall"].clone();
     if syscall == "266" || syscall == "86" {
         (data[0].clone(),
-        data[1].clone(), 
+        data[1].clone(),
         if data[3].clone()["type"] == "PATH" {
             data[3].clone()
         }else{ HashMap::new() },
@@ -74,7 +74,7 @@ pub fn extract_fields(data: Vec<HashMap<String, String>>) -> (SHashMap,
         data[data.len()-1].clone())
     }else{
         (data[0].clone(),
-        data[1].clone(), 
+        data[1].clone(),
         if data[2].clone()["type"] == "PATH" {
             data[2].clone()
         }else{ HashMap::new() },
@@ -97,40 +97,79 @@ pub fn parse_audit_log(log: String) -> HashMap<String, String> {
 
 // ----------------------------------------------------------------------------
 
-/*#[cfg(test)]
+#[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
-    use std::fs::File;
-    use std::io::prelude::*;
 
-    fn create_test_file(filename: String) {
-        File::create(filename).unwrap().write_all(b"This is a test!").unwrap();
-    }
+    #[test]
+    fn test_read_log() {
 
-    fn remove_test_file(filename: String) {
-        fs::remove_file(filename).unwrap()
     }
 
     #[test]
-    fn test_get_checksum_file() {
-        let filename = String::from("test_get_checksum_file");
-        create_test_file(filename.clone());
-        assert_eq!(get_checksum(filename.clone()), String::from("46512636eeeb22dee0d60f3aba6473b1fb3258dc0c9ed6fbdbf26bed06df796bc70d4c1f6d50ca977b45f35b494e4bd9fb34e55a1576d6d9a3b5e1ab059953ee"));
-        remove_test_file(filename.clone());
+    fn test_extract_fields() {
+        // Parent given check
+        let mut data = Vec::<HashMap<String, String>>::new();
+        data.push(HashMap::from([ (String::from("syscall"), String::from("100")) ]));
+        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
+        data.push(HashMap::from([ (String::from("type"), String::from("PATH")) ]));
+        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
+        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
+        let (a, b, c, d, e) = extract_fields(data);
+        assert_eq!(a["syscall"], String::from("100"));
+        assert_eq!(b["key"], String::from("expected"));
+        assert_eq!(c["type"], String::from("PATH"));
+        assert_eq!(d["key"], String::from("expected"));
+        assert_eq!(e["key"], String::from("expected"));
+
+        // Testing parent not given option
+        data = Vec::<HashMap<String, String>>::new();
+        data.push(HashMap::from([ (String::from("syscall"), String::from("100")) ]));
+        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
+        data.push(HashMap::from([ (String::from("type"), String::from("NOT_PATH")) ]));
+        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
+        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
+        let (a, b, c, d, e) = extract_fields(data);
+        assert_eq!(a["syscall"], String::from("100"));
+        assert_eq!(b["key"], String::from("expected"));
+        assert_eq!(c, HashMap::new());
+        assert_eq!(d["key"], String::from("expected"));
+        assert_eq!(e["key"], String::from("expected"));
+
+        // Testing specific syscall with parent given
+        data = Vec::<HashMap<String, String>>::new();
+        data.push(HashMap::from([ (String::from("syscall"), String::from("266")) ]));
+        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
+        data.push(HashMap::from([ (String::from("type"), String::from("NOT_PATH")) ]));
+        data.push(HashMap::from([ (String::from("type"), String::from("PATH")) ]));
+        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
+        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
+        let (a, b, c, d, e) = extract_fields(data);
+        assert_eq!(a["syscall"], String::from("266"));
+        assert_eq!(b["key"], String::from("expected"));
+        assert_eq!(c["type"], String::from("PATH"));
+        assert_eq!(d["key"], String::from("expected"));
+        assert_eq!(e["key"], String::from("expected"));
+
+        // Testing specific syscall with parent not given
+        data = Vec::<HashMap<String, String>>::new();
+        data.push(HashMap::from([ (String::from("syscall"), String::from("266")) ]));
+        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
+        data.push(HashMap::from([ (String::from("type"), String::from("NOT_PATH")) ]));
+        data.push(HashMap::from([ (String::from("type"), String::from("NOT_PATHPATH")) ]));
+        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
+        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
+        let (a, b, c, d, e) = extract_fields(data);
+        assert_eq!(a["syscall"], String::from("266"));
+        assert_eq!(b["key"], String::from("expected"));
+        assert_eq!(c, HashMap::new());
+        assert_eq!(d["key"], String::from("expected"));
+        assert_eq!(e["key"], String::from("expected"));
+
     }
 
     #[test]
-    fn test_get_checksum_not_exists() {
-        assert_ne!(get_checksum(String::from("not_exists")), String::from("This is a test"));
-        assert_eq!(get_checksum(String::from("not_exists")), String::from("UNKNOWN"));
-    }
+    fn test_parse_audit_log() {
 
-    #[test]
-    fn test_get_checksum_bad() {
-        let filename = String::from("test_get_checksum_bad");
-        create_test_file(filename.clone());
-        assert_ne!(get_checksum(filename.clone()), String::from("This is a test"));
-        remove_test_file(filename.clone());
     }
-}*/
+}
