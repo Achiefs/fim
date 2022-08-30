@@ -106,6 +106,8 @@ mod tests {
 
     }
 
+    // ------------------------------------------------------------------------
+
     #[test]
     fn test_extract_fields() {
         // Parent given check
@@ -167,6 +169,8 @@ mod tests {
         assert_eq!(e["key"], String::from("expected"));
 
     }
+
+    // ------------------------------------------------------------------------
 
     #[test]
     fn test_parse_audit_log() {
