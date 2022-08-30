@@ -160,7 +160,7 @@ mod tests {
     #[test]
     fn test_get_machine_id() {
         if get_os() == "linux" {
-            assert_eq!(get_machine_id().len(), 32);
+            assert_eq!(get_machine_id().len(), 33);
         }
     }
 
@@ -168,11 +168,14 @@ mod tests {
 
     #[test]
     fn test_get_filename_path() {
-        assert_eq!(get_filename_path("/test/file.txt"), "file.txt");
-        assert_ne!(get_filename_path("/test/file.txt"), "none");
-        assert_eq!(get_filename_path("C:\\test\\file.txt"), "file.txt");
-        assert_ne!(get_filename_path("C:\\test\\file.txt"), "none");
-        assert_eq!(get_filename_path("/test/"), "test");
+        if get_os() == "windows"{
+            assert_eq!(get_filename_path("C:\\test\\file.txt"), "file.txt");
+            assert_ne!(get_filename_path("C:\\test\\file.txt"), "none");
+        }else{
+            assert_eq!(get_filename_path("/test/file.txt"), "file.txt");
+            assert_ne!(get_filename_path("/test/file.txt"), "none");
+            assert_eq!(get_filename_path("/test/"), "test");
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -198,8 +201,13 @@ mod tests {
 
     #[test]
     fn test_get_file_end() {
-        assert_eq!(get_file_end("LICENSE"), 35823);
         assert_ne!(get_file_end("LICENSE"), 100);
+        // CRLF matter
+        if get_os() == "windows"{
+            assert_eq!(get_file_end("LICENSE"), 35823);
+        }else{
+            assert_eq!(get_file_end("LICENSE"), 35149);
+        }
     }
 
     // ------------------------------------------------------------------------
