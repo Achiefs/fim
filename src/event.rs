@@ -213,7 +213,7 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_send_event() {
+    fn test_send() {
         let evt = create_test_event();
         tokio_test::block_on( evt.send(
             String::from("test"), String::from("https://127.0.0.1:9200"),

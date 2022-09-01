@@ -51,7 +51,7 @@ pub fn get_os() -> String {
 // ----------------------------------------------------------------------------
 
 // Function to read file from begin to end
-pub fn read_file(path: String) -> String {
+pub fn read_file(path: &str) -> String {
     let mut file = File::open(path).unwrap();
     let mut contents = String::new();
 
@@ -63,7 +63,7 @@ pub fn read_file(path: String) -> String {
 
 // (Only supported in Linux) Function to get machine id of the host
 pub fn get_machine_id() -> String {
-    read_file(String::from(config::MACHINE_ID_PATH))
+    read_file(config::MACHINE_ID_PATH)
 }
 
 // ----------------------------------------------------------------------------
@@ -151,8 +151,8 @@ mod tests {
 
     #[test]
     fn test_read_file() {
-        assert_eq!(read_file(String::from("pkg/deb/debian/compat")), "10");
-        assert_ne!(read_file(String::from("LICENSE")), "10");
+        assert_eq!(read_file("pkg/deb/debian/compat"), "10");
+        assert_ne!(read_file("LICENSE"), "10");
     }
 
     // ------------------------------------------------------------------------

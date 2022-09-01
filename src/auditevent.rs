@@ -305,7 +305,7 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to write the received events to file
-    pub fn log(&self, file: String){
+    pub fn log(&self, file: &str){
         let mut events_file = OpenOptions::new()
             .create(true)
             .write(true)
@@ -347,13 +347,13 @@ impl Event {
     pub async fn process(&self, destination: &str, index_name: String, config: config::Config){
         match destination {
             config::BOTH_MODE => {
-                self.log(config.events_file);
+                self.log(&config.events_file);
                 self.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
             },
             config::NETWORK_MODE => {
                 self.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
             },
-            _ => self.log(config.events_file)
+            _ => self.log(&config.events_file)
         }
     }
 }
@@ -418,13 +418,13 @@ mod tests {
     use crate::auditevent::Event;
     use crate::config::Config;
     use tokio_test::block_on;
-    //use std::fs;
+    use std::fs;
 
     // ------------------------------------------------------------------------
 
-    /*fn remove_test_file(filename: String) {
+    fn remove_test_file(filename: &str) {
         fs::remove_file(filename).unwrap()
-    }*/
+    }
 
     fn create_empty_event() -> Event {
         Event {
@@ -493,8 +493,124 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    //#[test]
-    //fn test_from() {}
+    #[test]
+    fn test_from() {
+        if utils::get_os() == "linux"{
+            let config = Config::new(&utils::get_os());
+            let syscall = HashMap::<String, String>::from([
+                (String::from("syscall"), String::from("syscall")),
+                (String::from("ppid"), String::from("ppid")),
+                (String::from("comm"), String::from("comm")),
+                (String::from("fsuid"), String::from("fsuid")),
+                (String::from("pid"), String::from("pid")),
+                (String::from("a0"), String::from("a0")),
+                (String::from("a1"), String::from("a1")),
+                (String::from("a2"), String::from("a2")),
+                (String::from("a3"), String::from("a3")),
+                (String::from("arch"), String::from("arch")),
+                (String::from("auid"), String::from("auid")),
+                (String::from("items"), String::from("items")),
+                (String::from("gid"), String::from("gid")),
+                (String::from("euid"), String::from("euid")),
+                (String::from("sgid"), String::from("sgid")),
+                (String::from("uid"), String::from("uid")),
+                (String::from("tty"), String::from("tty")),
+                (String::from("success"), String::from("success")),
+                (String::from("exit"), String::from("exit")),
+                (String::from("ses"), String::from("ses")),
+                (String::from("key"), String::from("key")),
+                (String::from("suid"), String::from("suid")),
+                (String::from("egid"), String::from("egid")),
+                (String::from("fsgid"), String::from("fsgid")),
+                (String::from("exe"), String::from("exe"))
+            ]);
+
+            let cwd = HashMap::<String, String>::from([
+                (String::from("cwd"), String::from("cwd"))
+            ]);
+
+            let parent = HashMap::<String, String>::from([
+                (String::from("name"), String::from("/tmp"))
+            ]);
+
+            let path = HashMap::<String, String>::from([
+                (String::from("nametype"), String::from("nametype")),
+                (String::from("name"), String::from("name")),
+                (String::from("ogid"), String::from("ogid")),
+                (String::from("rdev"), String::from("rdev")),
+                (String::from("cap_fver"), String::from("cap_fver")),
+                (String::from("inode"), String::from("inode")),
+                (String::from("cap_fp"), String::from("cap_fp")),
+                (String::from("cap_fe"), String::from("cap_fe")),
+                (String::from("item"), String::from("item")),
+                (String::from("cap_fi"), String::from("cap_fi")),
+                (String::from("dev"), String::from("dev")),
+                (String::from("mode"), String::from("mode")),
+                (String::from("cap_frootid"), String::from("cap_frootid")),
+                (String::from("ouid"), String::from("ouid")),
+            ]);
+
+            let proctitle = HashMap::<String, String>::from([
+                (String::from("proctitle"), String::from("736564002D6900737C68656C6C6F7C4849217C670066696C6531302E747874")),
+                (String::from("msg"), String::from("audit(1659026449.689:6434)"))
+            ]);
+
+            let event = Event::from(syscall, cwd, parent, path, proctitle, config.clone());
+            assert_eq!(String::from("1659026449689"), event.timestamp);
+            assert_eq!(utils::get_hostname(), event.hostname);
+            assert_eq!(String::from("FIM"), event.node);
+            assert_eq!(String::from(config::VERSION), event.version);
+            assert_eq!(String::from("/tmp"), event.path);
+            assert_eq!(String::from("name"), event.file);
+            //assert_eq!(..., event.labels);
+            //assert_eq!(..., event.parent);
+            assert_eq!(String::from("nametype"), event.operation);
+            assert_eq!(String::from("UNKNOWN"), event.checksum);
+            assert_eq!(utils::get_pid(), event.fpid);
+            assert_eq!(utils::get_os(), event.system);
+            assert_eq!(String::from("sed -i s|hello|HI!|g file10.txt"), event.command);
+            assert_eq!(String::from("ogid"), event.ogid);
+            assert_eq!(String::from("rdev"), event.rdev);
+            assert_eq!(String::from("736564002D6900737C68656C6C6F7C4849217C670066696C6531302E747874"), event.proctitle);
+            assert_eq!(String::from("cap_fver"), event.cap_fver);
+            assert_eq!(String::from("inode"), event.inode);
+            assert_eq!(String::from("cap_fp"), event.cap_fp);
+            assert_eq!(String::from("cap_fe"), event.cap_fe);
+            assert_eq!(String::from("item"), event.item);
+            assert_eq!(String::from("cap_fi"), event.cap_fi);
+            assert_eq!(String::from("dev"), event.dev);
+            assert_eq!(String::from("mode"), event.mode);
+            assert_eq!(String::from("ouid"), event.ouid);
+            assert_eq!(String::from("cwd"), event.cwd);
+            assert_eq!(String::from("syscall"), event.syscall);
+            assert_eq!(String::from("ppid"), event.ppid);
+            assert_eq!(String::from("comm"), event.comm);
+            assert_eq!(String::from("fsuid"), event.fsuid);
+            assert_eq!(String::from("pid"), event.pid);
+            assert_eq!(String::from("a0"), event.a0);
+            assert_eq!(String::from("a1"), event.a1);
+            assert_eq!(String::from("a2"), event.a2);
+            assert_eq!(String::from("a3"), event.a3);
+            assert_eq!(String::from("arch"), event.arch);
+            assert_eq!(String::from("auid"), event.auid);
+            assert_eq!(String::from("items"), event.items);
+            assert_eq!(String::from("gid"), event.gid);
+            assert_eq!(String::from("euid"), event.euid);
+            assert_eq!(String::from("sgid"), event.sgid);
+            assert_eq!(String::from("uid"), event.uid);
+            assert_eq!(String::from("tty"), event.tty);
+            assert_eq!(String::from("success"), event.success);
+            assert_eq!(String::from("exit"), event.exit);
+            assert_eq!(String::from("ses"), event.ses);
+            assert_eq!(String::from("key"), event.key);
+            assert_eq!(String::from("suid"), event.suid);
+            assert_eq!(String::from("egid"), event.egid);
+            assert_eq!(String::from("fsgid"), event.fsgid);
+            assert_eq!(String::from("exe"), event.exe);
+            assert_eq!(String::from("audit"), event.source);
+        }
+
+    }
 
     // ------------------------------------------------------------------------
 
@@ -595,13 +711,51 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    //#[test]
-    //fn test_log() {}
+    #[test]
+    fn test_log() {
+        let filename = "test_log.json";
+        let event = create_test_event();
+        event.log(filename);
+
+        let expected = "{\"a0\":\"A0\",\"a1\":\"A1\",\"a2\":\"A2\",\"a3\":\"A3\",\
+        \"arch\":\"ARCH\",\"auid\":\"AUID\",\"cap_fe\":\"CAP_FE\",\"cap_fi\":\"CAP_FI\",\
+        \"cap_fp\":\"CAP_FP\",\"cap_frootid\":\"CAP_FROOTID\",\"cap_fver\":\"CAP_FVER\",\
+        \"checksum\":\"CHECKSUM\",\"comm\":\"COMM\",\"command\":\"COMMAND\",\
+        \"cwd\":\"CWD\",\"dev\":\"DEV\",\"egid\":\"EGID\",\"euid\":\"EUID\",\
+        \"exe\":\"EXE\",\"exit\":\"EXIT\",\"file\":\"FILE\",\"fpid\":0,\
+        \"fsgid\":\"FSGID\",\"fsuid\":\"FSUID\",\"gid\":\"GID\",\"hostname\":\"HOSTNAME\",\
+        \"id\":\"ID\",\"inode\":\"INODE\",\"item\":\"ITEM\",\"items\":\"ITEMS\",\
+        \"key\":\"KEY\",\"labels\":[],\"mode\":\"MODE\",\"node\":\"NODE\",\
+        \"ogid\":\"OGID\",\"operation\":\"OPERATION\",\"ouid\":\"OUID\",\
+        \"parent\":{},\"path\":\"PATH\",\"pid\":\"PID\",\"ppid\":\"PPID\",\
+        \"proctitle\":\"PROCTITLE\",\"rdev\":\"RDEV\",\"ses\":\"SES\",\"sgid\":\"SGID\",\
+        \"source\":\"SOURCE\",\"success\":\"SUCCESS\",\"suid\":\"SUID\",\
+        \"syscall\":\"SYSCALL\",\"system\":\"SYSTEM\",\"timestamp\":\"TIMESTAMP\",\
+        \"tty\":\"TTY\",\"uid\":\"UID\",\"version\":\"VERSION\"}\n";
+
+        let log = utils::read_file(filename);
+        assert_eq!(expected, log);
+
+        remove_test_file(filename);
+    }
 
     // ------------------------------------------------------------------------
 
-    //#[test]
-    //fn test_send() {   }
+    #[test]
+    #[should_panic]
+    fn test_log_panic() {
+        create_empty_event().log("");
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_send() {
+        let event = create_test_event();
+        tokio_test::block_on( event.send(
+            String::from("test"), String::from("https://127.0.0.1:9200"),
+            String::from("admin"), String::from("admin"), true) );
+    }
 
     // ------------------------------------------------------------------------
 

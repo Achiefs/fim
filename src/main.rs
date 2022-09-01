@@ -90,25 +90,6 @@ async fn push_template(destination: &str, config: config::Config){
 
 // ----------------------------------------------------------------------------
 
-/*async fn process_event(destination: &str, event: event::Event, index_name: String, config: config::Config){
-    match destination {
-        config::BOTH_MODE => {
-            event.log(config.events_file);
-            event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
-            /*.await{
-                Ok(response) => debug!("Response received: {:?}", response),
-                Err(e) => debug!("Error on request: {:?}", e)
-            }*/
-        },
-        config::NETWORK_MODE => {
-            event.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
-        },
-        _ => event.log(config.events_file)
-    }
-}*/
-
-// ----------------------------------------------------------------------------
-
 // Main function where the magic happens
 #[tokio::main]
 async fn main() {
@@ -182,7 +163,7 @@ async fn main() {
             std::process::exit(0);
         }).expect("Error setting Ctrl-C handler");
     }
-    
+
     // Main loop, receive any produced event and write it into the events log.
     loop {
         match rx.recv() {
@@ -222,7 +203,6 @@ async fn main() {
                                     ! config.match_ignore(index,
                                         audit_event.clone().file.as_str(),
                                         config.audit.clone()) {
-                                    //audit_event.clone().log(config.events_file.clone());
                                     audit_event.process(destination.clone().as_str(), index_name.clone(), config.clone()).await;
                                 }else{
                                     debug!("Event ignored not stored in alerts");
@@ -302,28 +282,4 @@ mod tests {
         setup_events("file", config.clone());
         setup_events("network", config.clone());
     }
-
-    // ------------------------------------------------------------------------
-
-    /*#[test]
-    fn test_process_event(){
-        let config = config::Config::new(&utils::get_os());
-        fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap();
-        fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
-        let event = Event {
-            id: "Test_id".to_string(),
-            timestamp: "Timestamp".to_string(),
-            hostname: "Hostname".to_string(),
-            node: "FIM".to_string(),
-            version: "x.x.x".to_string(),
-            op: Op::CREATE,
-            path: PathBuf::new(),
-            labels: Vec::new(),
-            operation: "TEST".to_string(),
-            checksum: "UNKNOWN".to_string(),
-            fpid: 0,
-            system: "test".to_string()
-        };
-        block_on(process_event("file", event, String::from("fim"), config.clone()));
-    }*/
 }
