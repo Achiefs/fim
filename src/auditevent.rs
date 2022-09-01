@@ -495,7 +495,7 @@ mod tests {
 
     #[test]
     fn test_from() {
-        if utils::get_os() == "linux"{
+        if utils::get_os() == "linux" {
             let config = Config::new(&utils::get_os());
             let syscall = HashMap::<String, String>::from([
                 (String::from("syscall"), String::from("syscall")),

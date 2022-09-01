@@ -298,7 +298,7 @@ impl Config {
 
 // ------------------------------------------------------------------------
 
-// Return if a path match with given one
+// Returns if raw_path contains compare_path
 pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
     let event_path = Path::new(raw_path);
     let value = utils::clean_path(compare_path);
@@ -309,10 +309,6 @@ pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
     let path = if event_path.is_file(){ String::from(raw_path)
     }else if utils::ends_with(raw_path, '/'){ format!("{}{}", raw_path, filename)
     }else{ format!("{}/{}", raw_path, filename) };
-    //println!("RAW_EVENT_PATH: {}", raw_path);
-    //println!("COMPARE_PATH: {}", compare_path);
-    //println!("VALUE: {}", value);
-    //println!("PATH: {}", path);
     match path.contains(&value) {
         true => true,
         false => event_path.to_str().unwrap().contains(&value)
@@ -555,14 +551,13 @@ mod tests {
         assert_eq!(yaml[0]["events"]["destination"].as_str().unwrap(), "file");
         assert_eq!(yaml[0]["events"]["file"].as_str().unwrap(), "/var/lib/fim/events.json");
 
-        assert_eq!(yaml[0]["monitor"][0]["path"].as_str().unwrap(), "/tmp/");
-        assert_eq!(yaml[0]["monitor"][1]["path"].as_str().unwrap(), "/bin/");
-        assert_eq!(yaml[0]["monitor"][2]["path"].as_str().unwrap(), "/usr/bin/");
-        assert_eq!(yaml[0]["monitor"][2]["labels"][0].as_str().unwrap(), "usr/bin");
+        assert_eq!(yaml[0]["monitor"][0]["path"].as_str().unwrap(), "/bin/");
+        assert_eq!(yaml[0]["monitor"][1]["path"].as_str().unwrap(), "/usr/bin/");
+        assert_eq!(yaml[0]["monitor"][1]["labels"][0].as_str().unwrap(), "usr/bin");
+        assert_eq!(yaml[0]["monitor"][1]["labels"][1].as_str().unwrap(), "linux");
+        assert_eq!(yaml[0]["monitor"][2]["path"].as_str().unwrap(), "/etc");
+        assert_eq!(yaml[0]["monitor"][2]["labels"][0].as_str().unwrap(), "etc");
         assert_eq!(yaml[0]["monitor"][2]["labels"][1].as_str().unwrap(), "linux");
-        assert_eq!(yaml[0]["monitor"][3]["path"].as_str().unwrap(), "/etc");
-        assert_eq!(yaml[0]["monitor"][3]["labels"][0].as_str().unwrap(), "etc");
-        assert_eq!(yaml[0]["monitor"][3]["labels"][1].as_str().unwrap(), "linux");
 
         assert_eq!(yaml[0]["log"]["file"].as_str().unwrap(), "/var/log/fim/fim.log");
         assert_eq!(yaml[0]["log"]["level"].as_str().unwrap(), "info");
@@ -666,4 +661,69 @@ mod tests {
         teardown("0");
         teardown("1");
     }*/
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_match_path() {
+        assert!(match_path("/", "/"));
+        assert!(match_path("/test", "/test"));
+        assert!(match_path("/test/", "/test"));
+        assert!(match_path("/test/tmp", "/test"));
+        assert!(!match_path("/tmp", "/test"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    #[should_panic]
+    fn test_match_path_panic() {
+        match_path("", "");
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_path_in() {
+        let config = Config::new(&utils::get_os());
+        if utils::get_os() == "windows" {
+            assert!(config.path_in("C:\\Program Files\\", "", config.monitor.clone()));
+            assert!(config.path_in("C:\\Program Files", "", config.monitor.clone()));
+            assert!(config.path_in("C:\\Program Files\\test", "", config.monitor.clone()));
+            assert!(!config.path_in("C:\\", "", config.monitor.clone()));
+        }else{
+            assert!(config.path_in("/bin/", "", config.monitor.clone()));
+            assert!(config.path_in("/bin", "", config.monitor.clone()));
+            assert!(config.path_in("/bin/test", "", config.monitor.clone()));
+            assert!(!config.path_in("/test", "", config.monitor.clone()));
+            assert!(config.path_in("/tmp", "", config.audit.clone()));
+            assert!(config.path_in("/tmp/", "", config.audit.clone()));
+            assert!(config.path_in("./", "/tmp", config.audit.clone()));
+            assert!(config.path_in("./", "/tmp/", config.audit.clone()));
+            assert!(!config.path_in("./", "/test", config.audit.clone()));
+            assert!(config.path_in("./", "/tmp/test", config.audit.clone()));
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_match_ignore() {
+        //...
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_get_labels() {
+        //...
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_get_index() {
+        //...
+    }
+
 }
