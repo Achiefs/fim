@@ -167,8 +167,11 @@ mod tests {
         assert_eq!(event.egid, "0");
         assert_eq!(event.fsgid, "0");
         assert_eq!(event.exe, "/usr/bin/sed");
-
-        assert_eq!(position, 854);
+        if utils::get_os() == "windows" {
+            assert_eq!(position, 854);
+        }else{
+            assert_eq!(position, 850);
+        }
     }
 
     // ------------------------------------------------------------------------
