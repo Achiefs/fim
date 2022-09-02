@@ -165,8 +165,11 @@ pub fn get_op(operation: Op) -> String {
 mod tests {
     use super::*;
     use crate::event::Event;
+    use crate::config::Config;
+    use crate::utils;
     use notify::op::Op;
     use std::path::PathBuf;
+    use tokio_test::block_on;
     use std::fs;
 
     // ------------------------------------------------------------------------
@@ -215,7 +218,7 @@ mod tests {
     #[test]
     fn test_send() {
         let evt = create_test_event();
-        tokio_test::block_on( evt.send(
+        block_on( evt.send(
             String::from("test"), String::from("https://127.0.0.1:9200"),
             String::from("admin"), String::from("admin"), true) );
     }
@@ -232,6 +235,18 @@ mod tests {
         assert_eq!(get_op(Op::CLOSE_WRITE), String::from("CLOSE_WRITE"));
         assert_eq!(get_op(Op::RESCAN), String::from("RESCAN"));
         assert_eq!(get_op(Op::empty()), String::from("UNKNOWN"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_process() {
+        let config = Config::new(&utils::get_os());
+        let event = create_test_event();
+
+        block_on(event.process(config::NETWORK_MODE, String::from("test"), config.clone()));
+        block_on(event.process(config::FILE_MODE, String::from("test2"), config.clone()));
+        block_on(event.process(config::BOTH_MODE, String::from("test3"), config.clone()));
     }
 
     // ------------------------------------------------------------------------

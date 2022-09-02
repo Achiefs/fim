@@ -555,7 +555,7 @@ mod tests {
                 (String::from("msg"), String::from("audit(1659026449.689:6434)"))
             ]);
 
-            let event = Event::from(syscall, cwd, parent, path, proctitle, config.clone());
+            let event = Event::from(syscall.clone(), cwd.clone(), parent.clone(), path.clone(), proctitle, config.clone());
             assert_eq!(String::from("1659026449689"), event.timestamp);
             assert_eq!(utils::get_hostname(), event.hostname);
             assert_eq!(String::from("FIM"), event.node);
@@ -608,8 +608,77 @@ mod tests {
             assert_eq!(String::from("fsgid"), event.fsgid);
             assert_eq!(String::from("exe"), event.exe);
             assert_eq!(String::from("audit"), event.source);
-        }
 
+            let proctitle = HashMap::<String, String>::from([
+                (String::from("proctitle"), String::from("bash")),
+                (String::from("msg"), String::from("audit(1659026449.689:6434)"))
+            ]);
+            let event = Event::from(syscall, cwd, parent, path, proctitle, config.clone());
+            assert_eq!(String::from("bash"), event.proctitle);
+
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_clone() {
+        let event = create_test_event();
+        let cloned = event.clone();
+        assert_eq!(event.id, cloned.id);
+        assert_eq!(event.timestamp, cloned.timestamp);
+        assert_eq!(event.hostname, cloned.hostname);
+        assert_eq!(event.node, cloned.node);
+        assert_eq!(event.version, cloned.version);
+        assert_eq!(event.path, cloned.path);
+        assert_eq!(event.file, cloned.file);
+        assert_eq!(event.labels, cloned.labels);
+        assert_eq!(event.operation, cloned.operation);
+        assert_eq!(event.checksum, cloned.checksum);
+        assert_eq!(event.fpid, cloned.fpid);
+        assert_eq!(event.system, cloned.system);
+        assert_eq!(event.command, cloned.command);
+        assert_eq!(event.ogid, cloned.ogid);
+        assert_eq!(event.rdev, cloned.rdev);
+        assert_eq!(event.proctitle, cloned.proctitle);
+        assert_eq!(event.cap_fver, cloned.cap_fver);
+        assert_eq!(event.inode, cloned.inode);
+        assert_eq!(event.cap_fp, cloned.cap_fp);
+        assert_eq!(event.cap_fe, cloned.cap_fe);
+        assert_eq!(event.item, cloned.item);
+        assert_eq!(event.cap_fi, cloned.cap_fi);
+        assert_eq!(event.dev, cloned.dev);
+        assert_eq!(event.mode, cloned.mode);
+        assert_eq!(event.cap_frootid, cloned.cap_frootid);
+        assert_eq!(event.ouid, cloned.ouid);
+        assert_eq!(event.parent, cloned.parent);
+        assert_eq!(event.cwd, cloned.cwd);
+        assert_eq!(event.syscall, cloned.syscall);
+        assert_eq!(event.ppid, cloned.ppid);
+        assert_eq!(event.comm, cloned.comm);
+        assert_eq!(event.fsuid, cloned.fsuid);
+        assert_eq!(event.pid, cloned.pid);
+        assert_eq!(event.a0, cloned.a0);
+        assert_eq!(event.a1, cloned.a1);
+        assert_eq!(event.a2, cloned.a2);
+        assert_eq!(event.a3, cloned.a3);
+        assert_eq!(event.arch, cloned.arch);
+        assert_eq!(event.auid, cloned.auid);
+        assert_eq!(event.items, cloned.items);
+        assert_eq!(event.gid, cloned.gid);
+        assert_eq!(event.euid, cloned.euid);
+        assert_eq!(event.sgid, cloned.sgid);
+        assert_eq!(event.uid, cloned.uid);
+        assert_eq!(event.tty, cloned.tty);
+        assert_eq!(event.success, cloned.success);
+        assert_eq!(event.exit, cloned.exit);
+        assert_eq!(event.ses, cloned.ses);
+        assert_eq!(event.key, cloned.key);
+        assert_eq!(event.suid, cloned.suid);
+        assert_eq!(event.egid, cloned.egid);
+        assert_eq!(event.fsgid, cloned.fsgid);
+        assert_eq!(event.exe, cloned.exe);
+        assert_eq!(event.source, cloned.source);
     }
 
     // ------------------------------------------------------------------------
@@ -752,7 +821,7 @@ mod tests {
     #[test]
     fn test_send() {
         let event = create_test_event();
-        tokio_test::block_on( event.send(
+        block_on( event.send(
             String::from("test"), String::from("https://127.0.0.1:9200"),
             String::from("admin"), String::from("admin"), true) );
     }

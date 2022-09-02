@@ -245,9 +245,9 @@ impl Config {
 
     // ------------------------------------------------------------------------
 
-    pub fn get_index(&self, raw_path: &str, cwd: &str, vector: Vec<Yaml>) -> usize {
+    pub fn get_index(&self, raw_path: &str, cwd: &str, array: Array) -> usize {
         // Iterate over monitoring paths to match ignore string and ignore event or not
-        match vector.iter().position(|it| {
+        match array.iter().position(|it| {
             if raw_path == "./" || raw_path == "." {
                 match_path(cwd, it["path"].as_str().unwrap())
             }else{
@@ -708,22 +708,55 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_match_ignore() {
-        //...
+    fn test_get_index() {
+        let config = Config::new(&utils::get_os());
+        if utils::get_os() == "windows" {
+            assert_eq!(config.get_index("C:\\Program Files\\", "", config.monitor.clone()), 0);
+            assert_eq!(config.get_index("C:\\Users\\", "", config.monitor.clone()), 1);
+            assert_eq!(config.get_index("C:\\test\\", "", config.monitor.clone()), usize::MAX);
+        }else{
+            assert_eq!(config.get_index("/bin/", "", config.monitor.clone()), 0);
+            assert_eq!(config.get_index("./", "/bin", config.monitor.clone()), 0);
+            assert_eq!(config.get_index("/usr/bin/", "", config.monitor.clone()), 1);
+            assert_eq!(config.get_index("/etc", "", config.monitor.clone()), 2);
+            assert_eq!(config.get_index("/test", "", config.monitor.clone()), usize::MAX);
+            assert_eq!(config.get_index("./", "/test", config.monitor.clone()), usize::MAX);
+            assert_eq!(config.get_index("/tmp", "", config.audit.clone()), 0);
+            assert_eq!(config.get_index("/test", "", config.audit.clone()), usize::MAX);
+            assert_eq!(config.get_index("./", "/tmp", config.audit.clone()), 0);
+            assert_eq!(config.get_index("./", "/test", config.audit.clone()), usize::MAX);
+        }
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
     fn test_get_labels() {
-        //...
+        let config = Config::new(&utils::get_os());
+        if utils::get_os() == "windows" {
+            let labels = config.get_labels(0, config.monitor.clone());
+            assert_eq!(labels[0], "Program Files");
+            assert_eq!(labels[1], "windows");
+        }else{
+            let labels = config.get_labels(1, config.monitor.clone());
+            assert_eq!(labels[0], "usr/bin");
+            assert_eq!(labels[1], "linux");
+
+            let labels = config.get_labels(0, config.audit.clone());
+            assert_eq!(labels[0], "tmp");
+            assert_eq!(labels[1], "linux");
+        }
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_get_index() {
-        //...
+    fn test_match_ignore() {
+        let config = Config::new(&utils::get_os());
+        if utils::get_os() == "linux" {
+            assert!(config.match_ignore(0, "file.swp", config.audit.clone()));
+            assert!(!config.match_ignore(0, "file.txt", config.audit.clone()));
+        }
     }
 
 }
