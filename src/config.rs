@@ -354,8 +354,6 @@ pub fn get_config_path(system: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // To use files IO operations.
-    use std::{fs, env};
 
     // ------------------------------------------------------------------------
 
@@ -623,7 +621,7 @@ mod tests {
         assert!(match_path("/", "/"));
         assert!(match_path("/test", "/test"));
         assert!(match_path("/test/", "/test"));
-        assert!(!match_path("/test/tmp", "/test"));
+        assert!(match_path("/test/tmp", "/test"));
         assert!(!match_path("/tmp", "/test"));
     }
 
@@ -640,7 +638,7 @@ mod tests {
         }else{
             assert!(config.path_in("/bin/", "", config.monitor.clone()));
             assert!(config.path_in("/bin", "", config.monitor.clone()));
-            assert!(config.path_in("/bin/test", "", config.monitor.clone()));
+            assert!(!config.path_in("/bin/test", "", config.monitor.clone()));
             assert!(!config.path_in("/test", "", config.monitor.clone()));
             assert!(config.path_in("/tmp", "", config.audit.clone()));
             assert!(config.path_in("/tmp/", "", config.audit.clone()));
