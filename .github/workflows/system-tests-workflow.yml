@@ -19,7 +19,7 @@ jobs:
 
       - name: Change configuration to test on Linux
         if: runner.os == 'Linux'
-        run: sed -i 's|tmp/.*|tmp/test|g' config/linux/config.yml
+        run: sed -i 's|usr/bin/.*|tmp/test|g' config/linux/config.yml
 
       - name: Change configuration to test on macOS
         if: runner.os == 'macOS'
