@@ -300,20 +300,24 @@ impl Config {
 
 // Returns if raw_path contains compare_path
 pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
-    let event_path = Path::new(raw_path);
-    let value = utils::clean_path(compare_path);
-    let filename = if event_path.is_file(){
-        event_path.file_name().unwrap().to_str().unwrap()
-    }else{ "" };
+    let pattern = if utils::get_os() == "linux" { '/' }else{ '\\' };
+    let mut raw_tokens: Vec<&str> = raw_path.split(pattern).collect();
+    let mut compare_tokens: Vec<&str> = compare_path.split(pattern).collect();
 
-    let path = if event_path.is_file(){ String::from(raw_path)
-    }else if utils::ends_with(raw_path, '/'){ format!("{}{}", raw_path, filename)
-    }else{ format!("{}/{}", raw_path, filename) };
-    match path.contains(&value) {
-        true => true,
-        false => event_path.to_str().unwrap().contains(&value)
+    if raw_tokens.len() == compare_tokens.len() {
+        raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)|
+            utils::clean_path(r) == utils::clean_path(c))
+    }else if raw_tokens.len() > compare_tokens.len() {
+        // Removing file name from bottom
+        raw_tokens.pop();
+        raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)|
+            utils::clean_path(r) == utils::clean_path(c))
+    }else {
+        // Removing file name from bottom
+        compare_tokens.pop();
+        raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)|
+            utils::clean_path(r) == utils::clean_path(c))
     }
-
 }
 
 // ----------------------------------------------------------------------------
@@ -351,7 +355,7 @@ pub fn get_config_path(system: &str) -> String {
 mod tests {
     use super::*;
     // To use files IO operations.
-    //use std::{fs, env};
+    use std::{fs, env};
 
     // ------------------------------------------------------------------------
 
@@ -602,65 +606,15 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    /*#[test]
+    #[test]
     fn test_get_config_path() {
-        tearup("0");
-        tearup("1");
         let default_path_windows = "./config/windows/config.yml";
         let default_path_linux = "./config/linux/config.yml";
         let default_path_macos = "./config/macos/config.yml";
         assert_eq!(get_config_path("windows"), default_path_windows);
         assert_eq!(get_config_path("linux"), default_path_linux);
         assert_eq!(get_config_path("macos"), default_path_macos);
-
-        let path = "./config.yml";
-        fs::rename(default_path_windows, path).unwrap();
-        assert_eq!(get_config_path("windows"), path);
-        fs::rename(path, default_path_windows).unwrap();
-
-        fs::rename(default_path_linux, path).unwrap();
-        assert_eq!(get_config_path("linux"), path);
-        fs::rename(path, default_path_linux).unwrap();
-
-        fs::rename(default_path_macos, path).unwrap();
-        assert_eq!(get_config_path("macos"), path);
-        fs::rename(path, default_path_macos).unwrap();
-
-        let relative_path_windows = "./../../config/windows";
-        let relative_config_windows = "./../../config/windows/config.yml";
-        let relative_path_linux = "./../../config/linux";
-        let relative_config_linux = "./../../config/linux/config.yml";
-        let relative_path_macos = "./../../config/macos";
-        let relative_config_macos = "./../../config/macos/config.yml";
-
-        fs::create_dir_all(relative_path_windows).unwrap();
-        fs::rename(default_path_windows, relative_config_windows).unwrap();
-        assert_eq!(get_config_path("windows"), relative_config_windows);
-        fs::rename(relative_config_windows, default_path_windows).unwrap();
-
-        fs::create_dir_all(relative_path_linux).unwrap();
-        fs::rename(default_path_linux, relative_config_linux).unwrap();
-        assert_eq!(get_config_path("linux"), relative_config_linux);
-        fs::rename(relative_config_linux, default_path_linux).unwrap();
-
-        fs::create_dir_all(relative_path_macos).unwrap();
-        fs::rename(default_path_macos, relative_config_macos).unwrap();
-        assert_eq!(get_config_path("macos"), relative_config_macos);
-        fs::rename(relative_config_macos, default_path_macos).unwrap();
-
-        fs::remove_dir_all("./../../config").unwrap();
-
-        if env::consts::OS == "linux" {
-            let linux_path = "/etc/fim";
-            let config_linux = "/etc/fim/config.yml";
-            fs::create_dir_all(linux_path).unwrap();
-            fs::rename(default_path_linux, config_linux).unwrap();
-            assert_eq!(get_config_path("linux"), config_linux);
-            fs::rename(config_linux, default_path_linux).unwrap();
-        }
-        teardown("0");
-        teardown("1");
-    }*/
+    }
 
     // ------------------------------------------------------------------------
 
@@ -669,16 +623,8 @@ mod tests {
         assert!(match_path("/", "/"));
         assert!(match_path("/test", "/test"));
         assert!(match_path("/test/", "/test"));
-        assert!(match_path("/test/tmp", "/test"));
+        assert!(!match_path("/test/tmp", "/test"));
         assert!(!match_path("/tmp", "/test"));
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    #[should_panic]
-    fn test_match_path_panic() {
-        match_path("", "");
     }
 
     // ------------------------------------------------------------------------
@@ -689,7 +635,7 @@ mod tests {
         if utils::get_os() == "windows" {
             assert!(config.path_in("C:\\Program Files\\", "", config.monitor.clone()));
             assert!(config.path_in("C:\\Program Files", "", config.monitor.clone()));
-            assert!(config.path_in("C:\\Program Files\\test", "", config.monitor.clone()));
+            assert!(!config.path_in("C:\\Program Files\\test", "", config.monitor.clone()));
             assert!(!config.path_in("C:\\", "", config.monitor.clone()));
         }else{
             assert!(config.path_in("/bin/", "", config.monitor.clone()));
@@ -717,8 +663,7 @@ mod tests {
         }else{
             assert_eq!(config.get_index("/bin/", "", config.monitor.clone()), 0);
             assert_eq!(config.get_index("./", "/bin", config.monitor.clone()), 0);
-            // Review this check is failling, must be 1 not 0.
-            assert_eq!(config.get_index("/usr/bin/", "", config.monitor.clone()), 0);
+            assert_eq!(config.get_index("/usr/bin/", "", config.monitor.clone()), 1);
             assert_eq!(config.get_index("/etc", "", config.monitor.clone()), 2);
             assert_eq!(config.get_index("/test", "", config.monitor.clone()), usize::MAX);
             assert_eq!(config.get_index("./", "/test", config.monitor.clone()), usize::MAX);
