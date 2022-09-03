@@ -618,11 +618,14 @@ mod tests {
 
     #[test]
     fn test_match_path() {
-        assert!(match_path("/", "/"));
-        assert!(match_path("/test", "/test"));
-        assert!(match_path("/test/", "/test"));
-        assert!(!match_path("/test/tmp", "/test"));
-        assert!(!match_path("/tmp", "/test"));
+        if utils::get_os() == "linux" {
+            assert!(match_path("/", "/"));
+            assert!(match_path("/test", "/test"));
+            assert!(match_path("/test/", "/test"));
+            assert!(match_path("/test/tmp", "/test"));
+            assert!(!match_path("/tmp/test", "/test"));
+            assert!(!match_path("/tmp", "/test"));
+        }
     }
 
     // ------------------------------------------------------------------------
