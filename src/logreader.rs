@@ -141,7 +141,7 @@ mod tests {
         assert_eq!(event.parent["cap_fe"], "0");
         assert_eq!(event.parent["cap_fp"], "0");
         assert_eq!(event.parent["name"], "./");
-        assert_eq!(event.cwd, "/tmp/test");
+        assert_eq!(event.cwd, "/tmp");
         assert_eq!(event.syscall, "257");
         assert_eq!(event.ppid, "161880");
         assert_eq!(event.comm, "sed");
@@ -168,9 +168,9 @@ mod tests {
         assert_eq!(event.fsgid, "0");
         assert_eq!(event.exe, "/usr/bin/sed");
         if utils::get_os() == "windows" {
-            assert_eq!(position, 854);
+            assert_eq!(position, 849);
         }else{
-            assert_eq!(position, 850);
+            assert_eq!(position, 845);
         }
     }
 

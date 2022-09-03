@@ -130,11 +130,10 @@ async fn main() {
             let path = element["path"].as_str().unwrap();
             match Command::new("auditctl")
                 .args(["-w", path, "-k", "fim", "-p", "wa"])
-                .output()
-                {
-                    Ok(d) => debug!("Auditctl command info: {:?}", d),
-                    Err(e) => error!("Auditctl command error: {}", e)
-                };
+                .output() {
+                Ok(d) => debug!("Auditctl command info: {:?}", d),
+                Err(e) => error!("Auditctl command error: {}", e)
+            };
             info!("Monitoring audit path: {}", path);
             match element["ignore"].as_vec() {
                 Some(ig) => {
@@ -145,8 +144,10 @@ async fn main() {
                 None => info!("Ignore for '{}' not set", path)
             };
         }
-        watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::Recursive).unwrap();
-        last_position = utils::get_file_end(logreader::AUDIT_LOG_PATH);
+        if utils::check_auditd(){
+            watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::Recursive).unwrap();
+            last_position = utils::get_file_end(logreader::AUDIT_LOG_PATH);
+        }
         // Added way to remove audit rules introduced by FIM
         let cconfig = config.clone();
         ctrlc::set_handler(move || {

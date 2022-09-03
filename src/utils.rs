@@ -14,6 +14,10 @@ use std::io::prelude::*;
 use crate::config;
 // To manage paths
 use std::path::Path;
+// To run commands
+use std::process::Command;
+// To log the program process
+use log::{error, debug};
 
 // ----------------------------------------------------------------------------
 
@@ -90,9 +94,19 @@ pub fn get_file_end(file: &str) -> u64 {
 
 // ----------------------------------------------------------------------------
 
-// Function to determine if a String ends with given char or not
-pub fn ends_with(string: &str, end: char) -> bool {
-    String::from(string).pop().unwrap() == end
+pub fn check_auditd() -> bool {
+    match Command::new("command")
+        .args(["-v", "auditctl"])
+        .output() {
+        Ok(_d) => {
+            debug!("Auditctl command available");
+            true
+        },
+        Err(_e) => {
+            error!("Auditctl command unavailable");
+            false
+        }
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -213,17 +227,8 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_ends_with() {
-        assert!(ends_with("/", '/'));
-        assert!(ends_with("test", 't'));
-        assert!(ends_with(" ", ' '));
-        assert!(!ends_with("/", 'h'));
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_ends_with_panic() {
-        assert!(ends_with("", ' '));
+    fn test_check_auditd() {
+        assert!(!check_auditd());
     }
 
 }

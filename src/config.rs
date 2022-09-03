@@ -621,7 +621,7 @@ mod tests {
         assert!(match_path("/", "/"));
         assert!(match_path("/test", "/test"));
         assert!(match_path("/test/", "/test"));
-        assert!(match_path("/test/tmp", "/test"));
+        assert!(!match_path("/test/tmp", "/test"));
         assert!(!match_path("/tmp", "/test"));
     }
 
