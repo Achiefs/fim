@@ -95,14 +95,17 @@ pub fn get_file_end(file: &str) -> u64 {
 // ----------------------------------------------------------------------------
 
 pub fn check_auditd() -> bool {
-    match Command::new("command")
-        .args(["-v", "auditctl"])
-        .output() {
-        Ok(_d) => {
+    match Command::new("which")
+        .arg("auditctl")
+        .output()
+        .expect("[ERROR] Failed to execute auditctl command check")
+        .status
+        .success() {
+        true => {
             debug!("Auditctl command available");
             true
         },
-        Err(_e) => {
+        _ => {
             error!("Auditctl command unavailable");
             false
         }

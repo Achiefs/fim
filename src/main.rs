@@ -125,7 +125,7 @@ async fn main() {
         }
     }
     let mut last_position = 0;
-    if ! config.audit.is_empty() && utils::get_os() == "linux" {
+    if ! config.audit.is_empty() && utils::get_os() == "linux" && utils::check_auditd() {
         for element in config.audit.clone() {
             let path = element["path"].as_str().unwrap();
             match Command::new("auditctl")
@@ -144,10 +144,8 @@ async fn main() {
                 None => info!("Ignore for '{}' not set", path)
             };
         }
-        if utils::check_auditd(){
-            watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::Recursive).unwrap();
-            last_position = utils::get_file_end(logreader::AUDIT_LOG_PATH);
-        }
+        watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::Recursive).unwrap();
+        last_position = utils::get_file_end(logreader::AUDIT_LOG_PATH);
         // Added way to remove audit rules introduced by FIM
         let cconfig = config.clone();
         ctrlc::set_handler(move || {
