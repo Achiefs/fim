@@ -29,7 +29,7 @@ jobs:
         run: cp ./target/release/fim ./
 
       - name: Create required directories
-        run: mkdir /tmp/test
+        run: mkdir -p /tmp/test
 
       - name: Create events file and folder
         run: sudo mkdir -p /var/lib/fim/ && sudo touch /var/lib/fim/events.json && sudo chown -R runner:runner /var/lib/fim
@@ -49,6 +49,7 @@ jobs:
 
       - run: echo "Job's status is ${{ job.status }}."
 
+
   audit-system-tests-unix:
     runs-on: self-hosted
 
@@ -60,7 +61,7 @@ jobs:
         run: cargo build --release
 
       - name: Change configuration
-        run: sed -i 's|tmp/.*|tmp/test|g' config/linux/config.yml
+        run: sed -i 's|/tmp.*|/tmp/test|g' config/linux/config.yml
 
       - name: Copy FIM binary to main folder
         run: cp ./target/release/fim ./
