@@ -66,7 +66,7 @@ jobs:
         run: cp ./target/release/fim ./
 
       - name: Create required directories
-        run: mkdir /tmp/test
+        run: mkdir -p /tmp/test
 
       - name: Create events file and folder
         run: sudo mkdir -p /var/lib/fim/ && sudo touch /var/lib/fim/events.json && sudo chown -R okynos:okynos /var/lib/fim
@@ -85,6 +85,7 @@ jobs:
         run: cat /var/lib/fim/events.json
 
       - name: Clean environment
+        if: always()
         run: sudo rm -rf /tmp/test /var/log/fim/ /var/lib/fim/
 
       - run: echo "Job's status is ${{ job.status }}."
