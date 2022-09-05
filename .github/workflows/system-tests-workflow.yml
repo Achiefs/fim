@@ -50,7 +50,7 @@ jobs:
       - run: echo "Job's status is ${{ job.status }}."
 
   audit-system-tests-unix:
-    runs-on: audit
+    runs-on: self-hosted
 
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
