@@ -128,8 +128,8 @@ async fn main() {
     if ! config.audit.is_empty() && utils::get_os() == "linux" && utils::check_auditd() {
         for element in config.audit.clone() {
             let path = element["path"].as_str().unwrap();
-            match Command::new("auditctl")
-                .args(["-w", path, "-k", "fim", "-p", "wa"])
+            match Command::new("/usr/sbin/auditctl")
+                .args(["-w", path, "-k", "fim", "-p", "wax"])
                 .output() {
                 Ok(d) => debug!("Auditctl command info: {:?}", d),
                 Err(e) => error!("Auditctl command error: {}", e)
@@ -151,8 +151,8 @@ async fn main() {
         ctrlc::set_handler(move || {
             for element in &cconfig.audit {
                 let path = element["path"].as_str().unwrap();
-                match Command::new("auditctl")
-                    .args(["-W", path, "-k", "fim", "-p", "wa"])
+                match Command::new("/usr/sbin/auditctl")
+                    .args(["-W", path, "-k", "fim", "-p", "wax"])
                     .output()
                     {
                         Ok(d) => debug!("Auditctl command info: {:?}", d),

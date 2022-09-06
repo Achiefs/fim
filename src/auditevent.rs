@@ -54,7 +54,7 @@ pub struct Event {
     pub mode: String,
     pub cap_frootid: String,
     pub ouid: String,
-    pub parent: HashMap<String, String>,
+    pub paths: Vec<HashMap<String, String>>,
     pub cwd: String,
     pub syscall: String,
     pub ppid: String,
@@ -86,9 +86,12 @@ pub struct Event {
 
 impl Event {
     pub fn from(syscall: HashMap<String, String>,
-        cwd: HashMap<String, String>, parent: HashMap<String, String>,
-        path: HashMap<String, String>, proctitle: HashMap<String, String>,
+        cwd: HashMap<String, String>, proctitle: HashMap<String, String>,
+        paths: Vec<HashMap<String, String>>,
         config: config::Config) -> Self {
+
+        let parent = get_parent(paths.clone(),  cwd["cwd"].as_str(), config.clone());
+        let path = get_item_path(paths.clone(), cwd["cwd"].as_str(), config.clone());
 
         let command = if proctitle["proctitle"].contains('/') ||
             proctitle["proctitle"].contains("bash") {
@@ -138,7 +141,7 @@ impl Event {
             cap_frootid: path["cap_frootid"].clone(),
             ouid: path["ouid"].clone(),
 
-            parent,
+            paths,
             cwd: cwd["cwd"].clone(),
 
             syscall: syscall["syscall"].clone(),
@@ -200,7 +203,7 @@ impl Event {
             mode: self.mode.clone(),
             cap_frootid: self.cap_frootid.clone(),
             ouid: self.ouid.clone(),
-            parent: self.parent.clone(),
+            paths: self.paths.clone(),
             cwd: self.cwd.clone(),
             syscall: self.syscall.clone(),
             ppid: self.ppid.clone(),
@@ -266,7 +269,7 @@ impl Event {
             "mode": self.mode.clone(),
             "cap_frootid": self.cap_frootid.clone(),
             "ouid": self.ouid.clone(),
-            "parent": self.parent.clone(),
+            "paths": self.paths.clone(),
             "cwd": self.cwd.clone(),
             "syscall": self.syscall.clone(),
             "ppid": self.ppid.clone(),
@@ -360,6 +363,30 @@ impl Event {
 
 // ----------------------------------------------------------------------------
 
+pub fn get_parent(paths: Vec<HashMap<String, String>>, cwd: &str, config: config::Config) -> HashMap<String, String> {
+    match paths.iter().find(|p|{
+        p["nametype"] == "PARENT" &&
+        config.path_in(p["name"].as_str(), cwd, config.audit.clone())
+    }){
+        Some(p) => p.clone(),
+        None => get_item_path(paths.clone(), cwd, config.clone())
+    }.clone()
+}
+
+// ----------------------------------------------------------------------------
+
+pub fn get_item_path(paths: Vec<HashMap<String, String>>, cwd: &str, config: config::Config) -> HashMap<String, String> {
+    match paths.iter().find(|p|{
+        p["nametype"] != "PARENT" &&
+        config.path_in(p["name"].as_str(), cwd, config.audit.clone())
+    }){
+        Some(p) => p.clone(),
+        None => get_parent(paths.clone(), cwd, config.clone())
+    }.clone()
+}
+
+// ----------------------------------------------------------------------------
+
 impl fmt::Debug for Event {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
         f.debug_struct("")
@@ -379,7 +406,7 @@ impl fmt::Debug for Event {
             .field("mode", &self.mode)
             .field("cap_frootid", &self.cap_frootid)
             .field("ouid", &self.ouid)
-            .field("parent", &self.parent)
+            .field("paths", &self.paths)
             .field("cwd", &self.cwd)
             .field("syscall", &self.syscall)
             .field("ppid", &self.ppid)
@@ -440,7 +467,7 @@ mod tests {
             cap_fe: String::from(""), item: String::from(""),
             cap_fi: String::from(""), dev: String::from(""),
             mode: String::from(""), cap_frootid: String::from(""),
-            ouid: String::from(""), parent: HashMap::new(),
+            ouid: String::from(""), paths: Vec::new(),
             cwd: String::from(""), syscall: String::from(""),
             ppid: String::from(""), comm: String::from(""),
             fsuid: String::from(""), pid: String::from(""),
@@ -473,7 +500,7 @@ mod tests {
             cap_fe: String::from("CAP_FE"), item: String::from("ITEM"),
             cap_fi: String::from("CAP_FI"), dev: String::from("DEV"),
             mode: String::from("MODE"), cap_frootid: String::from("CAP_FROOTID"),
-            ouid: String::from("OUID"), parent: HashMap::new(),
+            ouid: String::from("OUID"), paths: Vec::new(),
             cwd: String::from("CWD"), syscall: String::from("SYSCALL"),
             ppid: String::from("PPID"), comm: String::from("COMM"),
             fsuid: String::from("FSUID"), pid: String::from("PID"),
@@ -529,11 +556,34 @@ mod tests {
                 (String::from("cwd"), String::from("cwd"))
             ]);
 
-            let parent = HashMap::<String, String>::from([
+            /*let parent = HashMap::<String, String>::from([
                 (String::from("name"), String::from("/tmp"))
+            ]);*/
+            let paths = Vec::from([
+                HashMap::<String, String>::from([
+                    (String::from("name"), String::from("/tmp")),
+                    (String::from("nametype"), String::from("PARENT"))
+                ]),
+                HashMap::<String, String>::from([
+                    (String::from("nametype"), String::from("nametype")),
+                    (String::from("name"), String::from("/tmp")),
+                    (String::from("ogid"), String::from("ogid")),
+                    (String::from("rdev"), String::from("rdev")),
+                    (String::from("cap_fver"), String::from("cap_fver")),
+                    (String::from("inode"), String::from("inode")),
+                    (String::from("cap_fp"), String::from("cap_fp")),
+                    (String::from("cap_fe"), String::from("cap_fe")),
+                    (String::from("item"), String::from("item")),
+                    (String::from("cap_fi"), String::from("cap_fi")),
+                    (String::from("dev"), String::from("dev")),
+                    (String::from("mode"), String::from("mode")),
+                    (String::from("cap_frootid"), String::from("cap_frootid")),
+                    (String::from("ouid"), String::from("ouid")),
+
+                ])
             ]);
 
-            let path = HashMap::<String, String>::from([
+            /*let path = HashMap::<String, String>::from([
                 (String::from("nametype"), String::from("nametype")),
                 (String::from("name"), String::from("name")),
                 (String::from("ogid"), String::from("ogid")),
@@ -548,20 +598,20 @@ mod tests {
                 (String::from("mode"), String::from("mode")),
                 (String::from("cap_frootid"), String::from("cap_frootid")),
                 (String::from("ouid"), String::from("ouid")),
-            ]);
+            ]);*/
 
             let proctitle = HashMap::<String, String>::from([
                 (String::from("proctitle"), String::from("736564002D6900737C68656C6C6F7C4849217C670066696C6531302E747874")),
                 (String::from("msg"), String::from("audit(1659026449.689:6434)"))
             ]);
 
-            let event = Event::from(syscall.clone(), cwd.clone(), parent.clone(), path.clone(), proctitle, config.clone());
+            let event = Event::from(syscall.clone(), cwd.clone(), proctitle, paths.clone(), config.clone());
             assert_eq!(String::from("1659026449689"), event.timestamp);
             assert_eq!(utils::get_hostname(), event.hostname);
             assert_eq!(String::from("FIM"), event.node);
             assert_eq!(String::from(config::VERSION), event.version);
             assert_eq!(String::from("/tmp"), event.path);
-            assert_eq!(String::from("name"), event.file);
+            assert_eq!(String::from("tmp"), event.file);
             //assert_eq!(..., event.labels);
             //assert_eq!(..., event.parent);
             assert_eq!(String::from("nametype"), event.operation);
@@ -613,7 +663,7 @@ mod tests {
                 (String::from("proctitle"), String::from("bash")),
                 (String::from("msg"), String::from("audit(1659026449.689:6434)"))
             ]);
-            let event = Event::from(syscall, cwd, parent, path, proctitle, config.clone());
+            let event = Event::from(syscall, cwd, proctitle, paths.clone(), config.clone());
             assert_eq!(String::from("bash"), event.proctitle);
 
         }
@@ -651,7 +701,8 @@ mod tests {
         assert_eq!(event.mode, cloned.mode);
         assert_eq!(event.cap_frootid, cloned.cap_frootid);
         assert_eq!(event.ouid, cloned.ouid);
-        assert_eq!(event.parent, cloned.parent);
+        assert_eq!(event.paths, cloned.paths);
+        //assert_eq!(event.parent, cloned.parent);
         assert_eq!(event.cwd, cloned.cwd);
         assert_eq!(event.syscall, cloned.syscall);
         assert_eq!(event.ppid, cloned.ppid);
@@ -759,22 +810,20 @@ mod tests {
         let json = create_test_event().format_json();
         let string = String::from("{\"a0\":\"A0\",\"a1\":\"A1\",\"a2\":\"A2\",\
             \"a3\":\"A3\",\"arch\":\"ARCH\",\"auid\":\"AUID\",\"cap_fe\":\"CAP_FE\",\
-            \"cap_fi\":\"CAP_FI\",\"cap_fp\":\"CAP_FP\",\
-            \"cap_frootid\":\"CAP_FROOTID\",\"cap_fver\":\"CAP_FVER\",\
-            \"checksum\":\"CHECKSUM\",\"comm\":\"COMM\",\"command\":\"COMMAND\",\
-            \"cwd\":\"CWD\",\"dev\":\"DEV\",\"egid\":\"EGID\",\"euid\":\"EUID\",\
-            \"exe\":\"EXE\",\"exit\":\"EXIT\",\"file\":\"FILE\",\"fpid\":0,\
-            \"fsgid\":\"FSGID\",\"fsuid\":\"FSUID\",\"gid\":\"GID\",\
+            \"cap_fi\":\"CAP_FI\",\"cap_fp\":\"CAP_FP\",\"cap_frootid\":\"CAP_FROOTID\",\
+            \"cap_fver\":\"CAP_FVER\",\"checksum\":\"CHECKSUM\",\"comm\":\"COMM\",\
+            \"command\":\"COMMAND\",\"cwd\":\"CWD\",\"dev\":\"DEV\",\"egid\":\"EGID\",\
+            \"euid\":\"EUID\",\"exe\":\"EXE\",\"exit\":\"EXIT\",\"file\":\"FILE\",\
+            \"fpid\":0,\"fsgid\":\"FSGID\",\"fsuid\":\"FSUID\",\"gid\":\"GID\",\
             \"hostname\":\"HOSTNAME\",\"id\":\"ID\",\"inode\":\"INODE\",\
             \"item\":\"ITEM\",\"items\":\"ITEMS\",\"key\":\"KEY\",\"labels\":[],\
             \"mode\":\"MODE\",\"node\":\"NODE\",\"ogid\":\"OGID\",\
-            \"operation\":\"OPERATION\",\"ouid\":\"OUID\",\"parent\":{},\
-            \"path\":\"PATH\",\"pid\":\"PID\",\"ppid\":\"PPID\",\
-            \"proctitle\":\"PROCTITLE\",\"rdev\":\"RDEV\",\"ses\":\"SES\",\
-            \"sgid\":\"SGID\",\"source\":\"SOURCE\",\"success\":\"SUCCESS\",\
-            \"suid\":\"SUID\",\"syscall\":\"SYSCALL\",\"system\":\"SYSTEM\",\
-            \"timestamp\":\"TIMESTAMP\",\"tty\":\"TTY\",\"uid\":\"UID\",\
-            \"version\":\"VERSION\"}");
+            \"operation\":\"OPERATION\",\"ouid\":\"OUID\",\"path\":\"PATH\",\
+            \"paths\":[],\"pid\":\"PID\",\"ppid\":\"PPID\",\"proctitle\":\"PROCTITLE\",\
+            \"rdev\":\"RDEV\",\"ses\":\"SES\",\"sgid\":\"SGID\",\"source\":\"SOURCE\",\
+            \"success\":\"SUCCESS\",\"suid\":\"SUID\",\"syscall\":\"SYSCALL\",\
+            \"system\":\"SYSTEM\",\"timestamp\":\"TIMESTAMP\",\"tty\":\"TTY\",\
+            \"uid\":\"UID\",\"version\":\"VERSION\"}");
         assert_eq!(json, string);
     }
 
@@ -787,23 +836,26 @@ mod tests {
         event.log(filename);
 
         let expected = "{\"a0\":\"A0\",\"a1\":\"A1\",\"a2\":\"A2\",\"a3\":\"A3\",\
-        \"arch\":\"ARCH\",\"auid\":\"AUID\",\"cap_fe\":\"CAP_FE\",\"cap_fi\":\"CAP_FI\",\
-        \"cap_fp\":\"CAP_FP\",\"cap_frootid\":\"CAP_FROOTID\",\"cap_fver\":\"CAP_FVER\",\
-        \"checksum\":\"CHECKSUM\",\"comm\":\"COMM\",\"command\":\"COMMAND\",\
-        \"cwd\":\"CWD\",\"dev\":\"DEV\",\"egid\":\"EGID\",\"euid\":\"EUID\",\
-        \"exe\":\"EXE\",\"exit\":\"EXIT\",\"file\":\"FILE\",\"fpid\":0,\
-        \"fsgid\":\"FSGID\",\"fsuid\":\"FSUID\",\"gid\":\"GID\",\"hostname\":\"HOSTNAME\",\
-        \"id\":\"ID\",\"inode\":\"INODE\",\"item\":\"ITEM\",\"items\":\"ITEMS\",\
-        \"key\":\"KEY\",\"labels\":[],\"mode\":\"MODE\",\"node\":\"NODE\",\
-        \"ogid\":\"OGID\",\"operation\":\"OPERATION\",\"ouid\":\"OUID\",\
-        \"parent\":{},\"path\":\"PATH\",\"pid\":\"PID\",\"ppid\":\"PPID\",\
-        \"proctitle\":\"PROCTITLE\",\"rdev\":\"RDEV\",\"ses\":\"SES\",\"sgid\":\"SGID\",\
-        \"source\":\"SOURCE\",\"success\":\"SUCCESS\",\"suid\":\"SUID\",\
-        \"syscall\":\"SYSCALL\",\"system\":\"SYSTEM\",\"timestamp\":\"TIMESTAMP\",\
-        \"tty\":\"TTY\",\"uid\":\"UID\",\"version\":\"VERSION\"}\n";
+            \"arch\":\"ARCH\",\"auid\":\"AUID\",\"cap_fe\":\"CAP_FE\",\
+            \"cap_fi\":\"CAP_FI\",\"cap_fp\":\"CAP_FP\",\
+            \"cap_frootid\":\"CAP_FROOTID\",\"cap_fver\":\"CAP_FVER\",\
+            \"checksum\":\"CHECKSUM\",\"comm\":\"COMM\",\"command\":\"COMMAND\",\
+            \"cwd\":\"CWD\",\"dev\":\"DEV\",\"egid\":\"EGID\",\"euid\":\"EUID\",\
+            \"exe\":\"EXE\",\"exit\":\"EXIT\",\"file\":\"FILE\",\"fpid\":0,\
+            \"fsgid\":\"FSGID\",\"fsuid\":\"FSUID\",\"gid\":\"GID\",\
+            \"hostname\":\"HOSTNAME\",\"id\":\"ID\",\"inode\":\"INODE\",\
+            \"item\":\"ITEM\",\"items\":\"ITEMS\",\"key\":\"KEY\",\"labels\":[],\
+            \"mode\":\"MODE\",\"node\":\"NODE\",\"ogid\":\"OGID\",\
+            \"operation\":\"OPERATION\",\"ouid\":\"OUID\",\"path\":\"PATH\",\
+            \"paths\":[],\"pid\":\"PID\",\"ppid\":\"PPID\",\
+            \"proctitle\":\"PROCTITLE\",\"rdev\":\"RDEV\",\"ses\":\"SES\",\
+            \"sgid\":\"SGID\",\"source\":\"SOURCE\",\"success\":\"SUCCESS\",\
+            \"suid\":\"SUID\",\"syscall\":\"SYSCALL\",\"system\":\"SYSTEM\",\
+            \"timestamp\":\"TIMESTAMP\",\"tty\":\"TTY\",\"uid\":\"UID\",\
+            \"version\":\"VERSION\"}\n";
 
         let log = utils::read_file(filename);
-        assert_eq!(expected, log);
+        assert_eq!(log, expected);
 
         remove_test_file(filename);
     }
@@ -847,14 +899,14 @@ mod tests {
             file: \"FILE\", timestamp: \"TIMESTAMP\", proctitle: \"PROCTITLE\", \
             cap_fver: \"CAP_FVER\", inode: \"INODE\", cap_fp: \"CAP_FP\", \
             cap_fe: \"CAP_FE\", item: \"ITEM\", cap_fi: \"CAP_FI\", dev: \"DEV\", \
-            mode: \"MODE\", cap_frootid: \"CAP_FROOTID\", ouid: \"OUID\", \
-            parent: {}, cwd: \"CWD\", syscall: \"SYSCALL\", ppid: \"PPID\", \
-            comm: \"COMM\", fsuid: \"FSUID\", pid: \"PID\", a0: \"A0\", \
-            a1: \"A1\", a2: \"A2\", a3: \"A3\", arch: \"ARCH\", auid: \"AUID\", \
-            items: \"ITEMS\", gid: \"GID\", euid: \"EUID\", sgid: \"SGID\", \
-            uid: \"UID\", tty: \"TTY\", success: \"SUCCESS\", exit: \"EXIT\", \
-            ses: \"SES\", key: \"KEY\", suid: \"SUID\", egid: \"EGID\", \
-            fsgid: \"FSGID\", exe: \"EXE\" }";
+            mode: \"MODE\", cap_frootid: \"CAP_FROOTID\", ouid: \"OUID\", paths: [], \
+            cwd: \"CWD\", syscall: \"SYSCALL\", ppid: \"PPID\", comm: \"COMM\", \
+            fsuid: \"FSUID\", pid: \"PID\", a0: \"A0\", a1: \"A1\", a2: \"A2\", \
+            a3: \"A3\", arch: \"ARCH\", auid: \"AUID\", items: \"ITEMS\", \
+            gid: \"GID\", euid: \"EUID\", sgid: \"SGID\", uid: \"UID\", \
+            tty: \"TTY\", success: \"SUCCESS\", exit: \"EXIT\", ses: \"SES\", \
+            key: \"KEY\", suid: \"SUID\", egid: \"EGID\", fsgid: \"FSGID\", exe: \"EXE\" }";
+
         assert_eq!(out, expected);
     }
 

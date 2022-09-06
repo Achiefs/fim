@@ -248,10 +248,10 @@ impl Config {
     pub fn get_index(&self, raw_path: &str, cwd: &str, array: Array) -> usize {
         // Iterate over monitoring paths to match ignore string and ignore event or not
         match array.iter().position(|it| {
-            if raw_path == "./" || raw_path == "." {
-                match_path(cwd, it["path"].as_str().unwrap())
+            if raw_path.starts_with("./") || raw_path == "." || !raw_path.contains("/") {
+                utils::match_path(cwd, it["path"].as_str().unwrap())
             }else{
-                match_path(raw_path, it["path"].as_str().unwrap())
+                utils::match_path(raw_path, it["path"].as_str().unwrap())
             }
         }){
             Some(pos) => pos,
@@ -283,10 +283,10 @@ impl Config {
     pub fn path_in(&self, raw_path: &str, cwd: &str, vector: Vec<Yaml>) -> bool {
         // Iterate over monitoring paths to match ignore string and ignore event or not
         match vector.iter().any(|it| {
-            if raw_path == "./" || raw_path == "." {
-                match_path(cwd, it["path"].as_str().unwrap())
+            if raw_path.starts_with("./") || raw_path == "." || !raw_path.contains("/") {
+                utils::match_path(cwd, it["path"].as_str().unwrap())
             }else{
-                match_path(raw_path, it["path"].as_str().unwrap())
+                utils::match_path(raw_path, it["path"].as_str().unwrap())
             }
         }){
             true => true,
@@ -296,29 +296,7 @@ impl Config {
 
 }
 
-// ------------------------------------------------------------------------
 
-// Returns if raw_path contains compare_path
-pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
-    let pattern = if utils::get_os() == "linux" { '/' }else{ '\\' };
-    let mut raw_tokens: Vec<&str> = raw_path.split(pattern).collect();
-    let mut compare_tokens: Vec<&str> = compare_path.split(pattern).collect();
-
-    if raw_tokens.len() == compare_tokens.len() {
-        raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)|
-            utils::clean_path(r) == utils::clean_path(c))
-    }else if raw_tokens.len() > compare_tokens.len() {
-        // Removing file name from bottom
-        raw_tokens.pop();
-        raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)|
-            utils::clean_path(r) == utils::clean_path(c))
-    }else {
-        // Removing file name from bottom
-        compare_tokens.pop();
-        raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)|
-            utils::clean_path(r) == utils::clean_path(c))
-    }
-}
 
 // ----------------------------------------------------------------------------
 
@@ -617,28 +595,9 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_match_path() {
-        if utils::get_os() == "linux" {
-            assert!(match_path("/", "/"));
-            assert!(match_path("/test", "/test"));
-            assert!(match_path("/test/", "/test"));
-            assert!(match_path("/test/tmp", "/test"));
-            assert!(!match_path("/tmp/test", "/test"));
-            assert!(!match_path("/tmp", "/test"));
-        }
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
     fn test_path_in() {
         let config = Config::new(&utils::get_os());
-        if utils::get_os() == "windows" {
-            assert!(config.path_in("C:\\Program Files\\", "", config.monitor.clone()));
-            assert!(config.path_in("C:\\Program Files", "", config.monitor.clone()));
-            assert!(!config.path_in("C:\\Program Files\\test", "", config.monitor.clone()));
-            assert!(!config.path_in("C:\\", "", config.monitor.clone()));
-        }else{
+        if utils::get_os() == "linux" {
             assert!(config.path_in("/bin/", "", config.monitor.clone()));
             assert!(config.path_in("/bin", "", config.monitor.clone()));
             assert!(!config.path_in("/bin/test", "", config.monitor.clone()));
@@ -657,11 +616,7 @@ mod tests {
     #[test]
     fn test_get_index() {
         let config = Config::new(&utils::get_os());
-        if utils::get_os() == "windows" {
-            assert_eq!(config.get_index("C:\\Program Files\\", "", config.monitor.clone()), 0);
-            assert_eq!(config.get_index("C:\\Users\\", "", config.monitor.clone()), 1);
-            assert_eq!(config.get_index("C:\\test\\", "", config.monitor.clone()), usize::MAX);
-        }else{
+        if utils::get_os() == "linux" {
             assert_eq!(config.get_index("/bin/", "", config.monitor.clone()), 0);
             assert_eq!(config.get_index("./", "/bin", config.monitor.clone()), 0);
             assert_eq!(config.get_index("/usr/bin/", "", config.monitor.clone()), 1);

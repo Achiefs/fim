@@ -112,6 +112,30 @@ pub fn check_auditd() -> bool {
     }
 }
 
+// ------------------------------------------------------------------------
+
+// Returns if raw_path contains compare_path
+pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
+    let pattern = if get_os() == "linux" { '/' }else{ '\\' };
+    let mut raw_tokens: Vec<&str> = raw_path.split(pattern).collect();
+    let mut compare_tokens: Vec<&str> = compare_path.split(pattern).collect();
+
+    if raw_tokens.len() == compare_tokens.len() {
+        raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)|
+            clean_path(r) == clean_path(c))
+    }else if raw_tokens.len() > compare_tokens.len() {
+        // Removing file name from bottom
+        raw_tokens.pop();
+        raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)|
+            clean_path(r) == clean_path(c))
+    }else {
+        // Removing file name from bottom
+        compare_tokens.pop();
+        raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)|
+            clean_path(r) == clean_path(c))
+    }
+}
+
 // ----------------------------------------------------------------------------
 
 #[cfg(test)]
@@ -231,7 +255,23 @@ mod tests {
 
     #[test]
     fn test_check_auditd() {
-        assert!(!check_auditd());
+        if get_os() == "linux" {
+            assert!(!check_auditd());
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_match_path() {
+        if get_os() == "linux" {
+            assert!(match_path("/", "/"));
+            assert!(match_path("/test", "/test"));
+            assert!(match_path("/test/", "/test"));
+            assert!(match_path("/test/tmp", "/test"));
+            assert!(!match_path("/tmp/test", "/test"));
+            assert!(!match_path("/tmp", "/test"));
+        }
     }
 
 }
