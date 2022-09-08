@@ -79,7 +79,7 @@ jobs:
         run: sudo ./fim &
 
       - name: Launch test suite
-        run: python3 -m pytest test/system/audit.py -v
+        run: sudo python3 -m pytest test/system/audit.py -v
 
       - name: Print events.json file
         if: always()
