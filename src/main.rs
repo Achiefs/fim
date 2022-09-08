@@ -195,11 +195,8 @@ async fn main() {
                                 config.audit.clone().to_vec());
 
                             if index != usize::MAX {
-                                let path = utils::clean_path(config.audit[index]["path"].as_str().unwrap());
-                                // If the path of event contains monitored path will log the event!
-                                if (path.contains(&audit_event.clone().path) ||
-                                    path.contains(&audit_event.clone().cwd)) &&
-                                    ! config.match_ignore(index,
+                                // If event contains ignored string ignore event
+                                if ! config.match_ignore(index,
                                         audit_event.clone().file.as_str(),
                                         config.audit.clone()) {
                                     audit_event.process(destination.clone().as_str(), index_name.clone(), config.clone()).await;
