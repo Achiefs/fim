@@ -132,10 +132,49 @@ class TestAuditd:
         assert data['operation'] == "DELETE"
         assert data['syscall'] == "87"
 
+    # -------------------------------------------------------------------------
+
+    def test_ignore(self):
+        filename = test_file + '.swp'
+        c = open(filename, 'w')
+        data = json.loads(get_last_event())
+        assert data['operation'] == "DELETE"
+        assert data['syscall'] == "87"
+        c.close()
+        os.remove(filename)
+
+    # -------------------------------------------------------------------------
+
+    def test_false_move(self):
+        subprocess.Popen(["mv", test_file, test_file],
+            stdout=subprocess.PIPE).communicate()
+        data = json.loads(get_last_event())
+        assert data['syscall'] == "316"
+
+    # -------------------------------------------------------------------------
+
+    def test_move_external(self):
+        filename = test_file + '2'
+        open(filename, 'w').close()
+        os.rename(filename, "/tmp/test_file2")
+        data = json.loads(get_last_event())
+        assert data['operation'] == "DELETE"
+        assert data['syscall'] == "82"
+        os.remove("/tmp/test_file2")
+
+    # -------------------------------------------------------------------------
+
+    def test_move_external_bash(self):
+        filename = test_file + '2'
+        open(filename, 'w').close()
+        subprocess.Popen(["mv", filename, "/tmp/test_file2"],
+            stdout=subprocess.PIPE).communicate()
+        data = json.loads(get_last_event())
+        assert data['operation'] == "DELETE"
+        assert data['syscall'] == "316"
+        os.remove("/tmp/test_file2")
+
 ### Remaining tests
-# - Ignored file test
-# - Move to same file (Don't move)
-# - Move to external folder
 # - Move from external folder
 # - Link from external folder
 # - Link from internal to external folder
