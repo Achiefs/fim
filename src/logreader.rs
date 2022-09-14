@@ -70,7 +70,7 @@ pub fn extract_fields(data: Vec<HashMap<String, String>>) -> (SHashMap,
     SHashMap, SHashMap, Vec<SHashMap>) {
     let mut paths: Vec<SHashMap> = Vec::new();
     let mut syscall = SHashMap::new();
-    let mut cwd = SHashMap::new();
+    let mut cwd = SHashMap::from([ (String::from("cwd"), String::from("/UNKNOWN")) ]);
     let mut proctitle = SHashMap::new();
 
     data.iter().for_each(|v| {

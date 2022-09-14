@@ -87,6 +87,6 @@ jobs:
 
       - name: Clean environment
         if: always()
-        run: sudo rm -rf /tmp/test /var/log/fim/ /var/lib/fim/
+        run: sudo rm -rf /tmp/test /var/log/fim/ /var/lib/fim/ ${GITHUB_WORKSPACE}
 
       - run: echo "Job's status is ${{ job.status }}."

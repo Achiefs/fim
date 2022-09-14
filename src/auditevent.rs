@@ -128,18 +128,18 @@ impl Event {
             system: utils::get_os(),
 
 
-            ogid: path["ogid"].clone(),
-            rdev: path["rdev"].clone(),
-            cap_fver: path["cap_fver"].clone(),
-            inode: path["inode"].clone(),
-            cap_fp: path["cap_fp"].clone(),
-            cap_fe: path["cap_fe"].clone(),
-            item: path["item"].clone(),
-            cap_fi: path["cap_fi"].clone(),
-            dev: path["dev"].clone(),
-            mode: path["mode"].clone(),
-            cap_frootid: path["cap_frootid"].clone(),
-            ouid: path["ouid"].clone(),
+            ogid: get_field(path.clone(), "ogid"),
+            rdev: get_field(path.clone(), "rdev"),
+            cap_fver: get_field(path.clone(), "cap_fver"),
+            inode: get_field(path.clone(), "inode"),
+            cap_fp: get_field(path.clone(), "cap_fp"),
+            cap_fe: get_field(path.clone(), "cap_fe"),
+            item: get_field(path.clone(), "item"),
+            cap_fi: get_field(path.clone(), "cap_fi"),
+            dev: get_field(path.clone(), "dev"),
+            mode: get_field(path.clone(), "mode"),
+            cap_frootid: get_field(path.clone(), "cap_frootid"),
+            ouid: get_field(path.clone(), "ouid"),
 
             paths,
             cwd: cwd["cwd"].clone(),
@@ -358,6 +358,15 @@ impl Event {
             },
             _ => self.log(&config.events_file)
         }
+    }
+}
+
+// ----------------------------------------------------------------------------
+fn get_field(map: HashMap<String, String>,field: &str) -> String {
+    if map.contains_key(field) {
+        map[field].clone()
+    }else{
+        String::from("UNKNOWN")
     }
 }
 
