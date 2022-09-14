@@ -83,7 +83,7 @@ jobs:
 
       - name: Print config file
         if: always()
-        run: cat ${{ env.GITHUB_WORKSPACE }}/config/linux/config.yml
+        run: cat ${{ github.workspace }}/config/linux/config.yml
 
       - name: Print events.json file
         if: always()
@@ -91,6 +91,6 @@ jobs:
 
       - name: Clean environment
         if: always()
-        run: sudo rm -rf /tmp/test /var/log/fim/ /var/lib/fim/ ${{ env.GITHUB_WORKSPACE }} && sudo pkill fim
+        run: sudo rm -rf /tmp/test /var/log/fim/ /var/lib/fim/ ${{ github.workspace }} && sudo pkill fim
 
       - run: echo "Job's status is ${{ job.status }}."
