@@ -89,6 +89,8 @@ jobs:
         if: always()
         run: cat /var/lib/fim/events.json
 
-
+      - name: Clean environment
+        if: always()
+        run: sudo rm -rf /tmp/test /var/log/fim/ /var/lib/fim/ ${{ github.workspace }}/test/system/__pycache__/ ${{ github.workspace }}/test/system/.pytest_cache ${{ github.workspace }}/.pytest_cache && sudo pkill fim
 
       - run: echo "Job's status is ${{ job.status }}."
