@@ -61,7 +61,7 @@ jobs:
         run: cargo build --release
 
       - name: Change configuration
-        run: sed -i 's|/tmp.*|/tmp/test|g' config/linux/config.yml
+        run: sed -i 's|/tmp|/tmp/test|g' config/linux/config.yml
 
       - name: Copy FIM binary to main folder
         run: cp ./target/release/fim ./
