@@ -37,7 +37,9 @@ pub fn read_log(file: String, config: config::Config, position: u64) -> (Vec<Eve
 
     // Read from last registered position until the end
     let mut data: Vec<HashMap<String, String>> = Vec::new();
-    for result in buff.take(end_position-position).lines() {
+    let bytes = if position > end_position { end_position
+    }else{ end_position-position };
+    for result in buff.take(bytes).lines() {
         let line = result.unwrap();
         if data.is_empty() {
             data.push(parse_audit_log(line.clone()));
