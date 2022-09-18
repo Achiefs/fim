@@ -27,6 +27,7 @@ To set up FIM perform the following steps:
 2. Install with:
   - RPM: `yum install fim-*.rpm`
   - DEB: `dpkg -i fim*.deb`
+  - CARGO: `cargo install --git https://github.com/Achiefs/fim.git`
 
 3. You can start to work typing `sudo nohup fim` in your terminal
 4. FIM software will start monitoring any activity on the default folders configured in `/etc/fim/config.yml` file.
