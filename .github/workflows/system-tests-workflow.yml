@@ -89,8 +89,28 @@ jobs:
         if: always()
         run: cat /var/lib/fim/events.json
 
-      - name: Clean environment
+      - name: Clean temporal folder
         if: always()
-        run: sudo rm -rf /tmp/test /var/log/fim/ /var/lib/fim/ ${{ github.workspace }}/test/system/__pycache__/ ${{ github.workspace }}/test/system/.pytest_cache ${{ github.workspace }}/.pytest_cache && sudo pkill fim
+        run: sudo rm -rf /tmp/test
+
+      - name: Clean log folder
+        if: always()
+        run: sudo rm -rf /var/log/fim/
+
+      - name: Clean lib folder
+        if: always()
+        run: sudo rm -rf /var/lib/fim/
+
+      - name: Clean workspace
+        if: always()
+        run: sudo rm -rf ${{ github.workspace }}/test/system/__pycache__/ ${{ github.workspace }}/test/system/.pytest_cache ${{ github.workspace }}/.pytest_cache
+
+      - name: Clean test output
+        if: always()
+        run: sudo rm -rf ${{ github.workspace }}/test/system/test_*
+
+      - name: Stop FIM process
+        if: always()
+        run: sudo pkill fim
 
       - run: echo "Job's status is ${{ job.status }}."
