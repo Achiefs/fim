@@ -41,7 +41,7 @@ jobs:
         run: sudo ./fim &
 
       - name: Launch test suite
-        run: python3 -m pytest test/system/monitor.py -v
+        run: python3 -m pytest test/system/monitor.py -v --noconftest
 
       - name: Print events.json file
         if: always()

@@ -144,9 +144,11 @@ async fn main() {
                 None => info!("Ignore for '{}' not set", path)
             };
         }
-        watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::Recursive).unwrap();
+        // Detect if file is moved or renamed (rotation)
+        watcher.watch(logreader::AUDIT_PATH, RecursiveMode::NonRecursive).unwrap();
+        watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::NonRecursive).unwrap();
         last_position = utils::get_file_end(logreader::AUDIT_LOG_PATH);
-        // Added way to remove audit rules introduced by FIM
+        // Remove auditd rules introduced by FIM
         let cconfig = config.clone();
         ctrlc::set_handler(move || {
             for element in &cconfig.audit {
@@ -170,7 +172,13 @@ async fn main() {
                 // Get the event path and filename
                 debug!("Event received: {:?}", raw_event);
 
-                let event_path = Path::new(raw_event.path.as_ref().unwrap().to_str().unwrap());
+                let plain_path = raw_event.path.as_ref().unwrap().to_str().unwrap();
+                let event_path = Path::new(plain_path);
+                // Fix case on audit.log rotation not detected by path_in
+                if plain_path.contains(logreader::AUDIT_PATH) {
+                    watcher.unwatch(logreader::AUDIT_LOG_PATH).unwrap();
+                    watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::NonRecursive).unwrap();
+                }
                 let event_filename = event_path.file_name().unwrap();
 
                 let current_date = OffsetDateTime::now_utc();
@@ -183,9 +191,22 @@ async fn main() {
                 // If the event comes from audit.log
                 if raw_event.path.clone().unwrap().to_str().unwrap() == logreader::AUDIT_LOG_PATH {
                     // Getting events from audit.log
-                    let (events, position) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone(), last_position);
+                    let (mut events, mut position) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone(), last_position);
+                    let mut ctr = 0;
+                    println!("FIRST EVENT len: {}", events.len());
                     last_position = position;
+                    while last_position < utils::get_file_end(logreader::AUDIT_LOG_PATH) {
+                        println!("Read position: {}", position);
+                        println!("End position: {}", utils::get_file_end(logreader::AUDIT_LOG_PATH));
+                        debug!("Reading event: {}", ctr);
+                        ctr = ctr + 1;
+                        let (mut evts, pos) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone(), position);
+                        events.append(&mut evts);
+                        position = pos;
+                        last_position = pos;
+                    }
                     debug!("Events read from audit log, position: {}", last_position);
+                    println!("EVENTS len: {}", events.len());
 
                     for audit_event in events {
                         if ! audit_event.is_empty() {

@@ -14,11 +14,17 @@ test_link = test_file + '.link'
 system = platform.system()
 
 def get_last_event():
-    time.sleep(0.4)
+    time.sleep(0.2)
     with open(events_json, 'r') as f:
         for line in f: pass
         last_line = line.strip()
     return last_line
+
+def get_event(reversed_index):
+    time.sleep(0.2)
+    with open(events_json, 'r') as f:
+        line = f.readlines()[-reversed_index]
+    return line
 
 # -----------------------------------------------------------------------------
 
@@ -36,24 +42,25 @@ def remove(item):
 @pytest.mark.skipif(system == "Windows", reason="Cannot run on Windows")
 class TestAuditd:
 
-    def setup_method(self, method):
+    def setup_method(self):
         with open(events_json, 'w') as f:
             f.truncate(0)
-        time.sleep(0.4)
+        time.sleep(0.1)
 
-    def teardown_method(self, method):
-        time.sleep(0.4)
+    def teardown_method(self):
+        # Store failed test information in a trace
+        time.sleep(0.1)
         remove(test_link)
         remove(test_file)
         remove(test_folder)
 
+    # -------------------------------------------------------------------------
 
     def test_file_create(self):
-        c = open(test_file, 'w')
+        open(test_file, 'w').close()
         data = json.loads(get_last_event())
         assert data['operation'] == "CREATE"
         assert data['syscall'] == "257"
-        c.close()
 
     # -------------------------------------------------------------------------
 
@@ -238,9 +245,13 @@ class TestAuditd:
             shell=True, stdout=subprocess.PIPE).communicate()
         subprocess.Popen(["sed", "-i", "s|Test|Hello|g", test_file],
             stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
+        data = json.loads(get_event(-1))
         assert data['operation'] == "CREATE"
         assert data['syscall'] == "257"
+
+        data = json.loads(get_last_event())
+        assert data['operation'] == "DELETE"
+        assert data['syscall'] == "82"
 
     # -------------------------------------------------------------------------
 

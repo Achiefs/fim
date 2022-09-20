@@ -1,6 +1,7 @@
 // Copyright (C) 2022, Achiefs.
 
 // Global constants definitions
+pub const AUDIT_PATH: &str = "/var/log/audit";
 pub const AUDIT_LOG_PATH: &str = "/var/log/audit/audit.log";
 
 // To manage file reading
@@ -27,6 +28,7 @@ type SHashMap = HashMap<String, String>;
 // Read file to extract last data until the Audit ID changes
 pub fn read_log(file: String, config: config::Config, position: u64) -> (Vec<Event>, u64) {
     let mut events: Vec<Event> = Vec::new();
+    let mut current_position = position;
     let end_position = utils::get_file_end(&file);
     let log = File::open(file).unwrap();
     let mut buff = BufReader::new(log);
@@ -37,33 +39,50 @@ pub fn read_log(file: String, config: config::Config, position: u64) -> (Vec<Eve
 
     // Read from last registered position until the end
     let mut data: Vec<HashMap<String, String>> = Vec::new();
-    let bytes = if position > end_position { end_position
-    }else{ end_position-position };
-    for result in buff.take(bytes).lines() {
-        let line = result.unwrap();
+    let mut line = String::new();
+    //let bytes = if position > end_position { end_position
+    //}else{ end_position-position };
+    while current_position < end_position {
+        let start_position = current_position;
+        println!("(logreader): Reading start: {}", current_position);
+        buff.read_line(&mut line);
+        println!("(logreader): Read string: '{}'", line);
+        current_position = buff.stream_position().unwrap();
+        println!("(logreader): End read position: {}", current_position);
+    //for result in buff.take(bytes).lines() {
+        //let line = result.unwrap();
         if data.is_empty() {
             data.push(parse_audit_log(line.clone()));
         }else{
             let line_info = parse_audit_log(line.clone());
-            if line_info["msg"] == data.last().unwrap()["msg"] {
+            if line_info.contains_key("msg") &&
+                data.last().unwrap().contains_key("msg") &&
+                line_info["msg"] == data.last().unwrap()["msg"] {
                 data.push(line_info);
+            // If the timestamp is different then break (we got a complete event)
+            }else{
+                current_position = start_position;
+                break;
             }
         }
-        if data.last().unwrap()["type"] == "PROCTITLE" && data.first().unwrap()["type"] == "SYSCALL" {
-            let (syscall, cwd, proctitle, paths) = extract_fields(data.clone());
-            let audit_vec = config.audit.clone().to_vec();
+        line = String::new();
+    }
+    if !data.is_empty() && data.last().unwrap().contains_key("type") &&
+        data.first().unwrap().contains_key("type") &&
+        data.last().unwrap()["type"] == "PROCTITLE" &&
+        data.first().unwrap()["type"] == "SYSCALL" {
+        let (syscall, cwd, proctitle, paths) = extract_fields(data.clone());
+        let audit_vec = config.audit.clone().to_vec();
 
-            // Skip the event generation of paths not monitored by FIM
-            if paths.iter().any(|p| {
-                config.path_in(p["name"].as_str(), cwd["cwd"].as_str(), audit_vec.clone()) ||
-                config.path_in(cwd["cwd"].as_str(), "", audit_vec.clone())
-            }) {
-                events.push(Event::from(syscall, cwd, proctitle, paths, config.clone()));
-                data = Vec::new();
-            }
+        // Skip the event generation of paths not monitored by FIM
+        if paths.iter().any(|p| {
+            config.path_in(p["name"].as_str(), cwd["cwd"].as_str(), audit_vec.clone()) ||
+            config.path_in(cwd["cwd"].as_str(), "", audit_vec.clone())
+        }) {
+            events.push(Event::from(syscall, cwd, proctitle, paths, config.clone()));
         }
     }
-    (events, end_position)
+    (events, current_position)
 }
 
 // ----------------------------------------------------------------------------
@@ -94,7 +113,11 @@ pub fn parse_audit_log(log: String) -> HashMap<String, String> {
     fields.iter()
         .map(|f| {
             let obj: Vec<&str> = f.split('=').collect();
-            (String::from(obj[0]), String::from(obj[1]).replace('\"', ""))
+            if obj.len() == 2 {
+                (String::from(obj[0]), String::from(obj[1]).replace('\"', "").replace("\n", ""))
+            }else{
+                (String::from(obj[0]), String::from("UNKNOWN"))
+            }
         }).collect::<HashMap<String, String>>()
 }
 
