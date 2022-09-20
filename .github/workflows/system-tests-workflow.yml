@@ -85,9 +85,9 @@ jobs:
         if: always()
         run: cat ${{ github.workspace }}/config/linux/config.yml
 
-      - name: Print events.json file
+      - name: Print log file
         if: always()
-        run: cat /var/lib/fim/events.json
+        run: cat /var/log/fim/fim.log
 
       - name: Clean temporal folder
         if: always()
@@ -111,6 +111,6 @@ jobs:
 
       - name: Stop FIM process
         if: always()
-        run: sudo pkill fim
+        run: sudo pkill fim || true
 
       - run: echo "Job's status is ${{ job.status }}."
