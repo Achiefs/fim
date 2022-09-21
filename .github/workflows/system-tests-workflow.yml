@@ -107,7 +107,7 @@ jobs:
 
       - name: Clean test output
         if: always()
-        run: sudo rm -rf ${{ github.workspace }}/test/system/test_*
+        run: sudo rm -rf ${{ github.workspace }}/test_*
 
       - name: Stop FIM process
         if: always()
