@@ -20,6 +20,8 @@ use time::OffsetDateTime;
 use itertools::Itertools;
 // To run commands
 use std::process::Command;
+// Event handling
+use notify::op::Op;
 
 
 // Utils functions
@@ -32,7 +34,6 @@ mod config;
 mod index;
 // Single event data management
 mod event;
-//use crate::event;
 // File reading continuously
 mod logreader;
 mod auditevent;
@@ -146,7 +147,6 @@ async fn main() {
         }
         // Detect if file is moved or renamed (rotation)
         watcher.watch(logreader::AUDIT_PATH, RecursiveMode::NonRecursive).unwrap();
-        watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::NonRecursive).unwrap();
         last_position = utils::get_file_end(logreader::AUDIT_LOG_PATH);
         // Remove auditd rules introduced by FIM
         let cconfig = config.clone();
@@ -171,14 +171,9 @@ async fn main() {
             Ok(raw_event) => {
                 // Get the event path and filename
                 debug!("Event received: {:?}", raw_event);
-
+                println!("RAW_EVENT: {:?}", raw_event);
                 let plain_path = raw_event.path.as_ref().unwrap().to_str().unwrap();
                 let event_path = Path::new(plain_path);
-                // Fix case on audit.log rotation not detected by path_in
-                if plain_path.contains(logreader::AUDIT_PATH) {
-                    watcher.unwatch(logreader::AUDIT_LOG_PATH).unwrap();
-                    watcher.watch(logreader::AUDIT_LOG_PATH, RecursiveMode::NonRecursive).unwrap();
-                }
                 let event_filename = event_path.file_name().unwrap();
 
                 let current_date = OffsetDateTime::now_utc();
@@ -188,17 +183,19 @@ async fn main() {
                 let op = raw_event.op.unwrap();
                 let path = raw_event.path.clone().unwrap();
 
+                // Reset reading position due to log rotation
+                if plain_path == logreader::AUDIT_LOG_PATH && op == Op::CHMOD {
+                    last_position = 0;
+                }
+
                 // If the event comes from audit.log
-                if raw_event.path.clone().unwrap().to_str().unwrap() == logreader::AUDIT_LOG_PATH {
+                if plain_path == logreader::AUDIT_LOG_PATH {
                     // Getting events from audit.log
                     let (mut events, mut position) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone(), last_position);
                     let mut ctr = 0;
-                    println!("FIRST EVENT len: {}", events.len());
                     last_position = position;
                     while last_position < utils::get_file_end(logreader::AUDIT_LOG_PATH) {
-                        println!("Read position: {}", position);
-                        println!("End position: {}", utils::get_file_end(logreader::AUDIT_LOG_PATH));
-                        debug!("Reading event: {}", ctr);
+                        debug!("Reading events, iteration: {}", ctr);
                         ctr = ctr + 1;
                         let (mut evts, pos) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone(), position);
                         events.append(&mut evts);
@@ -206,7 +203,6 @@ async fn main() {
                         last_position = pos;
                     }
                     debug!("Events read from audit log, position: {}", last_position);
-                    println!("EVENTS len: {}", events.len());
 
                     for audit_event in events {
                         if ! audit_event.is_empty() {
@@ -232,28 +228,30 @@ async fn main() {
                     }
                 }else {
                     let index = config.get_index(event_path.to_str().unwrap(), "", config.monitor.clone().to_vec());
-                    let labels = config.get_labels(index, config.monitor.clone());
-                    if ! config.match_ignore(index,
-                        event_filename.to_str().unwrap(), config.monitor.clone()){
-                        let event = event::Event {
-                            id: utils::get_uuid(),
-                            timestamp: current_timestamp,
-                            hostname: current_hostname,
-                            node: config.node.clone(),
-                            version: String::from(config::VERSION),
-                            op,
-                            path: path.clone(),
-                            labels,
-                            operation: event::get_op(op),
-                            checksum: hash::get_checksum( String::from(path.to_str().unwrap()) ),
-                            fpid: utils::get_pid(),
-                            system: config.system.clone()
-                        };
+                    if index != usize::MAX {
+                        let labels = config.get_labels(index, config.monitor.clone());
+                        if ! config.match_ignore(index,
+                            event_filename.to_str().unwrap(), config.monitor.clone()){
+                            let event = event::Event {
+                                id: utils::get_uuid(),
+                                timestamp: current_timestamp,
+                                hostname: current_hostname,
+                                node: config.node.clone(),
+                                version: String::from(config::VERSION),
+                                op,
+                                path: path.clone(),
+                                labels,
+                                operation: event::get_op(op),
+                                checksum: hash::get_checksum( String::from(path.to_str().unwrap()) ),
+                                fpid: utils::get_pid(),
+                                system: config.system.clone()
+                            };
 
-                        debug!("Event processed: {:?}", event);
-                        event.process(destination.clone().as_str(), index_name.clone(), config.clone()).await;
-                    }else{
-                        debug!("Event ignored not stored in alerts");
+                            debug!("Event processed: {:?}", event);
+                            event.process(destination.clone().as_str(), index_name.clone(), config.clone()).await;
+                        }else{
+                            debug!("Event ignored not stored in alerts");
+                        }
                     }
                 }
             },
@@ -267,8 +265,6 @@ async fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    //use notify::op::Op;
-    //use std::path::PathBuf;
     use tokio_test::block_on;
 
     // ------------------------------------------------------------------------

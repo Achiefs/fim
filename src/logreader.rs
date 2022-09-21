@@ -37,20 +37,24 @@ pub fn read_log(file: String, config: config::Config, position: u64) -> (Vec<Eve
         Err(e) => error!("{}", e)
     };
 
-    // Read from last registered position until the end
+    // Read from last registered position until we get event or the end
     let mut data: Vec<HashMap<String, String>> = Vec::new();
     let mut line = String::new();
-    //let bytes = if position > end_position { end_position
-    //}else{ end_position-position };
     while current_position < end_position {
         let start_position = current_position;
-        println!("(logreader): Reading start: {}", current_position);
-        buff.read_line(&mut line);
-        println!("(logreader): Read string: '{}'", line);
-        current_position = buff.stream_position().unwrap();
-        println!("(logreader): End read position: {}", current_position);
-    //for result in buff.take(bytes).lines() {
-        //let line = result.unwrap();
+        debug!("(logreader): Reading start: {}", current_position);
+        let bytes_read = match buff.read_line(&mut line){
+            Ok(bytes) => {
+                debug!("(logreader): Read string: '{}', bytes read: {}", line, bytes);
+                bytes as u64
+            },
+            Err(e) => {
+                error!("(logreader): Reading string line, position: {}, error: {}", current_position, e);
+                0
+            }
+        };
+        current_position = current_position + bytes_read;
+        debug!("(logreader): End read position: {}", current_position);
         if data.is_empty() {
             data.push(parse_audit_log(line.clone()));
         }else{
