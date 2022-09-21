@@ -171,7 +171,6 @@ async fn main() {
             Ok(raw_event) => {
                 // Get the event path and filename
                 debug!("Event received: {:?}", raw_event);
-                println!("RAW_EVENT: {:?}", raw_event);
                 let plain_path = raw_event.path.as_ref().unwrap().to_str().unwrap();
                 let event_path = Path::new(plain_path);
                 let event_filename = event_path.file_name().unwrap();

@@ -48,7 +48,6 @@ class TestAuditd:
         time.sleep(0.1)
 
     def teardown_method(self):
-        # Store failed test information in a trace
         time.sleep(0.1)
         remove(test_link)
         remove(test_file)
