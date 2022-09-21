@@ -83,11 +83,11 @@ jobs:
 
       - name: Print config file
         if: always()
-        run: cat ${{ github.workspace }}/config/linux/config.yml
+        run: cat ${{ github.workspace }}/config/linux/config.yml || true
 
       - name: Print log file
         if: always()
-        run: cat /var/log/fim/fim.log
+        run: cat /var/log/fim/fim.log || true
 
       - name: Clean temporal folder
         if: always()
