@@ -149,7 +149,7 @@ mod tests {
     fn test_read_log() {
         let config = Config::new("linux");
         let (event, position) = read_log(String::from("test/unit/audit.log"),
-            config, 0);
+            config, 0, 0);
 
         assert_eq!(event.id.len(), 36);
         assert_eq!(event.path, ".");
