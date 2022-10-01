@@ -26,8 +26,8 @@ type SHashMap = HashMap<String, String>;
 // ----------------------------------------------------------------------------
 
 // Read file to extract last data until the Audit ID changes
-pub fn read_log(file: String, config: config::Config, position: u64) -> (Vec<Event>, u64) {
-    let mut events: Vec<Event> = Vec::new();
+pub fn read_log(file: String, config: config::Config, position: u64) -> (Event, u64) {
+    let mut event: Event = Event::new();
     let mut current_position = position;
     let end_position = utils::get_file_end(&file);
     let log = File::open(file).unwrap();
@@ -42,28 +42,30 @@ pub fn read_log(file: String, config: config::Config, position: u64) -> (Vec<Eve
     let mut line = String::new();
     while current_position < end_position {
         let start_position = current_position;
-        debug!("(logreader): Reading start: {}", current_position);
+        debug!("Reading start: {}", current_position);
         let bytes_read = match buff.read_line(&mut line){
             Ok(bytes) => {
-                debug!("(logreader): Read string: '{}', bytes read: {}", line, bytes);
+                debug!("Read string: '{}', bytes read: {}", line, bytes);
                 bytes as u64
             },
             Err(e) => {
-                error!("(logreader): Reading string line, position: {}, error: {}", current_position, e);
+                error!("Reading string line, position: {}, error: {}", current_position, e);
                 0
             }
         };
         current_position = current_position + bytes_read;
-        debug!("(logreader): End read position: {}", current_position);
+        debug!("End read position: {}", current_position);
         if data.is_empty() {
             data.push(parse_audit_log(line.clone()));
+            // It seems that doesn't exist a case where I read two lines with
+            // The same MSG and both of them aren't part of event...
         }else{
             let line_info = parse_audit_log(line.clone());
             if line_info.contains_key("msg") &&
                 data.last().unwrap().contains_key("msg") &&
                 line_info["msg"] == data.last().unwrap()["msg"] {
                 data.push(line_info);
-            // If the timestamp is different then break (we got a complete event)
+            // If the timestamp is different then we get a complete event
             }else{
                 current_position = start_position;
                 break;
@@ -71,22 +73,31 @@ pub fn read_log(file: String, config: config::Config, position: u64) -> (Vec<Eve
         }
         line = String::new();
     }
-    if !data.is_empty() && data.last().unwrap().contains_key("type") &&
-        data.first().unwrap().contains_key("type") &&
-        data.last().unwrap()["type"] == "PROCTITLE" &&
-        data.first().unwrap()["type"] == "SYSCALL" {
-        let (syscall, cwd, proctitle, paths) = extract_fields(data.clone());
-        let audit_vec = config.audit.clone().to_vec();
+    if !data.is_empty() {
+        if data.last().unwrap().contains_key("type") &&
+            data.first().unwrap().contains_key("type") &&
+            data.last().unwrap()["type"] == "PROCTITLE" &&
+            data.first().unwrap()["type"] == "SYSCALL" {
+            let (syscall, cwd, proctitle, paths) = extract_fields(data.clone());
+            let audit_vec = config.audit.clone().to_vec();
 
-        // Skip the event generation of paths not monitored by FIM
-        if paths.iter().any(|p| {
-            config.path_in(p["name"].as_str(), cwd["cwd"].as_str(), audit_vec.clone()) ||
-            config.path_in(cwd["cwd"].as_str(), "", audit_vec.clone())
+            // Skip the event generation of paths not monitored by FIM
+            if paths.iter().any(|p| {
+                config.path_in(p["name"].as_str(), cwd["cwd"].as_str(), audit_vec.clone()) ||
+                config.path_in(cwd["cwd"].as_str(), "", audit_vec.clone())
+            }) {
+                event = Event::from(syscall, cwd, proctitle, paths, config.clone());
+            }
+        }else if data.iter().any(|line| {
+            line["type"] == "SYSCALL" ||
+            line["type"] == "CWD" ||
+            line["type"] == "PATH" ||
+            line["type"] == "PROCTITLE"
         }) {
-            events.push(Event::from(syscall, cwd, proctitle, paths, config.clone()));
+            current_position = position;
         }
     }
-    (events, current_position)
+    (event, current_position)
 }
 
 // ----------------------------------------------------------------------------
@@ -135,11 +146,9 @@ mod tests {
     #[test]
     fn test_read_log() {
         let config = Config::new("linux");
-        let (events, position) = read_log(String::from("test/unit/audit.log"),
+        let (event, position) = read_log(String::from("test/unit/audit.log"),
             config, 0);
-        let event = events[0].clone();
 
-        assert_eq!(events.len(), 1);
         assert_eq!(event.id.len(), 36);
         assert_eq!(event.path, ".");
         assert_eq!(event.operation, "CREATE");

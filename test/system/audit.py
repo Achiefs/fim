@@ -45,10 +45,10 @@ class TestAuditd:
     def setup_method(self):
         with open(events_json, 'w') as f:
             f.truncate(0)
-        time.sleep(0.1)
+        time.sleep(0.2)
 
     def teardown_method(self):
-        time.sleep(0.1)
+        time.sleep(0.2)
         remove(test_link)
         remove(test_file)
         remove(test_folder)

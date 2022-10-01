@@ -85,6 +85,33 @@ pub struct Event {
 }
 
 impl Event {
+    pub fn new() -> Self {
+        let empty = String::from("0");
+        Event{
+            id: empty.clone(), timestamp: empty.clone(), hostname: empty.clone(),
+            node: empty.clone(), version: empty.clone(), path: empty.clone(),
+            file: empty.clone(), labels: Vec::new(), operation: empty.clone(),
+            checksum: empty.clone(), fpid: 0, system: empty.clone(),
+            command: empty.clone(), ogid: empty.clone(), rdev: empty.clone(),
+            proctitle: empty.clone(), cap_fver: empty.clone(),
+            inode: empty.clone(), cap_fp: empty.clone(), cap_fe: empty.clone(),
+            item: empty.clone(), cap_fi: empty.clone(), dev: empty.clone(),
+            mode: empty.clone(), cap_frootid: empty.clone(), ouid: empty.clone(),
+            paths: Vec::new(), cwd: empty.clone(), syscall: empty.clone(),
+            ppid: empty.clone(), comm: empty.clone(), fsuid: empty.clone(),
+            pid: empty.clone(), a0: empty.clone(), a1: empty.clone(),
+            a2: empty.clone(), a3: empty.clone(), arch: empty.clone(),
+            auid: empty.clone(), items: empty.clone(), gid: empty.clone(),
+            euid: empty.clone(), sgid: empty.clone(), uid: empty.clone(),
+            tty: empty.clone(), success: empty.clone(), exit: empty.clone(),
+            ses: empty.clone(), key: empty.clone(), suid: empty.clone(),
+            egid: empty.clone(), fsgid: empty.clone(), exe: empty.clone(),
+            source: empty.clone(),
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
     pub fn from(syscall: HashMap<String, String>,
         cwd: HashMap<String, String>, proctitle: HashMap<String, String>,
         paths: Vec<HashMap<String, String>>,

@@ -5,6 +5,7 @@ import subprocess
 
 events_json = '/var/lib/fim/events.json'
 audit_log = '/var/log/audit/audit.log'
+fim_log = '/var/log/fim/fim.log'
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
@@ -24,5 +25,11 @@ def pytest_runtest_makereport(item, call):
         proc = subprocess.Popen(['tail', '-n', "20", audit_log], stdout=subprocess.PIPE)
         (out, err) = proc.communicate()
         f = open(test_name + "/audit.log", 'w')
+        f.write(out.decode('UTF-8'))
+        f.close()
+
+        proc = subprocess.Popen(['tail', '-n', "20", fim_log], stdout=subprocess.PIPE)
+        (out, err) = proc.communicate()
+        f = open(test_name + "/fim.log", 'w')
         f.write(out.decode('UTF-8'))
         f.close()
