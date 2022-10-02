@@ -135,7 +135,7 @@ class TestAuditd:
         open(test_file, 'w').close()
         os.link(test_file, test_link)
         data = json.loads(get_last_event())
-        assert data['operation'] == "NORMAL"
+        assert data['operation'] == "CREATE"
         assert data['syscall'] == "86"
 
     # -------------------------------------------------------------------------
@@ -145,7 +145,7 @@ class TestAuditd:
         subprocess.Popen(["ln", test_file, test_link],
             stdout=subprocess.PIPE).communicate()
         data = json.loads(get_last_event())
-        assert data['operation'] == "NORMAL"
+        assert data['operation'] == "CREATE"
         assert data['syscall'] == "265"
 
     # -------------------------------------------------------------------------
@@ -249,7 +249,7 @@ class TestAuditd:
         assert data['syscall'] == "257"
 
         data = json.loads(get_last_event())
-        assert data['operation'] == "DELETE"
+        assert data['operation'] == "CREATE"
         assert data['syscall'] == "82"
 
     # -------------------------------------------------------------------------

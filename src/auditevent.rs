@@ -412,7 +412,7 @@ pub fn get_parent(paths: Vec<HashMap<String, String>>, cwd: &str, config: config
 // ----------------------------------------------------------------------------
 
 pub fn get_item_path(paths: Vec<HashMap<String, String>>, cwd: &str, config: config::Config) -> HashMap<String, String> {
-    match paths.iter().find(|p|{
+    match paths.iter().rfind(|p|{
         p["nametype"] != "PARENT" &&
         p["nametype"] != "UNKNOWN" &&
         config.path_in(p["name"].as_str(), cwd, config.audit.clone())
