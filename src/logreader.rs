@@ -26,7 +26,7 @@ type SHashMap = HashMap<String, String>;
 // ----------------------------------------------------------------------------
 
 // Read file to extract last data until the Audit ID changes
-pub fn read_log(file: String, config: config::Config, position: u64) -> (Event, u64) {
+pub fn read_log(file: String, config: config::Config, position: u64, itx: u64) -> (Event, u64) {
     let mut event: Event = Event::new();
     let mut current_position = position;
     let end_position = utils::get_file_end(&file);
@@ -94,7 +94,9 @@ pub fn read_log(file: String, config: config::Config, position: u64) -> (Event, 
             line["type"] == "PATH" ||
             line["type"] == "PROCTITLE"
         }) {
-            current_position = position;
+            if itx < 3{
+                current_position = position;
+            }
         }
     }
     (event, current_position)
@@ -147,7 +149,7 @@ mod tests {
     fn test_read_log() {
         let config = Config::new("linux");
         let (event, position) = read_log(String::from("test/unit/audit.log"),
-            config, 0);
+            config, 0, 0);
 
         assert_eq!(event.id.len(), 36);
         assert_eq!(event.path, ".");

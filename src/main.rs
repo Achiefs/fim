@@ -191,14 +191,14 @@ async fn main() {
                 if plain_path == logreader::AUDIT_LOG_PATH {
                     // Getting events from audit.log
                     let mut events = Vec::new();
-                    let (event, position) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone(), last_position);
+                    let (event, position) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone(), last_position, 0);
                     if event.id != "0" { events.push(event); };
                     let mut ctr = 0;
                     last_position = position;
-                    while last_position < utils::get_file_end(logreader::AUDIT_LOG_PATH) && ctr < 3 {
+                    while last_position < utils::get_file_end(logreader::AUDIT_LOG_PATH) {
                         debug!("Reading events, iteration: {}", ctr);
                         ctr = ctr + 1;
-                        let (evt, pos) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone(), last_position);
+                        let (evt, pos) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone(), last_position, ctr);
                         if evt.id != "0" { events.push(evt); };
                         last_position = pos;
                     }
