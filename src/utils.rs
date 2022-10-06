@@ -284,6 +284,7 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
+    #[ignore]
     fn test_check_auditd() {
         if get_os() == "linux" {
             assert!(check_auditd());
