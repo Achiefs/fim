@@ -14,14 +14,14 @@ test_link = test_file + '.link'
 system = platform.system()
 
 def get_last_event():
-    time.sleep(0.2)
+    time.sleep(0.1)
     with open(events_json, 'r') as f:
         for line in f: pass
         last_line = line.strip()
     return last_line
 
 def get_event(reversed_index):
-    time.sleep(0.2)
+    time.sleep(0.1)
     with open(events_json, 'r') as f:
         line = f.readlines()[-reversed_index]
     return line
@@ -43,12 +43,13 @@ def remove(item):
 class TestAuditd:
 
     def setup_method(self):
-        with open(events_json, 'w') as f:
-            f.truncate(0)
-        time.sleep(0.2)
+        time.sleep(0.1)
+        f = open(events_json, 'w')
+        f.truncate(0)
+        f.close()
 
     def teardown_method(self):
-        time.sleep(0.2)
+        time.sleep(0.1)
         remove(test_link)
         remove(test_file)
         remove(test_folder)
@@ -178,6 +179,7 @@ class TestAuditd:
     # -------------------------------------------------------------------------
 
     def test_false_move(self):
+        open(test_file, 'w').close()
         subprocess.Popen(["mv", test_file, test_file],
             stdout=subprocess.PIPE).communicate()
         data = json.loads(get_last_event())
@@ -244,7 +246,7 @@ class TestAuditd:
             shell=True, stdout=subprocess.PIPE).communicate()
         subprocess.Popen(["sed", "-i", "s|Test|Hello|g", test_file],
             stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_event(-1))
+        data = json.loads(get_event(0))
         assert data['operation'] == "CREATE"
         assert data['syscall'] == "257"
 

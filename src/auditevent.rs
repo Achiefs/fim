@@ -106,7 +106,7 @@ impl Event {
             tty: empty.clone(), success: empty.clone(), exit: empty.clone(),
             ses: empty.clone(), key: empty.clone(), suid: empty.clone(),
             egid: empty.clone(), fsgid: empty.clone(), exe: empty.clone(),
-            source: empty.clone(),
+            source: empty,
         }
     }
 
@@ -406,7 +406,7 @@ pub fn get_parent(paths: Vec<HashMap<String, String>>, cwd: &str, config: config
     }){
         Some(p) => p.clone(),
         None => get_item_path(paths.clone(), cwd, config.clone())
-    }.clone()
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -419,7 +419,7 @@ pub fn get_item_path(paths: Vec<HashMap<String, String>>, cwd: &str, config: con
     }){
         Some(p) => p.clone(),
         None => get_parent(paths.clone(), cwd, config.clone())
-    }.clone()
+    }
 }
 
 // ----------------------------------------------------------------------------

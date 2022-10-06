@@ -17,7 +17,9 @@ use std::path::Path;
 // To run commands
 use std::process::Command;
 // To log the program process
-use log::{error, debug};
+use log::{warn, error, debug};
+// To manage cmp order
+use std::cmp::Ordering;
 
 // ----------------------------------------------------------------------------
 
@@ -87,9 +89,33 @@ pub fn clean_path(path: &str) -> String {
 // ----------------------------------------------------------------------------
 
 // Function to get the last byte of a given file
-pub fn get_file_end(file: &str) -> u64 {
-    let mut f = File::open(file).unwrap();
-    f.seek(SeekFrom::End(0)).unwrap()
+pub fn get_file_end(file: &str, itx: u64) -> u64 {
+    if itx < 5 {
+        match File::open(file) {
+            Ok(mut d) => d.seek(SeekFrom::End(0)).unwrap(),
+            Err(e) => {
+                warn!("Cannot open file '{}', due to: {}, retrying...", file, e);
+                get_file_end(file, itx + 1)
+            }
+        }
+    }else{ 0 }
+}
+
+// ----------------------------------------------------------------------------
+
+// Function to get the last byte of a given file
+pub fn open_file(file: &str, itx: u64) -> File {
+    if itx < 5 {
+        match File::open(file) {
+            Ok(d) => d,
+            Err(e) => {
+                warn!("Cannot open file '{}', due to: {}, retrying...", file, e);
+                open_file(file, itx + 1)
+            }
+        }
+    }else{
+        panic!("Cannot open '{}'", file);
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -120,19 +146,23 @@ pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
     let mut raw_tokens: Vec<&str> = raw_path.split(pattern).collect();
     let mut compare_tokens: Vec<&str> = compare_path.split(pattern).collect();
 
-    if raw_tokens.len() == compare_tokens.len() {
-        raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)|
-            clean_path(r) == clean_path(c))
-    }else if raw_tokens.len() > compare_tokens.len() {
-        // Removing file name from bottom
-        raw_tokens.pop();
-        raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)|
-            clean_path(r) == clean_path(c))
-    }else {
-        // Removing file name from bottom
-        compare_tokens.pop();
-        raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)|
-            clean_path(r) == clean_path(c))
+    match raw_tokens.len().cmp(&compare_tokens.len()) {
+        Ordering::Equal => {
+            raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)|
+                clean_path(r) == clean_path(c))
+        },
+        Ordering::Greater => {
+            // Removing file name from bottom
+            raw_tokens.pop();
+            raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)|
+                clean_path(r) == clean_path(c))
+        },
+        _ => {
+            // Removing file name from bottom
+            compare_tokens.pop();
+            raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)|
+                clean_path(r) == clean_path(c))
+        }
     }
 }
 
@@ -242,12 +272,12 @@ mod tests {
 
     #[test]
     fn test_get_file_end() {
-        assert_ne!(get_file_end("LICENSE"), 100);
+        assert_ne!(get_file_end("LICENSE", 0), 100);
         // CRLF matter
         if get_os() == "windows"{
-            assert_eq!(get_file_end("LICENSE"), 35823);
+            assert_eq!(get_file_end("LICENSE", 0), 35823);
         }else{
-            assert_eq!(get_file_end("LICENSE"), 35149);
+            assert_eq!(get_file_end("LICENSE", 0), 35149);
         }
     }
 
@@ -256,7 +286,7 @@ mod tests {
     #[test]
     fn test_check_auditd() {
         if get_os() == "linux" {
-            assert!(!check_auditd());
+            assert!(check_auditd());
         }
     }
 

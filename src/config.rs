@@ -149,7 +149,7 @@ impl Config {
         let audit = match yaml[0]["audit"].as_vec() {
             Some(value) => value.to_vec(),
             None => {
-                if monitor.len() == 0 {
+                if monitor.is_empty() {
                     panic!("Neither monitor or audit section found in config.yml.");
                 };
                 Vec::new()
@@ -248,7 +248,7 @@ impl Config {
     pub fn get_index(&self, raw_path: &str, cwd: &str, array: Array) -> usize {
         // Iterate over monitoring paths to match ignore string and ignore event or not
         match array.iter().position(|it| {
-            if raw_path.starts_with("./") || raw_path == "." || !raw_path.contains("/") {
+            if raw_path.starts_with("./") || raw_path == "." || !raw_path.contains('/') {
                 utils::match_path(cwd, it["path"].as_str().unwrap())
             }else{
                 utils::match_path(raw_path, it["path"].as_str().unwrap())
@@ -283,7 +283,7 @@ impl Config {
     pub fn path_in(&self, raw_path: &str, cwd: &str, vector: Vec<Yaml>) -> bool {
         // Iterate over monitoring paths to match ignore string and ignore event or not
         match vector.iter().any(|it| {
-            if raw_path.starts_with("./") || raw_path == "." || !raw_path.contains("/") {
+            if raw_path.starts_with("./") || raw_path == "." || !raw_path.contains('/') {
                 utils::match_path(cwd, it["path"].as_str().unwrap())
             }else{
                 utils::match_path(raw_path, it["path"].as_str().unwrap())
@@ -302,7 +302,8 @@ impl Config {
 
 // To read the Yaml configuration file
 pub fn read_config(path: String) -> Vec<Yaml> {
-    let mut file = File::open(path.clone()).expect(&format!("(read_config): Unable to open file '{}'", path));
+    let mut file = File::open(path.clone())
+        .unwrap_or_else(|_| panic!("(read_config): Unable to open file '{}'", path));
     let mut contents = String::new();
 
     file.read_to_string(&mut contents)

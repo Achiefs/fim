@@ -7,7 +7,6 @@ pub const AUDIT_LOG_PATH: &str = "/var/log/audit/audit.log";
 // To manage file reading
 use std::io::{BufReader, SeekFrom};
 use std::io::prelude::*;
-use std::fs::File;
 // To manage readed data into collection
 use std::collections::HashMap;
 // To log the program process
@@ -29,19 +28,17 @@ type SHashMap = HashMap<String, String>;
 pub fn read_log(file: String, config: config::Config, position: u64, itx: u64) -> (Event, u64) {
     let mut event: Event = Event::new();
     let mut current_position = position;
-    let end_position = utils::get_file_end(&file);
-    let log = File::open(file).unwrap();
+    let log = utils::open_file(&file, 0);
     let mut buff = BufReader::new(log);
     match buff.seek(SeekFrom::Current(position as i64)) {
-        Ok(p) => debug!("Seek audit log file, position: {}, end: {}", p, end_position),
+        Ok(p) => debug!("Seek audit log file, position: {}", p),
         Err(e) => error!("{}", e)
     };
 
     // Read from last registered position until we get event or the end
     let mut data: Vec<HashMap<String, String>> = Vec::new();
     let mut line = String::new();
-    while current_position < end_position {
-        let start_position = current_position;
+    while current_position < utils::get_file_end(&file, 0) {
         debug!("Reading start: {}", current_position);
         let bytes_read = match buff.read_line(&mut line){
             Ok(bytes) => {
@@ -53,38 +50,38 @@ pub fn read_log(file: String, config: config::Config, position: u64, itx: u64) -
                 0
             }
         };
-        current_position = current_position + bytes_read;
+        current_position += bytes_read;
         debug!("End read position: {}", current_position);
-        if data.is_empty() {
-            data.push(parse_audit_log(line.clone()));
-            // It seems that doesn't exist a case where I read two lines with
-            // The same MSG and both of them aren't part of event...
-        }else{
-            let line_info = parse_audit_log(line.clone());
-            if line_info.contains_key("msg") &&
-                data.last().unwrap().contains_key("msg") &&
-                line_info["msg"] == data.last().unwrap()["msg"] {
-                data.push(line_info);
-            // If the timestamp is different then we get a complete event
-            }else{
-                current_position = start_position;
+
+        let line_info = parse_audit_log(line.clone());
+        if line_info.contains_key("type") && (line_info["type"] == "SYSCALL" ||
+            line_info["type"] == "CWD" ||
+            line_info["type"] == "PATH" ||
+            line_info["type"] == "PROCTITLE") {
+            data.push(line_info.clone());
+            println!("{:?}", line_info);
+            if line_info.contains_key("type") &&
+                line_info["type"] == "PROCTITLE" {
                 break;
             }
         }
         line = String::new();
     }
     if !data.is_empty() {
-        if data.last().unwrap().contains_key("type") &&
-            data.first().unwrap().contains_key("type") &&
-            data.last().unwrap()["type"] == "PROCTITLE" &&
-            data.first().unwrap()["type"] == "SYSCALL" {
+        let last = data.last().unwrap();
+        let first = data.first().unwrap();
+        if last.contains_key("type") &&
+            first.contains_key("type") &&
+            last["type"] == "PROCTITLE" &&
+            first["type"] == "SYSCALL" {
             let (syscall, cwd, proctitle, paths) = extract_fields(data.clone());
-            let audit_vec = config.audit.clone().to_vec();
+            let audit_vec = config.audit.to_vec();
 
             // Skip the event generation of paths not monitored by FIM
             if paths.iter().any(|p| {
-                config.path_in(p["name"].as_str(), cwd["cwd"].as_str(), audit_vec.clone()) ||
-                config.path_in(cwd["cwd"].as_str(), "", audit_vec.clone())
+                let cwd_path = cwd["cwd"].as_str();
+                config.path_in(p["name"].as_str(), cwd_path, audit_vec.clone()) ||
+                config.path_in(cwd_path, "", audit_vec.clone())
             }) {
                 event = Event::from(syscall, cwd, proctitle, paths, config.clone());
             }
@@ -93,10 +90,8 @@ pub fn read_log(file: String, config: config::Config, position: u64, itx: u64) -
             line["type"] == "CWD" ||
             line["type"] == "PATH" ||
             line["type"] == "PROCTITLE"
-        }) {
-            if itx < 3{
-                current_position = position;
-            }
+        }) && itx < 120 {
+            current_position = position;
         }
     }
     (event, current_position)
@@ -147,71 +142,81 @@ mod tests {
 
     #[test]
     fn test_read_log() {
-        let config = Config::new("linux");
-        let (event, position) = read_log(String::from("test/unit/audit.log"),
-            config, 0, 0);
+        if utils::get_os() == "linux" {
+            let config = Config::new("linux");
+            let (event, position) = read_log(String::from("test/unit/audit.log"),
+                config, 0, 0);
 
-        assert_eq!(event.id.len(), 36);
-        assert_eq!(event.path, ".");
-        assert_eq!(event.operation, "CREATE");
-        assert_eq!(event.file, "sedTsutP7");
-        assert_eq!(event.timestamp, "1659026449689");
-        assert_eq!(event.proctitle, "736564002D6900737C68656C6C6F7C4849217C670066696C6531302E747874");
-        assert_eq!(event.cap_fver, "0");
-        assert_eq!(event.inode, "1972630");
-        assert_eq!(event.cap_fp, "0");
-        assert_eq!(event.cap_fe, "0");
-        assert_eq!(event.item, "1");
-        assert_eq!(event.cap_fi, "0");
-        assert_eq!(event.dev, "08:02");
-        assert_eq!(event.mode, "0100000");
-        assert_eq!(event.cap_frootid, "0");
-        assert_eq!(event.ouid, "0");
-        /*assert_eq!(event.parent["rdev"], "00:00");
-        assert_eq!(event.parent["cap_fi"], "0");
-        assert_eq!(event.parent["item"], "0");
-        assert_eq!(event.parent["type"], "PATH");
-        assert_eq!(event.parent["inode"], "1966138");
-        assert_eq!(event.parent["ouid"], "1000");
-        assert_eq!(event.parent["msg"], "audit(1659026449.689:6434):");
-        assert_eq!(event.parent["dev"], "08:02");
-        assert_eq!(event.parent["cap_fver"], "0");
-        assert_eq!(event.parent["nametype"], "PARENT");
-        assert_eq!(event.parent["cap_frootid"], "0");
-        assert_eq!(event.parent["mode"], "040755");
-        assert_eq!(event.parent["ogid"], "0");
-        assert_eq!(event.parent["cap_fe"], "0");
-        assert_eq!(event.parent["cap_fp"], "0");
-        assert_eq!(event.parent["name"], "./");*/
-        assert_eq!(event.cwd, "/tmp");
-        assert_eq!(event.syscall, "257");
-        assert_eq!(event.ppid, "161880");
-        assert_eq!(event.comm, "sed");
-        assert_eq!(event.fsuid, "0");
-        assert_eq!(event.pid, "161937");
-        assert_eq!(event.a0, "ffffff9c");
-        assert_eq!(event.a1, "556150ee3c00");
-        assert_eq!(event.a2, "c2");
-        assert_eq!(event.a3, "180");
-        assert_eq!(event.arch, "c000003e");
-        assert_eq!(event.auid, "1000");
-        assert_eq!(event.items, "2");
-        assert_eq!(event.gid, "0");
-        assert_eq!(event.euid, "0");
-        assert_eq!(event.sgid, "0");
-        assert_eq!(event.uid, "0");
-        assert_eq!(event.tty, "pts0");
-        assert_eq!(event.success, "yes");
-        assert_eq!(event.exit, "4");
-        assert_eq!(event.ses, "807");
-        assert_eq!(event.key, "fim");
-        assert_eq!(event.suid, "0");
-        assert_eq!(event.egid, "0");
-        assert_eq!(event.fsgid, "0");
-        assert_eq!(event.exe, "/usr/bin/sed");
-        if utils::get_os() == "windows" {
-            assert_eq!(position, 849);
-        }else{
+            assert_eq!(event.id.len(), 36);
+            assert_eq!(event.path, ".");
+            assert_eq!(event.operation, "CREATE");
+            assert_eq!(event.file, "sedTsutP7");
+            assert_eq!(event.timestamp, "1659026449689");
+            assert_eq!(event.proctitle, "736564002D6900737C68656C6C6F7C4849217C670066696C6531302E747874");
+            assert_eq!(event.cap_fver, "0");
+            assert_eq!(event.inode, "1972630");
+            assert_eq!(event.cap_fp, "0");
+            assert_eq!(event.cap_fe, "0");
+            assert_eq!(event.item, "1");
+            assert_eq!(event.cap_fi, "0");
+            assert_eq!(event.dev, "08:02");
+            assert_eq!(event.mode, "0100000");
+            assert_eq!(event.cap_frootid, "0");
+            assert_eq!(event.ouid, "0");
+            assert_eq!(event.paths[0]["item"], "0");
+            assert_eq!(event.paths[0]["name"], "./");
+            assert_eq!(event.paths[0]["inode"], "1966138");
+            assert_eq!(event.paths[0]["dev"], "08:02");
+            assert_eq!(event.paths[0]["mode"], "040755");
+            assert_eq!(event.paths[0]["ouid"], "1000");
+            assert_eq!(event.paths[0]["ogid"], "0");
+            assert_eq!(event.paths[0]["rdev"], "00:00");
+            assert_eq!(event.paths[0]["nametype"], "PARENT");
+            assert_eq!(event.paths[0]["cap_fp"], "0");
+            assert_eq!(event.paths[0]["cap_fi"], "0");
+            assert_eq!(event.paths[0]["cap_fe"], "0");
+            assert_eq!(event.paths[0]["cap_fver"], "0");
+            assert_eq!(event.paths[0]["cap_frootid"], "0");
+            assert_eq!(event.paths[1]["item"], "1");
+            assert_eq!(event.paths[1]["name"], "./sedTsutP7");
+            assert_eq!(event.paths[1]["inode"], "1972630");
+            assert_eq!(event.paths[1]["dev"], "08:02");
+            assert_eq!(event.paths[1]["mode"], "0100000");
+            assert_eq!(event.paths[1]["ouid"], "0");
+            assert_eq!(event.paths[1]["ogid"], "0");
+            assert_eq!(event.paths[1]["rdev"], "00:00");
+            assert_eq!(event.paths[1]["nametype"], "CREATE");
+            assert_eq!(event.paths[1]["cap_fp"], "0");
+            assert_eq!(event.paths[1]["cap_fi"], "0");
+            assert_eq!(event.paths[1]["cap_fe"], "0");
+            assert_eq!(event.paths[1]["cap_fver"], "0");
+            assert_eq!(event.paths[1]["cap_frootid"], "0");
+            assert_eq!(event.cwd, "/tmp");
+            assert_eq!(event.syscall, "257");
+            assert_eq!(event.ppid, "161880");
+            assert_eq!(event.comm, "sed");
+            assert_eq!(event.fsuid, "0");
+            assert_eq!(event.pid, "161937");
+            assert_eq!(event.a0, "ffffff9c");
+            assert_eq!(event.a1, "556150ee3c00");
+            assert_eq!(event.a2, "c2");
+            assert_eq!(event.a3, "180");
+            assert_eq!(event.arch, "c000003e");
+            assert_eq!(event.auid, "1000");
+            assert_eq!(event.items, "2");
+            assert_eq!(event.gid, "0");
+            assert_eq!(event.euid, "0");
+            assert_eq!(event.sgid, "0");
+            assert_eq!(event.uid, "0");
+            assert_eq!(event.tty, "pts0");
+            assert_eq!(event.success, "yes");
+            assert_eq!(event.exit, "4");
+            assert_eq!(event.ses, "807");
+            assert_eq!(event.key, "fim");
+            assert_eq!(event.suid, "0");
+            assert_eq!(event.egid, "0");
+            assert_eq!(event.fsgid, "0");
+            assert_eq!(event.exe, "/usr/bin/sed");
             assert_eq!(position, 845);
         }
     }
@@ -220,64 +225,22 @@ mod tests {
 
     #[test]
     fn test_extract_fields() {
-        // Parent given check
-        /*let mut data = Vec::<HashMap<String, String>>::new();
-        data.push(HashMap::from([ (String::from("syscall"), String::from("100")) ]));
-        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
-        data.push(HashMap::from([ (String::from("type"), String::from("PATH")) ]));
-        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
-        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
-        let (a, b, c, d) = extract_fields(data);
-        assert_eq!(a["syscall"], String::from("100"));
-        assert_eq!(b["key"], String::from("expected"));
-        //assert_eq!(c["type"], String::from("PATH"));
-        //assert_eq!(d["key"], String::from("expected"));
-        //assert_eq!(e["key"], String::from("expected"));
-
-        // Testing parent not given option
-        data = Vec::<HashMap<String, String>>::new();
-        data.push(HashMap::from([ (String::from("syscall"), String::from("100")) ]));
-        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
-        data.push(HashMap::from([ (String::from("type"), String::from("NOT_PATH")) ]));
-        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
-        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
-        let (a, b, c, d) = extract_fields(data);
-        assert_eq!(a["syscall"], String::from("100"));
-        assert_eq!(b["key"], String::from("expected"));
-        //assert_eq!(c, HashMap::new());
-        //assert_eq!(d["key"], String::from("expected"));
-        //assert_eq!(e["key"], String::from("expected"));
-
-        // Testing specific syscall with parent given
-        data = Vec::<HashMap<String, String>>::new();
-        data.push(HashMap::from([ (String::from("syscall"), String::from("266")) ]));
-        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
-        data.push(HashMap::from([ (String::from("type"), String::from("NOT_PATH")) ]));
-        //data.push(HashMap::from([ (String::from("type"), String::from("PATH")) ]));
-        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
-        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
-        let (a, b, c, d) = extract_fields(data);
-        assert_eq!(a["syscall"], String::from("266"));
-        assert_eq!(b["key"], String::from("expected"));
-        //assert_eq!(c["type"], String::from("PATH"));
-        //assert_eq!(d["key"], String::from("expected"));
-        //assert_eq!(e["key"], String::from("expected"));
-
-        // Testing specific syscall with parent not given
-        data = Vec::<HashMap<String, String>>::new();
-        data.push(HashMap::from([ (String::from("syscall"), String::from("266")) ]));
-        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
-        data.push(HashMap::from([ (String::from("type"), String::from("NOT_PATH")) ]));
-        data.push(HashMap::from([ (String::from("type"), String::from("NOT_PATHPATH")) ]));
-        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
-        data.push(HashMap::from([ (String::from("key"), String::from("expected")) ]));
-        let (a, b, c, d) = extract_fields(data);
-        assert_eq!(a["syscall"], String::from("266"));
-        assert_eq!(b["key"], String::from("expected"));*/
-        //assert_eq!(c, HashMap::new());
-        //assert_eq!(d["key"], String::from("expected"));
-        //assert_eq!(e["key"], String::from("expected"));
-
+        let mut data = Vec::<HashMap<String, String>>::new();
+        data.push(HashMap::from([ (String::from("type"), String::from("SYSCALL")) ]));
+        data.push(HashMap::from([ (String::from("type"), String::from("CWD")) ]));
+        data.push(HashMap::from([ (String::from("type"), String::from("PROCTITLE")) ]));
+        data.push(HashMap::from([ (String::from("type"), String::from("PATH")),
+            (String::from("nametype"), String::from("CREATE")) ]));
+        data.push(HashMap::from([ (String::from("type"), String::from("PATH")),
+            (String::from("nametype"), String::from("PARENT")) ]));
+        let (a, b, c, vd) = extract_fields(data);
+        assert_eq!(a["type"], String::from("SYSCALL"));
+        assert_eq!(b["type"], String::from("CWD"));
+        assert_eq!(c["type"], String::from("PROCTITLE"));
+        assert_eq!(vd[0]["type"], String::from("PATH"));
+        assert_eq!(vd[0]["nametype"], String::from("CREATE"));
+        assert_eq!(vd[1]["type"], String::from("PATH"));
+        assert_eq!(vd[1]["nametype"], String::from("PARENT"));
     }
 
     // ------------------------------------------------------------------------

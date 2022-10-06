@@ -147,7 +147,7 @@ async fn main() {
         }
         // Detect if file is moved or renamed (rotation)
         watcher.watch(logreader::AUDIT_PATH, RecursiveMode::NonRecursive).unwrap();
-        last_position = utils::get_file_end(logreader::AUDIT_LOG_PATH);
+        last_position = utils::get_file_end(logreader::AUDIT_LOG_PATH, 0);
         // Remove auditd rules introduced by FIM
         let cconfig = config.clone();
         ctrlc::set_handler(move || {
@@ -195,11 +195,14 @@ async fn main() {
                     if event.id != "0" { events.push(event); };
                     let mut ctr = 0;
                     last_position = position;
-                    while last_position < utils::get_file_end(logreader::AUDIT_LOG_PATH) {
+                    while last_position < utils::get_file_end(logreader::AUDIT_LOG_PATH, 0) {
                         debug!("Reading events, iteration: {}", ctr);
-                        ctr = ctr + 1;
+                        ctr += 1;
                         let (evt, pos) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone(), last_position, ctr);
-                        if evt.id != "0" { events.push(evt); };
+                        if evt.id != "0" {
+                            events.push(evt);
+                            ctr = 0;
+                        };
                         last_position = pos;
                     }
                     debug!("Events read from audit log, position: {}", last_position);
