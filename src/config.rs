@@ -570,7 +570,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "NotFound")]
     fn test_read_config_panic() {
-        read_config(String::from("not_found"));
+        read_config(String::from("NotFound"));
     }
 
     // ------------------------------------------------------------------------
