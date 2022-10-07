@@ -279,6 +279,23 @@ mod tests {
         }else{
             assert_eq!(get_file_end("LICENSE", 0), 35149);
         }
+
+        assert_eq!(get_file_end("NotFound", 0), 0);
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_open_file() {
+        open_file("LICENSE", 0);
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    #[should_panic]
+    fn test_open_file_panic() {
+        open_file("NotFound", 0);
     }
 
     // ------------------------------------------------------------------------
