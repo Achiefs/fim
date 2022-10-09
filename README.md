@@ -64,5 +64,5 @@ Linux
 ### Invest
 Any kind of contribution will be invested into the project advertising, development or improvement.
 If you want to contribute with this matter you could send us your contribution through:
-- Cardano cryptocoin address `addr1qxuu48cln7ch3p4ncf393z6axza764ltkqfnr5t5hrayfqyevgzmdqwrctf8tmtgentkd0sr9wuya5rzkk8twwt3tfgqy26zdd`
+- Cardano address `addr1qy6t5cawnzj5r66ngh6klvtgw6fz0fp6fh36tf9smmv863jv7dg7pzc8ee2lhdtreepkwhtgyq8xk7cj76h52hn3pkys5ryr3u`
 - Paypal [paypal.me/achiefs](https://paypal.me/achiefs)
