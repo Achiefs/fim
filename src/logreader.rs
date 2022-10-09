@@ -59,7 +59,6 @@ pub fn read_log(file: String, config: config::Config, position: u64, itx: u64) -
             line_info["type"] == "PATH" ||
             line_info["type"] == "PROCTITLE") {
             data.push(line_info.clone());
-            println!("{:?}", line_info);
             if line_info.contains_key("type") &&
                 line_info["type"] == "PROCTITLE" {
                 break;

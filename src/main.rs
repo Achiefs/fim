@@ -255,6 +255,8 @@ async fn main() {
                         }else{
                             debug!("Event ignored not stored in alerts");
                         }
+                    }else{
+                        debug!("Event not matched monitor");
                     }
                 }
             },

@@ -142,7 +142,7 @@ pub fn check_auditd() -> bool {
 
 // Returns if raw_path contains compare_path
 pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
-    let pattern = if get_os() == "linux" { '/' }else{ '\\' };
+    let pattern = if get_os() == "linux" { "/" }else{ "\\" };
     let mut raw_tokens: Vec<&str> = raw_path.split(pattern).collect();
     let mut compare_tokens: Vec<&str> = compare_path.split(pattern).collect();
 
