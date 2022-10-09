@@ -1,10 +1,11 @@
 // Copyright (C) 2021, Achiefs.
 
 // Global constants definitions
-pub const VERSION: &str = "0.3.2";
+pub const VERSION: &str = "0.4.0";
 pub const NETWORK_MODE: &str = "NETWORK";
 pub const FILE_MODE: &str = "FILE";
 pub const BOTH_MODE: &str = "BOTH";
+pub const MACHINE_ID_PATH: &str = "/etc/machine-id";
 const CONFIG_LINUX_PATH: &str = "/etc/fim/config.yml";
 
 // To parse files in yaml format
@@ -17,6 +18,8 @@ use std::io::Write;
 use std::path::Path;
 // To set log filter level
 use simplelog::LevelFilter;
+// To manage common functions
+use crate::utils;
 
 // ----------------------------------------------------------------------------
 
@@ -29,7 +32,8 @@ pub struct Config {
     pub endpoint_pass: String,
     pub events_file: String,
     pub monitor: Array,
-    pub nodename: String,
+    pub audit: Array,
+    pub node: String,
     pub log_file: String,
     pub log_level: String,
     pub system: String,
@@ -48,7 +52,8 @@ impl Config {
             endpoint_pass: self.endpoint_pass.clone(),
             events_file: self.events_file.clone(),
             monitor: self.monitor.clone(),
-            nodename: self.nodename.clone(),
+            audit: self.audit.clone(),
+            node: self.node.clone(),
             log_file: self.log_file.clone(),
             log_level: self.log_level.clone(),
             system: self.system.clone(),
@@ -137,18 +142,37 @@ impl Config {
         // Manage null value on monitor value
         let monitor = match yaml[0]["monitor"].as_vec() {
             Some(value) => value.to_vec(),
+            None => Vec::new()
+        };
+
+        // Manage null value on audit value
+        let audit = match yaml[0]["audit"].as_vec() {
+            Some(value) => {
+                if utils::get_os() != "linux"{
+                    panic!("Audit only supported in Linux systems.");
+                }
+                value.to_vec()
+            },
             None => {
-                println!("[ERROR] monitor not found in config.yml.");
-                panic!("monitor not found in config.yml.");
+                if monitor.is_empty() {
+                    panic!("Neither monitor or audit section found in config.yml.");
+                };
+                Vec::new()
             }
         };
 
-        // Manage null value on nodename value
-        let nodename = match yaml[0]["nodename"].as_str() {
+        // Manage null value on node value
+        let node = match yaml[0]["node"].as_str() {
             Some(value) => String::from(value),
             None => {
-                println!("[WARN] nodename not found in config.yml, using 'FIM'.");
-                String::from("FIM")
+                match system {
+                    "linux" => utils::get_machine_id(),
+                    "macos" => utils::get_machine_id(),
+                    _ => {
+                        println!("[WARN] node not found in config.yml, using hostname.");
+                        utils::get_hostname()
+                    }
+                }
             }
         };
 
@@ -179,7 +203,8 @@ impl Config {
             endpoint_pass,
             events_file,
             monitor,
-            nodename,
+            audit,
+            node,
             log_file,
             log_level,
             system: String::from(system),
@@ -223,13 +248,67 @@ impl Config {
         }
     }
 
+    // ------------------------------------------------------------------------
+
+    pub fn get_index(&self, raw_path: &str, cwd: &str, array: Array) -> usize {
+        // Iterate over monitoring paths to match ignore string and ignore event or not
+        match array.iter().position(|it| {
+            if !cwd.is_empty() && (raw_path.starts_with("./") || raw_path == "." || !raw_path.contains('/')) {
+                utils::match_path(cwd, it["path"].as_str().unwrap())
+            }else{
+                utils::match_path(raw_path, it["path"].as_str().unwrap())
+            }
+        }){
+            Some(pos) => pos,
+            None => usize::MAX
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
+    pub fn get_labels(&self, index: usize, array: Array) -> Vec<String> {
+        match array[index]["labels"].clone().into_vec() {
+            Some(labels) => labels,
+            None => Vec::new()
+        }.to_vec().iter().map(|element| String::from(element.as_str().unwrap()) ).collect()
+    }
+
+    // ------------------------------------------------------------------------
+
+    pub fn match_ignore(&self, index: usize, filename: &str, array: Array) -> bool {
+        match array[index]["ignore"].as_vec() {
+            Some(igv) => igv.to_vec().iter().any(|ignore| filename.contains(ignore.as_str().unwrap()) ),
+            None => false
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
+    // Returns if a given path and filename is in the configuration paths
+    pub fn path_in(&self, raw_path: &str, cwd: &str, vector: Vec<Yaml>) -> bool {
+        // Iterate over monitoring paths to match ignore string and ignore event or not
+        match vector.iter().any(|it| {
+            if raw_path.starts_with("./") || raw_path == "." || !raw_path.contains('/') {
+                utils::match_path(cwd, it["path"].as_str().unwrap())
+            }else{
+                utils::match_path(raw_path, it["path"].as_str().unwrap())
+            }
+        }){
+            true => true,
+            false => false
+        }
+    }
+
 }
+
+
 
 // ----------------------------------------------------------------------------
 
 // To read the Yaml configuration file
 pub fn read_config(path: String) -> Vec<Yaml> {
-    let mut file = File::open(path).expect("Unable to open file");
+    let mut file = File::open(path.clone())
+        .unwrap_or_else(|_| panic!("(read_config): Unable to open file '{}'", path));
     let mut contents = String::new();
 
     file.read_to_string(&mut contents)
@@ -259,8 +338,6 @@ pub fn get_config_path(system: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // To use files IO operations.
-    use std::{fs, env};
 
     // ------------------------------------------------------------------------
 
@@ -274,7 +351,8 @@ mod tests {
             endpoint_pass: String::from("test"),
             events_file: String::from("test"),
             monitor: Array::new(),
-            nodename: String::from("test"),
+            audit: Array::new(),
+            node: String::from("test"),
             log_file: String::from("./test.log"),
             log_level: String::from(filter),
             system: String::from("test"),
@@ -296,7 +374,8 @@ mod tests {
         assert_eq!(config.endpoint_pass, cloned.endpoint_pass);
         assert_eq!(config.events_file, cloned.events_file);
         assert_eq!(config.monitor, cloned.monitor);
-        assert_eq!(config.nodename, cloned.nodename);
+        assert_eq!(config.audit, cloned.audit);
+        assert_eq!(config.node, cloned.node);
         assert_eq!(config.log_file, cloned.log_file);
         assert_eq!(config.log_level, cloned.log_level);
         assert_eq!(config.system, cloned.system);
@@ -315,7 +394,8 @@ mod tests {
         assert_eq!(config.endpoint_pass, String::from("Not_used"));
         assert_eq!(config.events_file, String::from("C:\\ProgramData\\fim\\events.json"));
         // monitor
-        assert_eq!(config.nodename, String::from("FIM"));
+        // audit
+        assert_eq!(config.node, String::from("FIM"));
         assert_eq!(config.log_file, String::from("C:\\ProgramData\\fim\\fim.log"));
         assert_eq!(config.log_level, String::from("info"));
         assert_eq!(config.system, String::from("windows"));
@@ -334,7 +414,8 @@ mod tests {
         assert_eq!(config.endpoint_pass, String::from("Not_used"));
         assert_eq!(config.events_file, String::from("/var/lib/fim/events.json"));
         // monitor
-        assert_eq!(config.nodename, String::from("FIM"));
+        // audit
+        assert_eq!(config.node, String::from("FIM"));
         assert_eq!(config.log_file, String::from("/var/log/fim/fim.log"));
         assert_eq!(config.log_level, String::from("info"));
         assert_eq!(config.system, String::from("linux"));
@@ -353,7 +434,8 @@ mod tests {
         assert_eq!(config.endpoint_pass, String::from("Not_used"));
         assert_eq!(config.events_file, String::from("/var/lib/fim/events.json"));
         // monitor
-        assert_eq!(config.nodename, String::from("FIM"));
+        // audit
+        assert_eq!(config.node, String::from("FIM"));
         assert_eq!(config.log_file, String::from("/var/log/fim/fim.log"));
         assert_eq!(config.log_level, String::from("info"));
         assert_eq!(config.system, String::from("macos"));
@@ -451,18 +533,17 @@ mod tests {
     fn test_read_config_unix() {
         let yaml = read_config(String::from("config/linux/config.yml"));
 
-        assert_eq!(yaml[0]["nodename"].as_str().unwrap(), "FIM");
+        assert_eq!(yaml[0]["node"].as_str().unwrap(), "FIM");
         assert_eq!(yaml[0]["events"]["destination"].as_str().unwrap(), "file");
         assert_eq!(yaml[0]["events"]["file"].as_str().unwrap(), "/var/lib/fim/events.json");
 
-        assert_eq!(yaml[0]["monitor"][0]["path"].as_str().unwrap(), "/tmp/");
-        assert_eq!(yaml[0]["monitor"][1]["path"].as_str().unwrap(), "/bin/");
-        assert_eq!(yaml[0]["monitor"][2]["path"].as_str().unwrap(), "/usr/bin/");
-        assert_eq!(yaml[0]["monitor"][2]["labels"][0].as_str().unwrap(), "usr/bin");
+        assert_eq!(yaml[0]["monitor"][0]["path"].as_str().unwrap(), "/bin/");
+        assert_eq!(yaml[0]["monitor"][1]["path"].as_str().unwrap(), "/usr/bin/");
+        assert_eq!(yaml[0]["monitor"][1]["labels"][0].as_str().unwrap(), "usr/bin");
+        assert_eq!(yaml[0]["monitor"][1]["labels"][1].as_str().unwrap(), "linux");
+        assert_eq!(yaml[0]["monitor"][2]["path"].as_str().unwrap(), "/etc");
+        assert_eq!(yaml[0]["monitor"][2]["labels"][0].as_str().unwrap(), "etc");
         assert_eq!(yaml[0]["monitor"][2]["labels"][1].as_str().unwrap(), "linux");
-        assert_eq!(yaml[0]["monitor"][3]["path"].as_str().unwrap(), "/etc");
-        assert_eq!(yaml[0]["monitor"][3]["labels"][0].as_str().unwrap(), "etc");
-        assert_eq!(yaml[0]["monitor"][3]["labels"][1].as_str().unwrap(), "linux");
 
         assert_eq!(yaml[0]["log"]["file"].as_str().unwrap(), "/var/log/fim/fim.log");
         assert_eq!(yaml[0]["log"]["level"].as_str().unwrap(), "info");
@@ -474,7 +555,7 @@ mod tests {
     fn test_read_config_windows() {
         let yaml = read_config(String::from("config/windows/config.yml"));
 
-        assert_eq!(yaml[0]["nodename"].as_str().unwrap(), "FIM");
+        assert_eq!(yaml[0]["node"].as_str().unwrap(), "FIM");
         assert_eq!(yaml[0]["events"]["destination"].as_str().unwrap(), "file");
         assert_eq!(yaml[0]["events"]["file"].as_str().unwrap(), "C:\\ProgramData\\fim\\events.json");
 
@@ -494,7 +575,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "NotFound")]
     fn test_read_config_panic() {
-        read_config(String::from("not_found"));
+        read_config(String::from("NotFound"));
     }
 
     // ------------------------------------------------------------------------
@@ -515,51 +596,75 @@ mod tests {
         assert_eq!(get_config_path("windows"), default_path_windows);
         assert_eq!(get_config_path("linux"), default_path_linux);
         assert_eq!(get_config_path("macos"), default_path_macos);
+    }
 
-        let path = "./config.yml";
-        fs::rename(default_path_windows, path).unwrap();
-        assert_eq!(get_config_path("windows"), path);
-        fs::rename(path, default_path_windows).unwrap();
+    // ------------------------------------------------------------------------
 
-        fs::rename(default_path_linux, path).unwrap();
-        assert_eq!(get_config_path("linux"), path);
-        fs::rename(path, default_path_linux).unwrap();
-
-        fs::rename(default_path_macos, path).unwrap();
-        assert_eq!(get_config_path("macos"), path);
-        fs::rename(path, default_path_macos).unwrap();
-
-        let relative_path_windows = "./../../config/windows";
-        let relative_config_windows = "./../../config/windows/config.yml";
-        let relative_path_linux = "./../../config/linux";
-        let relative_config_linux = "./../../config/linux/config.yml";
-        let relative_path_macos = "./../../config/macos";
-        let relative_config_macos = "./../../config/macos/config.yml";
-
-        fs::create_dir_all(relative_path_windows).unwrap();
-        fs::rename(default_path_windows, relative_config_windows).unwrap();
-        assert_eq!(get_config_path("windows"), relative_config_windows);
-        fs::rename(relative_config_windows, default_path_windows).unwrap();
-
-        fs::create_dir_all(relative_path_linux).unwrap();
-        fs::rename(default_path_linux, relative_config_linux).unwrap();
-        assert_eq!(get_config_path("linux"), relative_config_linux);
-        fs::rename(relative_config_linux, default_path_linux).unwrap();
-
-        fs::create_dir_all(relative_path_macos).unwrap();
-        fs::rename(default_path_macos, relative_config_macos).unwrap();
-        assert_eq!(get_config_path("macos"), relative_config_macos);
-        fs::rename(relative_config_macos, default_path_macos).unwrap();
-
-        fs::remove_dir_all("./../../config").unwrap();
-
-        if env::consts::OS == "linux" {
-            let linux_path = "/etc/fim";
-            let config_linux = "/etc/fim/config.yml";
-            fs::create_dir_all(linux_path).unwrap();
-            fs::rename(default_path_linux, config_linux).unwrap();
-            assert_eq!(get_config_path("linux"), config_linux);
-            fs::rename(config_linux, default_path_linux).unwrap();
+    #[test]
+    fn test_path_in() {
+        let config = Config::new(&utils::get_os());
+        if utils::get_os() == "linux" {
+            assert!(config.path_in("/bin/", "", config.monitor.clone()));
+            assert!(config.path_in("/bin", "", config.monitor.clone()));
+            assert!(!config.path_in("/bin/test", "", config.monitor.clone()));
+            assert!(!config.path_in("/test", "", config.monitor.clone()));
+            assert!(config.path_in("/tmp", "", config.audit.clone()));
+            assert!(config.path_in("/tmp/", "", config.audit.clone()));
+            assert!(config.path_in("./", "/tmp", config.audit.clone()));
+            assert!(config.path_in("./", "/tmp/", config.audit.clone()));
+            assert!(!config.path_in("./", "/test", config.audit.clone()));
+            assert!(config.path_in("./", "/tmp/test", config.audit.clone()));
         }
     }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_get_index() {
+        let config = Config::new(&utils::get_os());
+        if utils::get_os() == "linux" {
+            assert_eq!(config.get_index("/bin/", "", config.monitor.clone()), 0);
+            assert_eq!(config.get_index("./", "/bin", config.monitor.clone()), 0);
+            assert_eq!(config.get_index("/usr/bin/", "", config.monitor.clone()), 1);
+            assert_eq!(config.get_index("/etc", "", config.monitor.clone()), 2);
+            assert_eq!(config.get_index("/test", "", config.monitor.clone()), usize::MAX);
+            assert_eq!(config.get_index("./", "/test", config.monitor.clone()), usize::MAX);
+            assert_eq!(config.get_index("/tmp", "", config.audit.clone()), 0);
+            assert_eq!(config.get_index("/test", "", config.audit.clone()), usize::MAX);
+            assert_eq!(config.get_index("./", "/tmp", config.audit.clone()), 0);
+            assert_eq!(config.get_index("./", "/test", config.audit.clone()), usize::MAX);
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_get_labels() {
+        let config = Config::new(&utils::get_os());
+        if utils::get_os() == "windows" {
+            let labels = config.get_labels(0, config.monitor.clone());
+            assert_eq!(labels[0], "Program Files");
+            assert_eq!(labels[1], "windows");
+        }else{
+            let labels = config.get_labels(1, config.monitor.clone());
+            assert_eq!(labels[0], "usr/bin");
+            assert_eq!(labels[1], "linux");
+
+            let labels = config.get_labels(0, config.audit.clone());
+            assert_eq!(labels[0], "tmp");
+            assert_eq!(labels[1], "linux");
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_match_ignore() {
+        let config = Config::new(&utils::get_os());
+        if utils::get_os() == "linux" {
+            assert!(config.match_ignore(0, "file.swp", config.audit.clone()));
+            assert!(!config.match_ignore(0, "file.txt", config.audit.clone()));
+        }
+    }
+
 }

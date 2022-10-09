@@ -1,7 +1,7 @@
 name: System tests
 on: [push]
 jobs:
-  system-tests-unix:
+  monitor-system-tests-unix:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -19,17 +19,17 @@ jobs:
 
       - name: Change configuration to test on Linux
         if: runner.os == 'Linux'
-        run: sed -i 's|tmp/.*|tmp/test|g' config/linux/config.yml
+        run: sed -i 's|usr/bin/.*|tmp/test|g' config/linux/config.yml
 
       - name: Change configuration to test on macOS
         if: runner.os == 'macOS'
-        run: sed -i '' 's|tmp/.*|tmp/test|g' config/linux/config.yml
+        run: sed -i '' 's|usr/bin.*|tmp/test|g' config/linux/config.yml
 
       - name: Copy FIM binary to main folder
         run: cp ./target/release/fim ./
 
       - name: Create required directories
-        run: mkdir /tmp/test
+        run: mkdir -p /tmp/test
 
       - name: Create events file and folder
         run: sudo mkdir -p /var/lib/fim/ && sudo touch /var/lib/fim/events.json && sudo chown -R runner:runner /var/lib/fim
@@ -41,10 +41,76 @@ jobs:
         run: sudo ./fim &
 
       - name: Launch test suite
-        run: python3 -m pytest test/system/test_system.py -v
+        run: python3 -m pytest test/system/monitor.py -v --noconftest
 
       - name: Print events.json file
         if: always()
         run: cat /var/lib/fim/events.json
+
+      - run: echo "Job's status is ${{ job.status }}."
+
+
+  audit-system-tests-unix:
+    runs-on: self-hosted
+
+    steps:
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+
+      - name: Build FIM
+        run: cargo build --release
+
+      - name: Change configuration
+        run: sed -i 's|/tmp|/tmp/test|g' config/linux/config.yml
+
+      - name: Copy FIM binary to main folder
+        run: cp ./target/release/fim ./
+
+      - name: Create required directories
+        run: mkdir -p /tmp/test
+
+      - name: Create events file and folder
+        run: sudo mkdir -p /var/lib/fim/ && sudo touch /var/lib/fim/events.json && sudo chown -R okynos:okynos /var/lib/fim
+
+      - name: Create log file and folder
+        run: sudo mkdir -p /var/log/fim/ && sudo touch /var/log/fim/fim.log && sudo chown -R okynos:okynos /var/log/fim
+
+      - name: Start FIM process
+        run: sudo ./fim &
+
+      - name: Launch test suite
+        run: sudo python3 -m pytest test/system/audit.py -v
+
+      - name: Print config file
+        if: always()
+        run: cat ${{ github.workspace }}/config/linux/config.yml || true
+
+      - name: Print log file
+        if: always()
+        run: cat /var/log/fim/fim.log || true
+
+      - name: Clean temporal folder
+        if: always()
+        run: sudo rm -rf /tmp/test
+
+      - name: Clean log folder
+        if: always()
+        run: sudo rm -rf /var/log/fim/
+
+      - name: Clean lib folder
+        if: always()
+        run: sudo rm -rf /var/lib/fim/
+
+      - name: Clean workspace
+        if: always()
+        run: sudo rm -rf ${{ github.workspace }}/test/system/__pycache__/ ${{ github.workspace }}/test/system/.pytest_cache ${{ github.workspace }}/.pytest_cache
+
+      - name: Clean test output
+        if: always()
+        run: sudo rm -rf ${{ github.workspace }}/test_*
+
+      - name: Stop FIM process
+        if: always()
+        run: sudo pkill fim || true
 
       - run: echo "Job's status is ${{ job.status }}."

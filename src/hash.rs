@@ -1,11 +1,13 @@
 // Copyright (C) 2021, Achiefs.
 
 // To get file checksums
-use hex::encode;
+use hex::{encode, decode};
 use sha3::{Sha3_512, Digest};
 use std::io::ErrorKind;
 // To log the program process
 use log::*;
+// To manage hex to ascii conversion
+use std::str;
 
 // To calculate file content hash in sha512 format (SHA3 implementation)
 pub fn get_checksum(file: String) -> String {
@@ -33,6 +35,15 @@ pub fn get_checksum(file: String) -> String {
 
 // ----------------------------------------------------------------------------
 
+pub fn hex_to_ascii(hex: String) -> String {
+    debug!("HEX: {}", hex);
+    let bytes = decode(hex).unwrap();
+    String::from(str::from_utf8(&bytes).unwrap())
+        .replace('\u{0000}', " ")
+}
+
+// ----------------------------------------------------------------------------
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -48,6 +59,8 @@ mod tests {
         fs::remove_file(filename).unwrap()
     }
 
+    // ------------------------------------------------------------------------
+
     #[test]
     fn test_get_checksum_file() {
         let filename = String::from("test_get_checksum_file");
@@ -56,11 +69,15 @@ mod tests {
         remove_test_file(filename.clone());
     }
 
+    // ------------------------------------------------------------------------
+
     #[test]
     fn test_get_checksum_not_exists() {
         assert_ne!(get_checksum(String::from("not_exists")), String::from("This is a test"));
         assert_eq!(get_checksum(String::from("not_exists")), String::from("UNKNOWN"));
     }
+
+    // ------------------------------------------------------------------------
 
     #[test]
     fn test_get_checksum_bad() {
@@ -69,4 +86,21 @@ mod tests {
         assert_ne!(get_checksum(filename.clone()), String::from("This is a test"));
         remove_test_file(filename.clone());
     }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_hex_to_ascii() {
+        let ascii = hex_to_ascii(String::from("746F756368002F746D702F746573742F66696C65342E747874"));
+        assert_eq!(ascii, "touch /tmp/test/file4.txt");
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    #[should_panic]
+    fn test_hex_to_ascii_panic() {
+        hex_to_ascii(String::from("ABC"));
+    }
+
 }

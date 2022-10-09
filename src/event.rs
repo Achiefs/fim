@@ -4,7 +4,8 @@
 use std::fmt;
 // To handle files
 use std::fs::OpenOptions;
-use std::io::{Write, Error, ErrorKind};
+use std::io::Write;
+//use std::io::{Write, Error, ErrorKind};
 // Handle time intervals
 use std::time::Duration;
 // Event handling
@@ -13,23 +14,26 @@ use notify::op::Op;
 use log::*;
 // To handle JSON objects
 use serde_json::{json, to_string};
-// To manage Pathbufs
+// To manage paths
 use std::path::PathBuf;
 // To manage HTTP requests
 use reqwest::Client;
+
+// To get configuration constants
+use crate::config;
 
 pub struct Event {
     pub id: String,
     pub timestamp: String,
     pub hostname: String,
-    pub nodename: String,
+    pub node: String,
     pub version: String,
     pub path: PathBuf,
-    pub operation: Op,
+    pub op: Op,
     pub labels: Vec<String>,
-    pub kind: String,
+    pub operation: String,
     pub checksum: String,
-    pub pid: u32,
+    pub fpid: u32,
     pub system: String
 }
 
@@ -40,11 +44,11 @@ impl Event {
             "id": self.id.clone(),
             "timestamp": self.timestamp.clone(),
             "hostname": self.hostname.clone(),
-            "node": self.nodename.clone(),
-            "pid": self.pid.clone(),
+            "node": self.node.clone(),
+            "fpid": self.fpid.clone(),
             "version": self.version.clone(),
             "labels": self.labels.clone(),
-            "kind": self.kind.clone(),
+            "operation": self.operation.clone(),
             "file": String::from(self.path.clone().to_str().unwrap()),
             "checksum": self.checksum.clone(),
             "system": self.system.clone()
@@ -55,24 +59,26 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to write the received events to file
-    pub fn log_event(&self, file: String){
+    pub fn log(&self, file: String){
         let mut events_file = OpenOptions::new()
             .create(true)
             .write(true)
             .append(true)
             .open(file)
-            .expect("(log_event) Unable to open events log file.");
+            .expect("(log) Unable to open events log file.");
 
-        match self.operation {
+        match self.op {
             Op::CREATE|Op::WRITE|Op::RENAME|Op::REMOVE|Op::CHMOD|Op::CLOSE_WRITE|Op::RESCAN => {
-                writeln!(events_file, "{}", self.format_json() )
+                match writeln!(events_file, "{}", self.format_json() ) {
+                    Ok(_d) => debug!("Event log written"),
+                    Err(e) => error!("Event could not be written, Err: [{}]", e)
+                };
             },
             _ => {
                 let error_msg = "Event Op not Handled or do not exists";
                 error!("{}", error_msg);
-                Err(Error::new(ErrorKind::InvalidInput, error_msg))
             },
-        }.expect("(log_event) Error writing event")
+        };
     }
 
     // ------------------------------------------------------------------------
@@ -82,11 +88,11 @@ impl Event {
         let data = json!({
             "timestamp": self.timestamp.clone(),
             "hostname": self.hostname.clone(),
-            "node": self.nodename.clone(),
-            "pid": self.pid.clone(),
+            "node": self.node.clone(),
+            "fpid": self.fpid.clone(),
             "version": self.version.clone(),
             "labels": self.labels.clone(),
-            "kind": self.kind.clone(),
+            "operation": self.operation.clone(),
             "file": String::from(self.path.clone().to_str().unwrap()),
             "checksum": self.checksum.clone(),
             "system": self.system.clone()
@@ -102,11 +108,28 @@ impl Event {
             .basic_auth(user, Some(pass))
             .json(&data)
             .send()
-            .await{
+            .await {
             Ok(response) => debug!("Response received: {:?}", response),
             Err(e) => debug!("Error on request: {:?}", e)
         };
     }
+
+    // ------------------------------------------------------------------------
+
+    // Function to manage event destination
+    pub async fn process(&self, destination: &str, index_name: String, config: config::Config){
+        match destination {
+            config::BOTH_MODE => {
+                self.log(config.events_file);
+                self.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
+            },
+            config::NETWORK_MODE => {
+                self.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
+            },
+            _ => self.log(config.events_file)
+        }
+    }
+
 }
 
 // ----------------------------------------------------------------------------
@@ -123,7 +146,7 @@ impl fmt::Debug for Event {
 
 // ----------------------------------------------------------------------------
 
-pub fn get_kind(operation: Op) -> String {
+pub fn get_op(operation: Op) -> String {
     match operation {
         Op::CREATE => { String::from("CREATE") },
         Op::WRITE => { String::from("WRITE") },
@@ -142,8 +165,11 @@ pub fn get_kind(operation: Op) -> String {
 mod tests {
     use super::*;
     use crate::event::Event;
+    use crate::config::Config;
+    use crate::utils;
     use notify::op::Op;
     use std::path::PathBuf;
+    use tokio_test::block_on;
     use std::fs;
 
     // ------------------------------------------------------------------------
@@ -157,14 +183,14 @@ mod tests {
             id: "Test_id".to_string(),
             timestamp: "Timestamp".to_string(),
             hostname: "Hostname".to_string(),
-            nodename: "FIM".to_string(),
+            node: "FIM".to_string(),
             version: "x.x.x".to_string(),
-            operation: Op::CREATE,
+            op: Op::CREATE,
             path: PathBuf::new(),
             labels: Vec::new(),
-            kind: "TEST".to_string(),
+            operation: "TEST".to_string(),
             checksum: "UNKNOWN".to_string(),
-            pid: 0,
+            fpid: 0,
             system: "test".to_string()
         }
     }
@@ -177,22 +203,22 @@ mod tests {
         assert_eq!(evt.id, "Test_id".to_string());
         assert_eq!(evt.timestamp, "Timestamp".to_string());
         assert_eq!(evt.hostname, "Hostname".to_string());
-        assert_eq!(evt.nodename, "FIM".to_string());
+        assert_eq!(evt.node, "FIM".to_string());
         assert_eq!(evt.version, "x.x.x".to_string());
-        assert_eq!(evt.operation, Op::CREATE);
+        assert_eq!(evt.op, Op::CREATE);
         assert_eq!(evt.path, PathBuf::new());
         assert_eq!(evt.labels, Vec::<String>::new());
-        assert_eq!(evt.kind, String::from("TEST"));
-        assert_eq!(evt.pid, 0);
+        assert_eq!(evt.operation, String::from("TEST"));
+        assert_eq!(evt.fpid, 0);
         assert_eq!(evt.system, String::from("test"));
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_send_event() {
+    fn test_send() {
         let evt = create_test_event();
-        tokio_test::block_on( evt.send(
+        block_on( evt.send(
             String::from("test"), String::from("https://127.0.0.1:9200"),
             String::from("admin"), String::from("admin"), true) );
     }
@@ -200,15 +226,27 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_get_kind(){
-        assert_eq!(get_kind(Op::CREATE), String::from("CREATE"));
-        assert_eq!(get_kind(Op::WRITE), String::from("WRITE"));
-        assert_eq!(get_kind(Op::RENAME), String::from("RENAME"));
-        assert_eq!(get_kind(Op::REMOVE), String::from("REMOVE"));
-        assert_eq!(get_kind(Op::CHMOD), String::from("CHMOD"));
-        assert_eq!(get_kind(Op::CLOSE_WRITE), String::from("CLOSE_WRITE"));
-        assert_eq!(get_kind(Op::RESCAN), String::from("RESCAN"));
-        assert_eq!(get_kind(Op::empty()), String::from("UNKNOWN"));
+    fn test_get_op(){
+        assert_eq!(get_op(Op::CREATE), String::from("CREATE"));
+        assert_eq!(get_op(Op::WRITE), String::from("WRITE"));
+        assert_eq!(get_op(Op::RENAME), String::from("RENAME"));
+        assert_eq!(get_op(Op::REMOVE), String::from("REMOVE"));
+        assert_eq!(get_op(Op::CHMOD), String::from("CHMOD"));
+        assert_eq!(get_op(Op::CLOSE_WRITE), String::from("CLOSE_WRITE"));
+        assert_eq!(get_op(Op::RESCAN), String::from("RESCAN"));
+        assert_eq!(get_op(Op::empty()), String::from("UNKNOWN"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_process() {
+        let config = Config::new(&utils::get_os());
+        let event = create_test_event();
+
+        block_on(event.process(config::NETWORK_MODE, String::from("test"), config.clone()));
+        block_on(event.process(config::FILE_MODE, String::from("test2"), config.clone()));
+        block_on(event.process(config::BOTH_MODE, String::from("test3"), config.clone()));
     }
 
     // ------------------------------------------------------------------------
@@ -216,27 +254,33 @@ mod tests {
     #[test]
     fn test_event_fmt(){
         let out = format!("{:?}", create_test_event());
-        assert_eq!(out, "(\"Test_id\", \"\", CREATE)");
+        assert_eq!(out, "(\"Test_id\", \"\", \"TEST\")");
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
     fn test_format_json() {
-        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"hostname\":\"Hostname\",\"id\":\"Test_id\",\"kind\":\"TEST\",\"labels\":[],\"node\":\"FIM\",\"pid\":0,\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}";
+        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"fpid\":0,\
+            \"hostname\":\"Hostname\",\"id\":\"Test_id\",\"labels\":[],\
+            \"node\":\"FIM\",\"operation\":\"TEST\",\"system\":\"test\",\
+            \"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}";
         assert_eq!(create_test_event().format_json(), expected);
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_log_event() {
+    fn test_log() {
         let filename = String::from("test_event.json");
         let evt = create_test_event();
 
-        evt.log_event(filename.clone());
+        evt.log(filename.clone());
         let contents = fs::read_to_string(filename.clone());
-        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"hostname\":\"Hostname\",\"id\":\"Test_id\",\"kind\":\"TEST\",\"labels\":[],\"node\":\"FIM\",\"pid\":0,\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}\n";
+        let expected = "{\"checksum\":\"UNKNOWN\",\"file\":\"\",\"fpid\":0,\
+            \"hostname\":\"Hostname\",\"id\":\"Test_id\",\"labels\":[],\
+            \"node\":\"FIM\",\"operation\":\"TEST\",\"system\":\"test\",\
+            \"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}\n";
         assert_eq!(contents.unwrap(), expected);
         remove_test_file(filename.clone());
     }
