@@ -253,7 +253,7 @@ impl Config {
     pub fn get_index(&self, raw_path: &str, cwd: &str, array: Array) -> usize {
         // Iterate over monitoring paths to match ignore string and ignore event or not
         match array.iter().position(|it| {
-            if cwd != "" && (raw_path.starts_with("./") || raw_path == "." || !raw_path.contains('/')) {
+            if !cwd.is_empty() && (raw_path.starts_with("./") || raw_path == "." || !raw_path.contains('/')) {
                 utils::match_path(cwd, it["path"].as_str().unwrap())
             }else{
                 utils::match_path(raw_path, it["path"].as_str().unwrap())
