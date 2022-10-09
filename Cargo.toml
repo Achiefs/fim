@@ -14,7 +14,6 @@ notify = "4.0.17"
 log = "0.4.11"
 simplelog = "0.12.0"
 gethostname = "0.2.1"
-retry = "1.2.0"
 itertools = "0.10.3"
 uuid = { version = "1.0.0", features = ["v4"] }
 reqwest = { version = "0.11", features = ["json", "stream"] }
