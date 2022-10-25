@@ -129,7 +129,7 @@ impl Event {
 
         let clean_timestamp: String = String::from(proctitle["msg"].clone()
             .replace("audit(", "")
-            .replace(".", "")
+            .replace('.', "")
             .split(':').collect::<Vec<&str>>()[0]); // Getting the 13 digits timestamp
 
         let event_path = parent["name"].clone();
