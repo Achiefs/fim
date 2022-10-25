@@ -2,21 +2,20 @@
 [![Join us on Slack](https://img.shields.io/badge/Chat-Join%20us%20on%20Slack-blue)](https://join.slack.com/t/filemonitor/shared_invite/zt-1au9t0hf4-yOsW6D3pGPqzzYsAJt9Dvg)
 ![GitHub](https://img.shields.io/github/license/Achiefs/fim)
 [![Coverage Status](https://coveralls.io/repos/github/Achiefs/fim/badge.svg)](https://coveralls.io/github/Achiefs/fim)
-[![Tip Me via PayPal](https://img.shields.io/badge/PayPal-tip_me-green?logo=paypal)](https://paypal.me/achiefs)
 
-FIM is a File Integrity Monitoring tool that tracks any event performed over your files.
+FIM is a File Integrity Monitoring tool that tracks any event over your files.
 It is capable of keeping historical data of your files. It checks the filesystem changes in the background.
 FIM is the fastest alternative to other software like Ossec to perform file integrity monitoring.
-It can be integrated with other security tools like Ossec or Wazuh.
+It could integrate with other security tools like Ossec or Wazuh.
 The produced data can be ingested and analyzed with tools like ElasticSearch/OpenSearch.
-Developed with Rust, the next generation of programming language.
+It has developed with Rust, the best core programming language.
 
 ## Features
-- Filesystem monitor
-- Identification of changes in content, attributes, ownership or permissions
-- Store logs of detected events
-- Easy integration
-- Compatible with Linux, macOS and Windows
+- Filesystem monitor (File change monitor).
+- Identification of changes in content, attributes, ownership or permissions (Linux Audit data).
+- Store logs of detected events.
+- Easy integration with Elasticsearch/OpenSearch Wazuh indexer.
+- Compatible with Linux, macOS and Windows.
 
 ## Get started
 To set up FIM perform the following steps:
@@ -62,7 +61,5 @@ Linux
 - Run `cargo run` to download crates, build and run FIM software.
 
 ### Invest
-Any kind of contribution will be invested into the project advertising, development or improvement.
-If you want to contribute with this matter you could send us your contribution through:
-- Cardano address `addr1qy6t5cawnzj5r66ngh6klvtgw6fz0fp6fh36tf9smmv863jv7dg7pzc8ee2lhdtreepkwhtgyq8xk7cj76h52hn3pkys5ryr3u`
-- Paypal [paypal.me/achiefs](https://paypal.me/achiefs)
+Any kind of contribution will be invested into the project webpage, code development or advertising.
+If you want to contribute with the project you could contact us at support@achiefs.com
