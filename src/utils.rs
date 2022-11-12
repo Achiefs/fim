@@ -13,7 +13,7 @@ use std::io::prelude::*;
 // To get config constants
 use crate::config;
 // To manage paths
-use std::path::Path;
+use std::path::{Path, PathBuf};
 // To run commands
 use std::process::Command;
 // To log the program process
@@ -164,6 +164,13 @@ pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
                 clean_path(r) == clean_path(c))
         }
     }
+}
+
+// ----------------------------------------------------------------------------
+
+pub fn get_current_dir() -> String {
+    String::from(env::current_dir().unwrap_or(PathBuf::from(".")).to_str()
+        .unwrap_or("."))
 }
 
 // ----------------------------------------------------------------------------
