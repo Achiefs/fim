@@ -6,20 +6,24 @@
         <Package Id='*' Keywords='Installer'
             Description="FIM is an Open Source Host-based file integrity monitoring tool that performs file system analysis, file integrity checking and real time alerting."
             Comments='FIM is an open source application, coded in Rust.'
-            Manufacturer='Achiefs LLC.' InstallerVersion='100' Languages='1033'
+            Manufacturer='Achiefs LLC.' InstallerVersion='200' Languages='1033'
             Compressed='yes' SummaryCodepage='1252' Platform="x64" />
         <Condition Message="You need to be an administrator to install this product.">Privileged</Condition>
         <Media Id='1' Cabinet='fim.cab' EmbedCab='yes' CompressionLevel="high" />
         <Icon Id="ICO" SourceFile="ui/favicon.ico" />
         <Property Id="ARPPRODUCTICON" Value="ICO" />
+        <Property Id="ARPNOMODIFY" Value="yes" />
         <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
+        <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Start FIM in background now." />
+        <Property Id="ALLUSERS" Value="1" />
+        <WixVariable Id="WixUISupportPerUser" Value="0" />
 
         <Directory Id='TARGETDIR' Name='SourceDir'>
             <Directory Id='ProgramFilesFolder' Name='PFiles'>
                 <Directory Id='INSTALLDIR' Name='FIM'>
                     <Component Id='MainExecutable' Guid='*'>
                         <File Id='FIMEXE' Name='fim.exe' DiskId='1' Source='fim.exe' KeyPath='yes'></File>
-                        <ServiceInstall Name="FimService" Type="ownProcess" Start="auto" ErrorControl="normal" Description="File integrity monitoring Windows service." DisplayName="FIM" Id="fim_service_install" />
+                        <ServiceInstall Id="fim_service_install" Name="FimService" Type="ownProcess" Start="auto" ErrorControl="normal" Description="File integrity monitoring Windows service." DisplayName="FIM" />
                         <ServiceControl Id="ServiceControl" Name="FimService" Stop="both" Remove="uninstall" Wait="yes" />
                     </Component>
                     <Component Id='ConfigFile' Guid='*'>
