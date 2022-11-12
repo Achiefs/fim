@@ -2,7 +2,7 @@ name: Pkg build
 on: [push]
 jobs:
   Pkg-build-ubuntu:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
