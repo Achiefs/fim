@@ -1,0 +1,65 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+    <Product Name='FIM' Manufacturer='Achiefs LLC.' Id='*'
+        UpgradeCode='5b9136b1-f19d-4af0-9efe-356fabdf1467'
+        Language='1033' Codepage='1252' Version='0.4.0'>
+        <Package Id='*' Keywords='Installer'
+            Description="FIM is an Open Source Host-based file integrity monitoring tool that performs file system analysis, file integrity checking and real time alerting."
+            Comments='FIM is an open source application, coded in Rust.'
+            Manufacturer='Achiefs LLC.' InstallerVersion='100' Languages='1033'
+            Compressed='yes' SummaryCodepage='1252' Platform="x64" />
+        <Condition Message="You need to be an administrator to install this product.">Privileged</Condition>
+        <Media Id='1' Cabinet='fim.cab' EmbedCab='yes' CompressionLevel="high" />
+        <Icon Id="ICO" SourceFile="ui/favicon.ico" />
+        <Property Id="ARPPRODUCTICON" Value="ICO" />
+        <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
+
+        <Directory Id='TARGETDIR' Name='SourceDir'>
+            <Directory Id='ProgramFilesFolder' Name='PFiles'>
+                <Directory Id='INSTALLDIR' Name='FIM'>
+                    <Component Id='MainExecutable' Guid='*'>
+                        <File Id='FIMEXE' Name='fim.exe' DiskId='1' Source='fim.exe' KeyPath='yes'></File>
+                        <ServiceInstall Name="FimService" Type="ownProcess" Start="auto" ErrorControl="normal" Description="File integrity monitoring Windows service." DisplayName="FIM" Id="fim_service_install" />
+                        <ServiceControl Id="ServiceControl" Name="FimService" Stop="both" Remove="uninstall" Wait="yes" />
+                    </Component>
+                    <Component Id='ConfigFile' Guid='*'>
+                        <File Id='CONFIG' Name='config.yml' DiskId='1' Source='config.yml' KeyPath='yes'></File>
+                    </Component>
+                </Directory>
+            </Directory>
+
+            <!--
+            <Directory id='AppDataFolder' Name='AppData'>
+                <Component Id='LogFile' Guid='*'>
+                    <File Id='LOG' Name='fim.log' DiskId='1' Source='fim.log' KeyPath='yes'></File>
+                    <RemoveFile Id='LogFile' On='uninstall' Name='fim.log' />
+                </Component>
+            </Directory>
+            -->
+
+        </Directory>
+
+        <Feature Id='Complete' Title='Fim' Level='1' Description='Complete package features.'
+            Display='expand' ConfigurableDirectory='INSTALLDIR'>
+            <Feature Id='MainProgram' Title='Program' Description='The main executable.' Level='1'>
+                <ComponentRef Id='MainExecutable' />
+                <ComponentRef Id='ConfigFile' />
+            </Feature>
+        </Feature>
+
+        <UIRef Id="WixUI_Mondo" />
+        <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
+        <WixVariable Id="WixUIDialogBmp" Value="ui\dialog.jpg" />
+        <WixVariable Id="WixUIBannerBmp" Value="ui\banner.jpg" />
+
+        <!--
+        <UI>
+            <UIRef Id="WixUI_Advanced" />
+            <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Order="4"><![CDATA[WIXUI_DONTVALIDATEPATH OR WIXUI_INSTALLDIR_VALID="1"]]></Publish>
+            <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg" />
+            <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchUI">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
+        </UI>
+        -->
+
+    </Product>
+</Wix>
