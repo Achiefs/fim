@@ -15,11 +15,13 @@ use std::fs::{File, OpenOptions};
 use std::io::Read;
 use std::io::Write;
 // To manage paths
-use std::path::Path;
+use std::path::{Path, PathBuf};
 // To set log filter level
 use simplelog::LevelFilter;
 // To manage common functions
 use crate::utils;
+// To get environment information
+use std::env;
 
 // ----------------------------------------------------------------------------
 
@@ -307,9 +309,9 @@ impl Config {
 
 // To read the Yaml configuration file
 pub fn read_config(path: String) -> Vec<Yaml> {
-    let mut file = File::open(path.clone())
+    let mut file: File = File::open(path.clone())
         .unwrap_or_else(|_| panic!("(read_config): Unable to open file '{}'", path));
-    let mut contents = String::new();
+    let mut contents: String = String::new();
 
     file.read_to_string(&mut contents)
         .expect("Unable to read file");
@@ -320,16 +322,37 @@ pub fn read_config(path: String) -> Vec<Yaml> {
 
 pub fn get_config_path(system: &str) -> String {
     // Select directory where to load config.yml it depends on system
-    let default_path = format!("./config/{}/config.yml", system);
-    let relative_path = format!("./../../config/{}/config.yml", system);
-    if Path::new(default_path.as_str()).exists() {
-        default_path
-    }else if Path::new("./config.yml").exists() {
-        String::from("./config.yml")
-    }else if Path::new(relative_path.as_str()).exists() {
-        relative_path
+    let current_dir: String = String::from(env::current_dir().unwrap_or(
+        PathBuf::from(".")).to_str().unwrap_or("."));
+    if system != "windows" {
+        let default_path: String = format!("{}/config/{}/config.yml", current_dir, system);
+        let relative_path: String = format!("{}/../../config/{}/config.yml", current_dir, system);
+        if Path::new(default_path.as_str()).exists() {
+            default_path
+        }else if Path::new(&format!("{}/config.yml", current_dir)).exists() {
+            String::from(format!("{}/config.yml", current_dir))
+        }else if Path::new(relative_path.as_str()).exists() {
+            relative_path
+        }else{
+            String::from(CONFIG_LINUX_PATH)
+        }
     }else{
-        String::from(CONFIG_LINUX_PATH)
+        let default_path: String = format!("{}\\config\\{}\\config.yml", current_dir, system);
+        let relative_path: String = format!("{}\\..\\..\\config\\{}\\config.yml", current_dir, system);
+        if Path::new(default_path.as_str()).exists() {
+            default_path
+        }else if Path::new(&format!("{}\\config.yml", current_dir)).exists() {
+            String::from(format!("{}\\config.yml", current_dir))
+        }else if Path::new(relative_path.as_str()).exists() {
+            relative_path
+        }else{
+            //let key: &str = "%PROGRAMFILES(X86)%";
+            //match env::var_os(key) {
+            //    Some(val) => println!("{key}: {val:?}"),
+            //    None => println!("{key} is not defined in the environment.")
+            //};
+            String::from(CONFIG_LINUX_PATH)
+        }   
     }
 }
 
