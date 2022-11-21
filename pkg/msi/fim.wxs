@@ -2,7 +2,7 @@
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
     <Product Name='FIM' Manufacturer='Achiefs LLC.' Id='*'
         UpgradeCode='5b9136b1-f19d-4af0-9efe-356fabdf1467'
-        Language='1033' Codepage='1252' Version='0.4.0'>
+        Language='1033' Codepage='1252' Version='0.4.1'>
         <Package Id='*' Keywords='Installer'
             Description="FIM is an Open Source Host-based file integrity monitoring tool that performs file system analysis, file integrity checking and real time alerting."
             Comments='FIM is an open source application, coded in Rust.'
