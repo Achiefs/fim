@@ -125,7 +125,7 @@ pub fn parse_audit_log(log: String) -> HashMap<String, String> {
         .map(|f| {
             let obj: Vec<&str> = f.split('=').collect();
             if obj.len() == 2 {
-                (String::from(obj[0]), String::from(obj[1]).replace('\"', "").replace('\n', ""))
+                (String::from(obj[0]), String::from(obj[1]).replace(['\"', '\n'], ""))
             }else{
                 (String::from(obj[0]), String::from("UNKNOWN"))
             }
