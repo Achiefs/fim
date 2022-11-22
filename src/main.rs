@@ -3,8 +3,7 @@
 // To allow big structs like json on audit events
 #![recursion_limit = "256"]
 
-// To manage terminal parameters
-use std::env;
+
 // To manage event channels
 use std::sync::mpsc;
 
@@ -22,6 +21,7 @@ mod event;
 mod logreader;
 mod auditevent;
 // Manage Windows service
+#[cfg(target_os = "windows")]
 mod service;
 // Manage monitor methods
 mod monitor;
@@ -33,7 +33,7 @@ mod monitor;
 #[tokio::main]
 async fn main() {
     let (tx, rx) = mpsc::channel();
-    monitor::monitor(tx, rx);
+    monitor::monitor(tx, rx).await;
 }
 
 // ----------------------------------------------------------------------------
@@ -41,6 +41,8 @@ async fn main() {
 #[cfg(windows)]
 #[tokio::main]
 async fn main() -> windows_service::Result<()> {
+    // To manage terminal parameters
+    use std::env;
     let args: Vec<_> = env::args().collect();
     if args.len() > 1 {
         match args[1].as_str() {

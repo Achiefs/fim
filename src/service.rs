@@ -1,22 +1,7 @@
-// Copyright (C) 2021, Achiefs.
-// Part of the code here is based on mullvad/windows-service-rs crate
+// Copyright (C) 2022, Achiefs.
+// Parts of the code here is based on mullvad/windows-service-rs crate examples
 // Crate link: https://github.com/mullvad/windows-service-rs
 
-// Ping service example.
-//
-// You can install and uninstall this service using other example programs.
-// All commands mentioned below shall be executed in Command Prompt with Administrator privileges.
-//
-// Service installation: `install_service.exe`
-// Service uninstallation: `uninstall_service.exe`
-//
-// Start the service: `net start ping_service`
-// Stop the service: `net stop ping_service`
-//
-// Ping server sends a text message to local UDP port 1234 once a second.
-// You can verify that service works by running netcat, i.e: `ncat -ul 1234`.
-
-#[cfg(windows)]
 // To manage aynchronous functions
 use futures::executor::block_on;
 use notify::{Op, RawEvent};
