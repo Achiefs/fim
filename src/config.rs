@@ -400,6 +400,7 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
+    #[cfg(target_os = "windows")]
     #[test]
     fn test_new_config_windows() {
         let config = Config::new("windows");
@@ -569,6 +570,7 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
+    #[cfg(target_os = "windows")]
     #[test]
     fn test_read_config_windows() {
         let yaml = read_config(String::from("config/windows/config.yml"));
@@ -607,14 +609,22 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_get_config_path() {
+    fn test_get_config_path_unix() {
         let current_dir = utils::get_current_dir();
-        let default_path_windows = format!("{}\\config\\windows\\config.yml", current_dir);
         let default_path_linux = format!("{}/config/linux/config.yml", current_dir);
         let default_path_macos = format!("{}/config/macos/config.yml", current_dir);
-        assert_eq!(get_config_path("windows"), default_path_windows);
         assert_eq!(get_config_path("linux"), default_path_linux);
         assert_eq!(get_config_path("macos"), default_path_macos);
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_get_config_path_windows() {
+        let current_dir = utils::get_current_dir();
+        let default_path_windows = format!("{}\\config\\windows\\config.yml", current_dir);
+        assert_eq!(get_config_path("windows"), default_path_windows);
     }
 
     // ------------------------------------------------------------------------

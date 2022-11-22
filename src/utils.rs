@@ -236,6 +236,7 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
+    #[ignore]
     fn test_get_machine_id() {
         if get_os() == "linux" {
             assert_eq!(get_machine_id().len(), 33);
