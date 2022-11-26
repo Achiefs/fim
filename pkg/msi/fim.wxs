@@ -31,16 +31,6 @@
                     </Component>
                 </Directory>
             </Directory>
-
-            <!--
-            <Directory id='AppDataFolder' Name='AppData'>
-                <Component Id='LogFile' Guid='*'>
-                    <File Id='LOG' Name='fim.log' DiskId='1' Source='fim.log' KeyPath='yes'></File>
-                    <RemoveFile Id='LogFile' On='uninstall' Name='fim.log' />
-                </Component>
-            </Directory>
-            -->
-
         </Directory>
 
         <Feature Id='Complete' Title='Fim' Level='1' Description='Complete package features.'
@@ -55,15 +45,5 @@
         <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
         <WixVariable Id="WixUIDialogBmp" Value="ui\dialog.jpg" />
         <WixVariable Id="WixUIBannerBmp" Value="ui\banner.jpg" />
-
-        <!--
-        <UI>
-            <UIRef Id="WixUI_Advanced" />
-            <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Order="4"><![CDATA[WIXUI_DONTVALIDATEPATH OR WIXUI_INSTALLDIR_VALID="1"]]></Publish>
-            <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg" />
-            <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchUI">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
-        </UI>
-        -->
-
     </Product>
 </Wix>
