@@ -22,7 +22,7 @@ jobs:
       - name: Copying EXE to pkg folder
         run: cp target/release/fim.exe pkg/msi
       - name: Running candle
-        run: Invoke-Expression "& `"C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe`" pkg\msi\fim.wxs"
+        run: Invoke-Expression "& `"C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe`" pkg\msi\fim.wxs -o pkg\msi\fim.wixobj"
       - name: Building package
-        run: Invoke-Expression "& `"C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe`" -ext WixUIExtension .\fim.wixobj"
+        run: Invoke-Expression "& `"C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe`" -ext WixUIExtension pkg\msi\fim.wixobj -b pkg\msi"
       - run: echo "Job's status is ${{ job.status }}."
