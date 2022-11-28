@@ -24,5 +24,5 @@ jobs:
       - name: Running candle
         run: cd pkg/msi && &"C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe" .\fim.wxs
       - name: Building package
-        run: &"C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe" -ext WixUIExtension .\fim.wixobj
+        run: Invoke-Expression "& `"C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe`" -ext WixUIExtension .\fim.wixobj"
       - run: echo "Job's status is ${{ job.status }}."
