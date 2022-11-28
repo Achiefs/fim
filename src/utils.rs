@@ -169,7 +169,7 @@ pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
 // ----------------------------------------------------------------------------
 
 pub fn get_current_dir() -> String {
-    String::from(env::current_dir().unwrap_or(PathBuf::from(".")).to_str()
+    String::from(env::current_dir().unwrap_or_else(|_| PathBuf::from(".")).to_str()
         .unwrap_or("."))
 }
 

@@ -328,7 +328,7 @@ pub fn get_config_path(system: &str) -> String {
         if Path::new(default_path.as_str()).exists() {
             default_path
         }else if Path::new(&format!("{}\\config.yml", current_dir)).exists() {
-            String::from(format!("{}\\config.yml", current_dir))
+            format!("{}\\config.yml", current_dir)
         }else if Path::new(relative_path.as_str()).exists() {
             relative_path
         }else{
@@ -340,7 +340,7 @@ pub fn get_config_path(system: &str) -> String {
         if Path::new(default_path.as_str()).exists() {
             default_path
         }else if Path::new(&format!("{}/config.yml", current_dir)).exists() {
-            String::from(format!("{}/config.yml", current_dir))
+            format!("{}/config.yml", current_dir)
         }else if Path::new(relative_path.as_str()).exists() {
             relative_path
         }else{

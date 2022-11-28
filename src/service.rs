@@ -97,7 +97,7 @@ pub fn run_service() -> Result<()> {
         process_id: None,
     })?;
 
-    block_on(monitor::monitor(tx.clone(), rx));
+    block_on(monitor::monitor(tx, rx));
 
     // Tell the system that service has stopped.
     status_handle.set_service_status(ServiceStatus {

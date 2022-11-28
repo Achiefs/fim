@@ -104,7 +104,6 @@ pub async fn monitor(tx: mpsc::Sender<RawEvent>, rx: mpsc::Receiver<RawEvent>){
     push_template(destination.as_str(), config.clone()).await;
 
     // Iterating over monitor paths and set watcher on each folder to watch.
-    //let (tx, rx) = channel();
     let mut watcher: RecommendedWatcher = Watcher::new_raw(tx).unwrap();
     if ! config.monitor.is_empty() {
         for element in config.monitor.clone() {
