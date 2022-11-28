@@ -11,3 +11,15 @@ jobs:
       - name: Building package
         run: cd pkg/deb && sudo ./builder.sh
       - run: echo "Job's status is ${{ job.status }}."
+
+  Pkg-build-windows:
+    runs-on: windows-2022
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+      - name: Building code
+        run: cargo build --release
+      - name: Copying EXE to pkg folder
+        run: cp target/release/fim.exe pkg/msi
+      - name: Building package
+        run: cd pkg/msi && candle.exe .\fim.wxs && light.exe -ext WixUIExtension .\fim.wixobj
+      - run: echo "Job's status is ${{ job.status }}."
