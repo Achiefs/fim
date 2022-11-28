@@ -21,6 +21,8 @@ jobs:
         run: cargo build --release
       - name: Copying EXE to pkg folder
         run: cp target/release/fim.exe pkg/msi
+      - name: Running candle
+        run: cd pkg/msi && &"C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe" .\fim.wxs
       - name: Building package
-        run: cd pkg/msi && candle.exe .\fim.wxs && light.exe -ext WixUIExtension .\fim.wixobj
+        run: &"C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe" -ext WixUIExtension .\fim.wixobj
       - run: echo "Job's status is ${{ job.status }}."
