@@ -635,7 +635,7 @@ mod tests {
         if utils::get_os() == "linux" {
             assert!(config.path_in("/bin/", "", config.monitor.clone()));
             assert!(config.path_in("/bin", "", config.monitor.clone()));
-            assert!(!config.path_in("/bin/test", "", config.monitor.clone()));
+            assert!(config.path_in("/bin/test", "", config.monitor.clone()));
             assert!(!config.path_in("/test", "", config.monitor.clone()));
             assert!(config.path_in("/tmp", "", config.audit.clone()));
             assert!(config.path_in("/tmp/", "", config.audit.clone()));

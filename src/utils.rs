@@ -177,7 +177,7 @@ pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
 
     while raw_tokens.len() > compare_tokens.len() && pops < max_pops {
         raw_tokens.pop();
-        pops = pops + 1;
+        pops += 1;
     }
     
     raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)| {
