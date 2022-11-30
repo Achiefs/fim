@@ -7,7 +7,7 @@ use std::process;
 // To get Operating system
 use std::env;
 // To use files IO operations.
-use std::fs::File;
+use std::fs::{File, metadata};
 use std::io::{Read, SeekFrom};
 use std::io::prelude::*;
 // To get config constants
@@ -18,8 +18,6 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 // To log the program process
 use log::{warn, error, debug};
-// To manage cmp order
-use std::cmp::Ordering;
 
 // ----------------------------------------------------------------------------
 
@@ -142,28 +140,52 @@ pub fn check_auditd() -> bool {
 
 // Returns if raw_path contains compare_path
 pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
+    let max_pops = 128;
+    let mut pops = 0;
     let pattern = if get_os() == "linux" { "/" }else{ "\\" };
-    let mut raw_tokens: Vec<&str> = raw_path.split(pattern).collect();
-    let mut compare_tokens: Vec<&str> = compare_path.split(pattern).collect();
+    let compare_path_clean = &clean_path(compare_path);
+    let raw_path_clean = &clean_path(raw_path);
 
-    match raw_tokens.len().cmp(&compare_tokens.len()) {
-        Ordering::Equal => {
-            raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)|
-                clean_path(r) == clean_path(c))
-        },
-        Ordering::Greater => {
-            // Removing file name from bottom
+    let mut raw_tokens: Vec<&str>;
+    let mut compare_tokens: Vec<&str>;
+
+    match metadata(raw_path_clean) {
+        Ok(md) => if md.is_file(){
+            raw_tokens = raw_path_clean.split(pattern).collect();
             raw_tokens.pop();
-            raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)|
-                clean_path(r) == clean_path(c))
-        },
-        _ => {
-            // Removing file name from bottom
-            compare_tokens.pop();
-            raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)|
-                clean_path(r) == clean_path(c))
+        }else{
+            raw_tokens = raw_path_clean.split(pattern).collect();
         }
+        ,
+        Err(e) => { 
+            debug!("Could not fetch metadata information of '{}', assuming not a file. Error: {}", raw_path_clean, e);
+            raw_tokens = raw_path_clean.split(pattern).collect();
+        }
+    };
+    match metadata(compare_path_clean) {
+        Ok(md) => if md.is_file(){
+            compare_tokens = compare_path_clean.split(pattern).collect();
+            compare_tokens.pop();
+        }else{
+            compare_tokens = compare_path_clean.split(pattern).collect();
+        },
+        Err(e) => {
+            debug!("Could not fetch metadata information of '{}', assuming not a file. Error: {}", compare_path_clean, e);
+            compare_tokens = compare_path_clean.split(pattern).collect();
+        }
+    };
+
+    while raw_tokens.len() > compare_tokens.len() && pops < max_pops {
+        raw_tokens.pop();
+        pops = pops + 1;
     }
+
+    println!("RTOKENS: '{:?}', CTOKENS: '{:?}'", raw_tokens, compare_tokens);
+    
+    raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)| {
+        println!("R: '{}', C: '{}'", r, c);
+        clean_path(r) == clean_path(c)
+    })
 }
 
 // ----------------------------------------------------------------------------

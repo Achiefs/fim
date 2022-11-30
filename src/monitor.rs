@@ -171,6 +171,7 @@ pub async fn monitor(tx: mpsc::Sender<RawEvent>, rx: mpsc::Receiver<RawEvent>){
                 debug!("Event received: {:?}", raw_event);
 
                 if raw_event.path.clone().unwrap().to_str().unwrap() == "DISCONNECT" {
+                    info!("Received exit signal, exiting...");
                     break;
                 }
 

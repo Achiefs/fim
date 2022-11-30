@@ -4,7 +4,7 @@
         UpgradeCode='5b9136b1-f19d-4af0-9efe-356fabdf1467'
         Language='1033' Codepage='1252' Version='0.4.1'>
         <Package Id='*' Keywords='Installer'
-            Description="FIM is an Open Source Host-based file integrity monitoring tool that performs file system analysis, file integrity checking and real time alerting."
+            Description="FIM is a Host-based file monitoring tool that performs file system analysis and real time alerting."
             Comments='FIM is an open source application, coded in Rust.'
             Manufacturer='Achiefs LLC.' InstallerVersion='200' Languages='1033'
             Compressed='yes' SummaryCodepage='1252' Platform="x64" />
