@@ -179,11 +179,8 @@ pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
         raw_tokens.pop();
         pops = pops + 1;
     }
-
-    println!("RTOKENS: '{:?}', CTOKENS: '{:?}'", raw_tokens, compare_tokens);
     
     raw_tokens.iter().zip(compare_tokens.iter()).all(|(r,c)| {
-        println!("R: '{}', C: '{}'", r, c);
         clean_path(r) == clean_path(c)
     })
 }
