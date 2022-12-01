@@ -37,9 +37,6 @@ pub fn get_checksum(file: String) -> String {
 
 pub fn hex_to_ascii(hex: String) -> String {
     debug!("HEX: {}", hex);
-    // Include error handling for decode method, error:
-    /* thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: OddLength', src/hash.rs:40:29
-note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace */
     let bytes = match decode(hex){
         Ok(d) => d,
         Err(e) => {
@@ -107,9 +104,8 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    #[should_panic]
-    fn test_hex_to_ascii_panic() {
-        hex_to_ascii(String::from("ABC"));
+    fn test_hex_to_ascii_bad() {
+        assert_eq!(hex_to_ascii(String::from("ABC")), "");
     }
 
 }
