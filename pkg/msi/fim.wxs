@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='windows-1252'?>
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-    <Product Name='FIM' Manufacturer='Achiefs LLC.' Id='*'
+    <Product Name='File Integrity Monitor' Manufacturer='Achiefs LLC.' Id='*'
         UpgradeCode='5b9136b1-f19d-4af0-9efe-356fabdf1467'
         Language='1033' Codepage='1252' Version='0.4.1'>
         <Package Id='*' Keywords='Installer'
@@ -12,21 +12,20 @@
         <Media Id='1' Cabinet='fim.cab' EmbedCab='yes' CompressionLevel="high" />
         <Icon Id="ICO" SourceFile="ui/favicon.ico" />
         <Property Id="ARPPRODUCTICON" Value="ICO" />
-        <Property Id="ARPNOMODIFY" Value="yes" />
         <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
+        <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
         <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Start FIM in background now." />
         <Property Id="ALLUSERS" Value="1" />
-        <WixVariable Id="WixUISupportPerUser" Value="0" />
 
         <Directory Id='TARGETDIR' Name='SourceDir'>
-            <Directory Id='ProgramFilesFolder' Name='PFiles'>
-                <Directory Id='INSTALLDIR' Name='FIM'>
-                    <Component Id='MainExecutable' Guid='*'>
+            <Directory Id='ProgramFiles64Folder' Name='PFiles'>
+                <Directory Id='INSTALLDIR' Name='File Integrity Monitor'>
+                    <Component Id='MainExecutable' Guid='*' Win64="yes">
                         <File Id='FIMEXE' Name='fim.exe' DiskId='1' Source='fim.exe' KeyPath='yes'></File>
-                        <ServiceInstall Id="fim_service_install" Name="FimService" Type="ownProcess" Start="auto" ErrorControl="normal" Description="File integrity monitoring Windows service." DisplayName="FIM" />
+                        <ServiceInstall Id="fim_service_install" Name="FimService" Type="ownProcess" Start="auto" ErrorControl="normal" Description="File integrity monitoring Windows service." DisplayName="File Integrity Monitor" />
                         <ServiceControl Id="ServiceControl" Name="FimService" Stop="both" Remove="uninstall" Wait="yes" />
                     </Component>
-                    <Component Id='ConfigFile' Guid='*'>
+                    <Component Id='ConfigFile' Guid='*' Win64="yes">
                         <File Id='CONFIG' Name='config.yml' DiskId='1' Source='config.yml' KeyPath='yes'></File>
                     </Component>
                 </Directory>
@@ -41,9 +40,16 @@
             </Feature>
         </Feature>
 
-        <UIRef Id="WixUI_Mondo" />
+        <UIRef Id="WixUI_InstallDir" />
         <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
         <WixVariable Id="WixUIDialogBmp" Value="ui\dialog.jpg" />
         <WixVariable Id="WixUIBannerBmp" Value="ui\banner.jpg" />
+        <WixVariable Id="WixUISupportPerUser" Value="0" />
+
+        <UI>
+            <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="StartService">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed</Publish>
+        </UI>
+
+        <CustomAction Id="StartService" Directory="INSTALLDIR" ExeCommand="NET START FimService"/>
     </Product>
 </Wix>
