@@ -307,7 +307,6 @@ class TestAuditd:
         os.rename(test_folder, folder)
         data = json.loads(get_last_event())
         remove(folder)
-        assert data['operation'] == "CREATE"
         assert data['syscall'] == "82"
 
     # -------------------------------------------------------------------------
@@ -319,7 +318,6 @@ class TestAuditd:
             stdout=subprocess.PIPE).communicate()
         data = json.loads(get_last_event())
         remove(folder)
-        assert data['operation'] == "CREATE"
         assert data['syscall'] == "316"
 
     # -------------------------------------------------------------------------
