@@ -7,6 +7,7 @@ pub const FILE_MODE: &str = "FILE";
 pub const BOTH_MODE: &str = "BOTH";
 pub const MACHINE_ID_PATH: &str = "/etc/machine-id";
 const CONFIG_LINUX_PATH: &str = "/etc/fim/config.yml";
+const CONFIG_WINDOWS_PATH: &str = "C:\\Program Files (x86)\\FIM\\config.yml";
 
 // To parse files in yaml format
 use yaml_rust::yaml::{Yaml, YamlLoader, Array};
@@ -307,9 +308,9 @@ impl Config {
 
 // To read the Yaml configuration file
 pub fn read_config(path: String) -> Vec<Yaml> {
-    let mut file = File::open(path.clone())
+    let mut file: File = File::open(path.clone())
         .unwrap_or_else(|_| panic!("(read_config): Unable to open file '{}'", path));
-    let mut contents = String::new();
+    let mut contents: String = String::new();
 
     file.read_to_string(&mut contents)
         .expect("Unable to read file");
@@ -320,16 +321,31 @@ pub fn read_config(path: String) -> Vec<Yaml> {
 
 pub fn get_config_path(system: &str) -> String {
     // Select directory where to load config.yml it depends on system
-    let default_path = format!("./config/{}/config.yml", system);
-    let relative_path = format!("./../../config/{}/config.yml", system);
-    if Path::new(default_path.as_str()).exists() {
-        default_path
-    }else if Path::new("./config.yml").exists() {
-        String::from("./config.yml")
-    }else if Path::new(relative_path.as_str()).exists() {
-        relative_path
+    let current_dir: String = utils::get_current_dir();
+    if system == "windows" {
+        let default_path: String = format!("{}\\config\\{}\\config.yml", current_dir, system);
+        let relative_path: String = format!("{}\\..\\..\\config\\{}\\config.yml", current_dir, system);
+        if Path::new(default_path.as_str()).exists() {
+            default_path
+        }else if Path::new(&format!("{}\\config.yml", current_dir)).exists() {
+            format!("{}\\config.yml", current_dir)
+        }else if Path::new(relative_path.as_str()).exists() {
+            relative_path
+        }else{
+            String::from(CONFIG_WINDOWS_PATH)
+        }  
     }else{
-        String::from(CONFIG_LINUX_PATH)
+        let default_path: String = format!("{}/config/{}/config.yml", current_dir, system);
+        let relative_path: String = format!("{}/../../config/{}/config.yml", current_dir, system);
+        if Path::new(default_path.as_str()).exists() {
+            default_path
+        }else if Path::new(&format!("{}/config.yml", current_dir)).exists() {
+            format!("{}/config.yml", current_dir)
+        }else if Path::new(relative_path.as_str()).exists() {
+            relative_path
+        }else{
+            String::from(CONFIG_LINUX_PATH)
+        } 
     }
 }
 
@@ -384,6 +400,7 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
+    #[cfg(target_os = "windows")]
     #[test]
     fn test_new_config_windows() {
         let config = Config::new("windows");
@@ -406,20 +423,22 @@ mod tests {
 
     #[test]
     fn test_new_config_linux() {
-        let config = Config::new("linux");
-        assert_eq!(config.version, String::from(VERSION));
-        assert_eq!(config.events_destination, String::from("file"));
-        assert_eq!(config.endpoint_address, String::from("Not_used"));
-        assert_eq!(config.endpoint_user, String::from("Not_used"));
-        assert_eq!(config.endpoint_pass, String::from("Not_used"));
-        assert_eq!(config.events_file, String::from("/var/lib/fim/events.json"));
-        // monitor
-        // audit
-        assert_eq!(config.node, String::from("FIM"));
-        assert_eq!(config.log_file, String::from("/var/log/fim/fim.log"));
-        assert_eq!(config.log_level, String::from("info"));
-        assert_eq!(config.system, String::from("linux"));
-        assert_eq!(config.insecure, false);
+        if utils::get_os() == "linux" {
+            let config = Config::new("linux");
+            assert_eq!(config.version, String::from(VERSION));
+            assert_eq!(config.events_destination, String::from("file"));
+            assert_eq!(config.endpoint_address, String::from("Not_used"));
+            assert_eq!(config.endpoint_user, String::from("Not_used"));
+            assert_eq!(config.endpoint_pass, String::from("Not_used"));
+            assert_eq!(config.events_file, String::from("/var/lib/fim/events.json"));
+            // monitor
+            // audit
+            assert_eq!(config.node, String::from("FIM"));
+            assert_eq!(config.log_file, String::from("/var/log/fim/fim.log"));
+            assert_eq!(config.log_level, String::from("info"));
+            assert_eq!(config.system, String::from("linux"));
+            assert_eq!(config.insecure, false);
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -551,6 +570,7 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
+    #[cfg(target_os = "windows")]
     #[test]
     fn test_read_config_windows() {
         let yaml = read_config(String::from("config/windows/config.yml"));
@@ -589,13 +609,22 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_get_config_path() {
-        let default_path_windows = "./config/windows/config.yml";
-        let default_path_linux = "./config/linux/config.yml";
-        let default_path_macos = "./config/macos/config.yml";
-        assert_eq!(get_config_path("windows"), default_path_windows);
+    fn test_get_config_path_unix() {
+        let current_dir = utils::get_current_dir();
+        let default_path_linux = format!("{}/config/linux/config.yml", current_dir);
+        let default_path_macos = format!("{}/config/macos/config.yml", current_dir);
         assert_eq!(get_config_path("linux"), default_path_linux);
         assert_eq!(get_config_path("macos"), default_path_macos);
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_get_config_path_windows() {
+        let current_dir = utils::get_current_dir();
+        let default_path_windows = format!("{}\\config\\windows\\config.yml", current_dir);
+        assert_eq!(get_config_path("windows"), default_path_windows);
     }
 
     // ------------------------------------------------------------------------
@@ -606,7 +635,7 @@ mod tests {
         if utils::get_os() == "linux" {
             assert!(config.path_in("/bin/", "", config.monitor.clone()));
             assert!(config.path_in("/bin", "", config.monitor.clone()));
-            assert!(!config.path_in("/bin/test", "", config.monitor.clone()));
+            assert!(config.path_in("/bin/test", "", config.monitor.clone()));
             assert!(!config.path_in("/test", "", config.monitor.clone()));
             assert!(config.path_in("/tmp", "", config.audit.clone()));
             assert!(config.path_in("/tmp/", "", config.audit.clone()));

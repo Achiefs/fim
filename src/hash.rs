@@ -37,7 +37,13 @@ pub fn get_checksum(file: String) -> String {
 
 pub fn hex_to_ascii(hex: String) -> String {
     debug!("HEX: {}", hex);
-    let bytes = decode(hex).unwrap();
+    let bytes = match decode(hex){
+        Ok(d) => d,
+        Err(e) => {
+            debug!("Could not decode HEX data. Error: {}", e);
+            Vec::new()
+        }
+    };
     String::from(str::from_utf8(&bytes).unwrap())
         .replace('\u{0000}', " ")
 }
@@ -98,9 +104,8 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    #[should_panic]
-    fn test_hex_to_ascii_panic() {
-        hex_to_ascii(String::from("ABC"));
+    fn test_hex_to_ascii_bad() {
+        assert_eq!(hex_to_ascii(String::from("ABC")), "");
     }
 
 }

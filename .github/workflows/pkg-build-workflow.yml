@@ -2,7 +2,7 @@ name: Pkg build
 on: [push]
 jobs:
   Pkg-build-ubuntu:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
@@ -10,4 +10,21 @@ jobs:
         run: sudo apt install -y curl devscripts equivs tar gcc
       - name: Building package
         run: cd pkg/deb && sudo ./builder.sh
+      - run: echo "Job's status is ${{ job.status }}."
+
+  Pkg-build-windows:
+    runs-on: windows-2022
+    steps:
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+      - name: Building code
+        run: cargo build --release
+      - name: Copying EXE to pkg folder
+        run: cp target\release\fim.exe pkg\msi
+      - name: Copying config to pkg folder
+        run: cp config\windows\config.yml pkg\msi
+      - name: Running candle
+        run: Invoke-Expression "& `"C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe`" pkg\msi\fim.wxs -o pkg\msi\fim.wixobj"
+      - name: Building package
+        run: Invoke-Expression "& `"C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe`" -ext WixUIExtension pkg\msi\fim.wixobj -b pkg\msi"
       - run: echo "Job's status is ${{ job.status }}."

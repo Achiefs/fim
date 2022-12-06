@@ -2,10 +2,7 @@ name: System tests
 on: [push]
 jobs:
   monitor-system-tests-unix:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-18.04, ubuntu-20.04]
+    runs-on: ubuntu-20.04
 
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
