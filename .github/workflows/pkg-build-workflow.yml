@@ -6,8 +6,10 @@ jobs:
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
+      - name: Change sources.list repositories to archive Ubuntu
+        run: sudo sed -i "s|http://azure.archive.ubuntu.com|http://archive.ubuntu.com|g" /etc/apt/sources.list
       - name: Install required dependencies
-        run: sudo apt install -y curl devscripts equivs tar gcc
+        run: sudo apt update -y && sudo apt install -y curl devscripts equivs tar gcc
       - name: Building package
         run: cd pkg/deb && sudo ./builder.sh
       - run: echo "Job's status is ${{ job.status }}."
