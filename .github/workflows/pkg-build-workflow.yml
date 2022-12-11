@@ -6,6 +6,8 @@ jobs:
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
+      - name: Change sources.list repositories to archive Ubuntu
+        run: sed -i "s|http://azure.archive.ubuntu.com|http://archive.ubuntu.com|g" /etc/apt/sources.list
       - name: Install required dependencies
         run: sudo apt install -y curl devscripts equivs tar gcc
       - name: Building package
