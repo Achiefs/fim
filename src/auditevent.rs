@@ -146,7 +146,7 @@ impl Event {
             node: config.node,
             version: String::from(config::VERSION),
             labels,
-            operation: path["nametype"].clone(),
+            operation: utils::get_field(path.clone(), "nametype"),
             path: utils::clean_path(&event_path),
             file: utils::get_filename_path(path["name"].clone().as_str()),
             checksum: hash::get_checksum(format!("{}/{}",
@@ -401,7 +401,7 @@ fn get_field(map: HashMap<String, String>,field: &str) -> String {
 
 pub fn get_parent(paths: Vec<HashMap<String, String>>, cwd: &str, config: config::Config) -> HashMap<String, String> {
     match paths.iter().find(|p|{
-        p["nametype"] == "PARENT" &&
+        utils::get_field((*p).clone(), "nametype") == "PARENT" &&
         config.path_in(p["name"].as_str(), cwd, config.audit.clone())
     }){
         Some(p) => p.clone(),
@@ -413,8 +413,8 @@ pub fn get_parent(paths: Vec<HashMap<String, String>>, cwd: &str, config: config
 
 pub fn get_item_path(paths: Vec<HashMap<String, String>>, cwd: &str, config: config::Config) -> HashMap<String, String> {
     match paths.iter().rfind(|p|{
-        p["nametype"] != "PARENT" &&
-        p["nametype"] != "UNKNOWN" &&
+        utils::get_field((*p).clone(), "nametype") != "PARENT" &&
+        utils::get_field((*p).clone(), "nametype") != "UNKNOWN" &&
         config.path_in(p["name"].as_str(), cwd, config.audit.clone())
     }){
         Some(p) => p.clone(),

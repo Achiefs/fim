@@ -18,6 +18,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 // To log the program process
 use log::{warn, error, debug};
+// To manage maps
+use std::collections::HashMap;
 
 // ----------------------------------------------------------------------------
 
@@ -190,6 +192,28 @@ pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
 pub fn get_current_dir() -> String {
     String::from(env::current_dir().unwrap_or_else(|_| PathBuf::from(".")).to_str()
         .unwrap_or("."))
+}
+
+// ----------------------------------------------------------------------------
+
+pub fn get_field(data: HashMap<String, String>, field_name: &str) -> String {
+    let alternative = match field_name {
+        "nametype" => "objtype",
+        _ => field_name
+    };
+    match data.get(field_name) {
+        Some(value) => String::from(value),
+        None => {
+            debug!("Could not fetch field name trying alternative");
+            match data.get(alternative) {
+                Some(alt) => String::from(alt),
+                None => {
+                    debug!("Could not fetch alternative. Using default");
+                    String::from("UNKNOWN")
+                }
+            }
+        }
+    }
 }
 
 // ----------------------------------------------------------------------------
