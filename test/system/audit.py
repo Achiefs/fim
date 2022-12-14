@@ -125,10 +125,7 @@ class TestAuditd:
         os.symlink(test_file, test_link)
         data = json.loads(get_last_event())
         assert data['operation'] == "CREATE"
-        if "el7" in release:
-            assert data['syscall'] == "88"
-        else:
-            assert data['syscall'] == "266"
+        assert data['syscall'] == "88"
 
     # -------------------------------------------------------------------------
 
