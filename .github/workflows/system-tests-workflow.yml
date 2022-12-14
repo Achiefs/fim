@@ -121,7 +121,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build FIM
-        run: cargo build --release
+        run: /home/okynos/.cargo/bin/cargo build --release
 
       - name: Change configuration
         run: sed -i 's|/tmp|/tmp/test|g' config/linux/config.yml
