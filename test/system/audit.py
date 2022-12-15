@@ -12,6 +12,7 @@ test_file = '/tmp/test/test_file'
 test_folder = '/tmp/test/test_folder'
 test_link = test_file + '.link'
 system = platform.system()
+release = platform.release()
 
 def get_last_event():
     time.sleep(0.1)
@@ -60,7 +61,10 @@ class TestAuditd:
         open(test_file, 'w').close()
         data = json.loads(get_last_event())
         assert data['operation'] == "CREATE"
-        assert data['syscall'] == "257"
+        if "el7" in release:
+            assert data['syscall'] == "2"
+        else:
+            assert data['syscall'] == "257"
 
     # -------------------------------------------------------------------------
 
@@ -71,7 +75,10 @@ class TestAuditd:
         w.close()
         data = json.loads(get_last_event())
         assert data['operation'] == "NORMAL"
-        assert data['syscall'] == "257"
+        if "el7" in release:
+            assert data['syscall'] == "2"
+        else:
+            assert data['syscall'] == "257"
 
     # -------------------------------------------------------------------------
 
@@ -128,7 +135,10 @@ class TestAuditd:
             stdout=subprocess.PIPE).communicate()
         data = json.loads(get_last_event())
         assert data['operation'] == "CREATE"
-        assert data['syscall'] == "266"
+        if "el7" in release:
+            assert data['syscall'] == "88"
+        else:
+            assert data['syscall'] == "266"
 
     # -------------------------------------------------------------------------
 
@@ -183,7 +193,10 @@ class TestAuditd:
         subprocess.Popen(["mv", test_file, test_file],
             stdout=subprocess.PIPE).communicate()
         data = json.loads(get_last_event())
-        assert data['syscall'] == "316"
+        if "el7" in release:
+            assert data['syscall'] == "2"
+        else:
+            assert data['syscall'] == "316"
 
     # -------------------------------------------------------------------------
 
@@ -237,7 +250,10 @@ class TestAuditd:
             shell=True, stdout=subprocess.PIPE).communicate()
         data = json.loads(get_last_event())
         assert data['operation'] == "CREATE"
-        assert data['syscall'] == "257"
+        if "el7" in release:
+            assert data['syscall'] == "2"
+        else:
+            assert data['syscall'] == "257"
 
     # -------------------------------------------------------------------------
 
@@ -248,7 +264,10 @@ class TestAuditd:
             stdout=subprocess.PIPE).communicate()
         data = json.loads(get_event(0))
         assert data['operation'] == "CREATE"
-        assert data['syscall'] == "257"
+        if "el7" in release:
+            assert data['syscall'] == "2"
+        else:
+            assert data['syscall'] == "257"
 
         data = json.loads(get_last_event())
         assert data['operation'] == "CREATE"
@@ -261,7 +280,10 @@ class TestAuditd:
             stdout=subprocess.PIPE).communicate()
         data = json.loads(get_last_event())
         assert data['operation'] == "CREATE"
-        assert data['syscall'] == "257"
+        if "el7" in release:
+            assert data['syscall'] == "2"
+        else:
+            assert data['syscall'] == "257"
 
     # -------------------------------------------------------------------------
 
@@ -423,7 +445,10 @@ class TestAuditd:
         data = json.loads(get_last_event())
         remove(filename)
         assert data['operation'] == "CREATE"
-        assert data['syscall'] == "257"
+        if "el7" in release:
+            assert data['syscall'] == "2"
+        else:
+            assert data['syscall'] == "257"
 
     # -------------------------------------------------------------------------
 
@@ -458,7 +483,10 @@ class TestAuditd:
         data = json.loads(get_last_event())
         remove(folder)
         assert data['operation'] == "CREATE"
-        assert data['syscall'] == "266"
+        if "el7" in release:
+            assert data['syscall'] == "88"
+        else:
+            assert data['syscall'] == "266"
 
     # -------------------------------------------------------------------------
 
@@ -468,4 +496,7 @@ class TestAuditd:
             shell=True, stdout=subprocess.PIPE).communicate()
         data = json.loads(get_last_event())
         assert data['operation'] == "NORMAL"
-        assert data['syscall'] == "257"
+        if "el7" in release:
+            assert data['syscall'] == "2"
+        else:
+            assert data['syscall'] == "257"
