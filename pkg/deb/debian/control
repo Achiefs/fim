@@ -2,7 +2,7 @@ Source: fim
 Section: admin
 Priority: optional
 Maintainer: Jose Fernandez <support@achiefs.com>
-Build-Depends: debhelper (>=10), dh-systemd
+Build-Depends: debhelper (>=9), dh-systemd
 Standards-Version: 4.0.0
 Homepage: https://github.com/Achiefs/fim
 
