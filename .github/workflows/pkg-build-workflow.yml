@@ -1,7 +1,7 @@
 name: Pkg build
 on: [push]
 jobs:
-  Pkg-build-ubuntu:
+  Pkg-build-ubuntu20:
     runs-on: ubuntu-20.04
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
@@ -38,3 +38,11 @@ jobs:
         uses: actions/checkout@v2
       - name: Ubuntu 16.04 - package build
         run: sudo docker run okynos/fim-builder:xenial ${{ github.ref_name }}
+
+  Pkg-build-centos7:
+    runs-on: [self-hosted, ubuntu18]
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: CentOS 7 - package build
+        run: sudo docker run okynos/fim-builder:centos7 ${{ github.ref_name }}
