@@ -30,3 +30,13 @@ jobs:
       - name: Building package
         run: Invoke-Expression "& `"C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe`" -ext WixUIExtension pkg\msi\fim.wixobj -b pkg\msi"
       - run: echo "Job's status is ${{ job.status }}."
+
+
+
+  Pkg-build-ubuntu16:
+    runs-on: [self-hosted, ubuntu18]
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Ubuntu 16.04 - package build
+        run: docker run -it okynos/fim-builder:xenial ${{ github.ref }}
