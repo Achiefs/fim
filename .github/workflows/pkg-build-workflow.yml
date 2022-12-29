@@ -37,7 +37,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
       - name: Ubuntu 16.04 - package build
-        run: sudo docker run okynos/fim-builder:xenial ${{ github.ref_name }}
+        run: sudo docker run --rm okynos/fim-builder:xenial ${{ github.ref_name }}
 
   Pkg-build-centos7:
     runs-on: [self-hosted, ubuntu18]
@@ -45,4 +45,4 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
       - name: CentOS 7 - package build
-        run: sudo docker run okynos/fim-builder:centos7 ${{ github.ref_name }}
+        run: sudo docker run --rm okynos/fim-builder:centos7 ${{ github.ref_name }}
