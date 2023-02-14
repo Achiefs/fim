@@ -1,13 +1,13 @@
 // Copyright (C) 2021, Achiefs.
 
 // Global constants definitions
-pub const VERSION: &str = "0.4.3";
+pub const VERSION: &str = "0.4.4";
 pub const NETWORK_MODE: &str = "NETWORK";
 pub const FILE_MODE: &str = "FILE";
 pub const BOTH_MODE: &str = "BOTH";
 pub const MACHINE_ID_PATH: &str = "/etc/machine-id";
 const CONFIG_LINUX_PATH: &str = "/etc/fim/config.yml";
-const CONFIG_WINDOWS_PATH: &str = "C:\\Program Files (x86)\\FIM\\config.yml";
+const CONFIG_WINDOWS_PATH: &str = "C:\\Program Files\\File Integrity Monitor\\config.yml";
 
 // To parse files in yaml format
 use yaml_rust::yaml::{Yaml, YamlLoader, Array};
