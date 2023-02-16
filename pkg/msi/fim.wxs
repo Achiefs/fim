@@ -8,13 +8,17 @@
             Comments='FIM is an open source application, coded in Rust.'
             Manufacturer='Achiefs LLC.' InstallerVersion='200' Languages='1033'
             Compressed='yes' SummaryCodepage='1252' Platform="x64" />
-        <Condition Message="You need to be an administrator to install this product.">Privileged</Condition>
+        <Condition Message="This MSI installer requires administrator rights.">Privileged</Condition>
         <Media Id='1' Cabinet='fim.cab' EmbedCab='yes' CompressionLevel="high" />
         <Icon Id="ICO" SourceFile="ui/favicon.ico" />
         <Property Id="ARPPRODUCTICON" Value="ICO" />
         <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
-        <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
-        <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Start FIM in background now." />
+        <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT" Value="Thank you for installing FIM.
+Checkout our documentation to start using it.
+
+Please visit:
+https://achiefs.com
+https://github.com/Achiefs/fim/wiki" />
         <Property Id="ALLUSERS" Value="1" />
 
         <Directory Id='TARGETDIR' Name='SourceDir'>
@@ -45,11 +49,5 @@
         <WixVariable Id="WixUIDialogBmp" Value="ui\dialog.jpg" />
         <WixVariable Id="WixUIBannerBmp" Value="ui\banner.jpg" />
         <WixVariable Id="WixUISupportPerUser" Value="0" />
-
-        <UI>
-            <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="StartService">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed</Publish>
-        </UI>
-
-        <CustomAction Id="StartService" Directory="INSTALLDIR" ExeCommand="NET START FimService"/>
     </Product>
 </Wix>
