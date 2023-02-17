@@ -59,7 +59,3 @@ Linux
 - Run `cd fim` to go inside cloned folder.
 - Edit `config.yml` to adjust your needs, add paths or ignore files.
 - Run `cargo run` to download crates, build and run FIM software.
-
-### Invest
-Any kind of contribution will be invested into the project webpage, code development or advertising.
-If you want to contribute with the project you could contact us at support@achiefs.com
