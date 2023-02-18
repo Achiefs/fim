@@ -1,6 +1,6 @@
 [package]
 name = "fim"
-version = "0.4.4"
+version = "0.4.5"
 authors = ["José Fernández <´pylott@gmail.com´>"]
 edition = "2021"
 
