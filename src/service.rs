@@ -4,15 +4,18 @@
 
 // To manage aynchronous functions
 use futures::executor::block_on;
-use notify::{Op, RawEvent};
+//use notify::{Op, RawEvent};
+//use notify::event::EventKind;
+//use notify::event::DataChange;
 // Monitor functions
 use crate::monitor;
 // To log the program process
 use log::error;
 use std::{
     ffi::OsString,
-    sync::mpsc,
-    time::Duration, path::PathBuf,
+    //sync::mpsc,
+    time::Duration,
+    //path::PathBuf,
 };
 use windows_service::{
     define_windows_service,
@@ -58,8 +61,8 @@ pub fn my_service_main(_arguments: Vec<OsString>) {
 
 pub fn run_service() -> Result<()> {
     // Create a channel to be able to poll a stop event from the service worker loop.
-    let (tx, rx) = mpsc::channel();
-    let signal_handler = tx.clone();
+    //let (tx, rx) = mpsc::channel();
+    //let signal_handler = tx.clone();
 
     // Define system service event handler that will be receiving service events.
     let event_handler = move |control_event| -> ServiceControlHandlerResult {
@@ -70,11 +73,11 @@ pub fn run_service() -> Result<()> {
 
             // Handle stop
             ServiceControl::Stop => {
-                signal_handler.send(RawEvent {
+                /*signal_handler.send(RawEvent {
                     path: Some(PathBuf::from("DISCONNECT")),
-                    op: Ok(Op::WRITE),
+                    op: Ok(DataChange::Any),
                     cookie: Some(0)
-                }).unwrap();
+                }).unwrap();*/
                 ServiceControlHandlerResult::NoError
             },
 
@@ -97,7 +100,7 @@ pub fn run_service() -> Result<()> {
         process_id: None,
     })?;
 
-    block_on(monitor::monitor(tx, rx));
+    block_on(monitor::monitor());
 
     // Tell the system that service has stopped.
     status_handle.set_service_status(ServiceStatus {

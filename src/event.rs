@@ -5,11 +5,10 @@ use std::fmt;
 // To handle files
 use std::fs::OpenOptions;
 use std::io::Write;
-//use std::io::{Write, Error, ErrorKind};
 // Handle time intervals
 use std::time::Duration;
 // Event handling
-use notify::op::Op;
+use notify::event::*;
 // To log the program procedure
 use log::*;
 // To handle JSON objects
@@ -29,7 +28,7 @@ pub struct Event {
     pub node: String,
     pub version: String,
     pub path: PathBuf,
-    pub op: Op,
+    pub kind: EventKind,
     pub labels: Vec<String>,
     pub operation: String,
     pub checksum: String,
@@ -67,18 +66,10 @@ impl Event {
             .open(file)
             .expect("(log) Unable to open events log file.");
 
-        match self.op {
-            Op::CREATE|Op::WRITE|Op::RENAME|Op::REMOVE|Op::CHMOD|Op::CLOSE_WRITE|Op::RESCAN => {
-                match writeln!(events_file, "{}", self.format_json() ) {
-                    Ok(_d) => debug!("Event log written"),
-                    Err(e) => error!("Event could not be written, Err: [{}]", e)
-                };
-            },
-            _ => {
-                let error_msg = "Event Op not Handled or do not exists";
-                error!("{}", error_msg);
-            },
-        };
+        match writeln!(events_file, "{}", self.format_json() ) {
+            Ok(_d) => debug!("Event log written"),
+            Err(e) => error!("Event could not be written, Err: [{}]", e)
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -146,15 +137,12 @@ impl fmt::Debug for Event {
 
 // ----------------------------------------------------------------------------
 
-pub fn get_op(operation: Op) -> String {
+pub fn get_kind(operation: EventKind) -> String {
     match operation {
-        Op::CREATE => { String::from("CREATE") },
-        Op::WRITE => { String::from("WRITE") },
-        Op::RENAME => { String::from("RENAME") },
-        Op::REMOVE => { String::from("REMOVE") },
-        Op::CHMOD => { String::from("CHMOD") },
-        Op::CLOSE_WRITE => { String::from("CLOSE_WRITE") },
-        Op::RESCAN => { String::from("RESCAN") },
+        EventKind::Create(CreateKind::Any) => { String::from("CREATE") },
+        EventKind::Modify(ModifyKind::Any) => { String::from("WRITE") },
+        EventKind::Remove(RemoveKind::Any) => { String::from("REMOVE") },
+        EventKind::Access(AccessKind::Any) => { String::from("ACCESS") },
         _ => { String::from("UNKNOWN") }
     }
 }
@@ -167,7 +155,6 @@ mod tests {
     use crate::event::Event;
     use crate::config::Config;
     use crate::utils;
-    use notify::op::Op;
     use std::path::PathBuf;
     use tokio_test::block_on;
     use std::fs;
@@ -185,7 +172,7 @@ mod tests {
             hostname: "Hostname".to_string(),
             node: "FIM".to_string(),
             version: "x.x.x".to_string(),
-            op: Op::CREATE,
+            kind: EventKind::Create(CreateKind::Any),
             path: PathBuf::new(),
             labels: Vec::new(),
             operation: "TEST".to_string(),
@@ -205,7 +192,7 @@ mod tests {
         assert_eq!(evt.hostname, "Hostname".to_string());
         assert_eq!(evt.node, "FIM".to_string());
         assert_eq!(evt.version, "x.x.x".to_string());
-        assert_eq!(evt.op, Op::CREATE);
+        assert_eq!(evt.kind, EventKind::Create(CreateKind::Any) );
         assert_eq!(evt.path, PathBuf::new());
         assert_eq!(evt.labels, Vec::<String>::new());
         assert_eq!(evt.operation, String::from("TEST"));
@@ -226,15 +213,12 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_get_op(){
-        assert_eq!(get_op(Op::CREATE), String::from("CREATE"));
-        assert_eq!(get_op(Op::WRITE), String::from("WRITE"));
-        assert_eq!(get_op(Op::RENAME), String::from("RENAME"));
-        assert_eq!(get_op(Op::REMOVE), String::from("REMOVE"));
-        assert_eq!(get_op(Op::CHMOD), String::from("CHMOD"));
-        assert_eq!(get_op(Op::CLOSE_WRITE), String::from("CLOSE_WRITE"));
-        assert_eq!(get_op(Op::RESCAN), String::from("RESCAN"));
-        assert_eq!(get_op(Op::empty()), String::from("UNKNOWN"));
+    fn test_get_kind(){
+        assert_eq!(get_kind(EventKind::Create(CreateKind::Any)), String::from("CREATE"));
+        assert_eq!(get_kind(EventKind::Modify(ModifyKind::Any)), String::from("WRITE"));
+        assert_eq!(get_kind(EventKind::Remove(RemoveKind::Any)), String::from("REMOVE"));
+        assert_eq!(get_kind(EventKind::Access(AccessKind::Any)), String::from("ACCESS"));
+        assert_eq!(get_kind(EventKind::Any), String::from("UNKNOWN"));
     }
 
     // ------------------------------------------------------------------------
