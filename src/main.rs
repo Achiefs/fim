@@ -32,9 +32,7 @@ mod monitor;
 #[cfg(not(windows))]
 #[tokio::main]
 async fn main() {
-    use std::sync::mpsc;
-    let (tx, rx) = mpsc::channel();
-    monitor::monitor(tx, rx).await;
+    monitor::monitor().await;
 }
 
 // ----------------------------------------------------------------------------
@@ -48,7 +46,6 @@ async fn main() -> windows_service::Result<()> {
     if args.len() > 1 {
         match args[1].as_str() {
             "--foreground"|"-f" => {
-                //let (tx, rx) = mpsc::channel();
                 monitor::monitor().await;
                 Ok(())
             },
