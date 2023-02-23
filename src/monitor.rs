@@ -252,8 +252,8 @@ pub async fn monitor(){
                                     kind: kind.clone(),
                                     path: path.clone(),
                                     labels,
-                                    operation: event::get_kind(kind),
-                                    //operation: String::from("Test"),
+                                    operation: event::get_operation(kind.clone()),
+                                    detailed_operation: event::get_detailed_operation(kind),
                                     checksum: hash::get_checksum( String::from(path.to_str().unwrap()) ),
                                     fpid: utils::get_pid(),
                                     system: config.system.clone()
