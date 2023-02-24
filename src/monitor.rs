@@ -3,7 +3,7 @@
 // To read and write directories and files
 use std::fs;
 // To get file system changes
-//use notify::{RecommendedWatcher, Watcher, RecursiveMode};
+use notify::{RecommendedWatcher, RecursiveMode, Watcher, Config as NConfig};
 use std::sync::mpsc;
 // To log the program process
 use log::{info, error, debug, warn};
@@ -19,8 +19,6 @@ use itertools::Itertools;
 use std::process::Command;
 // Event handling
 use notify::event::{EventKind, AccessKind};
-
-use notify::{RecommendedWatcher, RecursiveMode, Watcher, Config as NConfig};
 
 
 // Utils functions
