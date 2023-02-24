@@ -104,7 +104,8 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
     push_template(destination.as_str(), config.clone()).await;
 
     let mut watcher = RecommendedWatcher::new(tx, NConfig::default()).unwrap();
-
+    
+    // Iterating over monitor paths and set watcher on each folder to watch.
     if ! config.monitor.is_empty() {
         for element in config.monitor.clone() {
             let path = element["path"].as_str().unwrap();

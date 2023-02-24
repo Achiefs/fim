@@ -5,7 +5,6 @@
 // To manage aynchronous functions
 use futures::executor::block_on;
 use notify::event::{Event, EventKind, EventAttributes};
-//use notify::event::DataChange;
 // Monitor functions
 use crate::monitor;
 // To log the program process
