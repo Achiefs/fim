@@ -5,7 +5,7 @@
 
 
 // To manage event channels
-//use std::sync::mpsc;
+use std::sync::mpsc;
 
 // Utils functions
 mod utils;
@@ -32,7 +32,8 @@ mod monitor;
 #[cfg(not(windows))]
 #[tokio::main]
 async fn main() {
-    monitor::monitor().await;
+    let (tx, rx) = mpsc::channel();
+    monitor::monitor(tx, rx).await;
 }
 
 // ----------------------------------------------------------------------------
@@ -46,7 +47,8 @@ async fn main() -> windows_service::Result<()> {
     if args.len() > 1 {
         match args[1].as_str() {
             "--foreground"|"-f" => {
-                monitor::monitor().await;
+                let (tx, rx) = mpsc::channel();
+                monitor::monitor(tx, rx).await;
                 Ok(())
             },
             _ => { service::run() }

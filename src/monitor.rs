@@ -88,7 +88,8 @@ async fn push_template(destination: &str, config: config::Config){
 // ----------------------------------------------------------------------------
 
 // Function that monitorize files in loop
-pub async fn monitor(){
+pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
+    rx: mpsc::Receiver<Result<notify::Event, notify::Error>>){
     println!("Achiefs File Integrity Monitoring software started!");
     println!("[INFO] Reading config...");
     let config = config::Config::new(&utils::get_os());
@@ -102,7 +103,6 @@ pub async fn monitor(){
     // Check if we have to push index template
     push_template(destination.as_str(), config.clone()).await;
 
-    let (tx, rx) = mpsc::channel();
     let mut watcher = RecommendedWatcher::new(tx, NConfig::default()).unwrap();
 
     if ! config.monitor.is_empty() {
