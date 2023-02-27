@@ -6,16 +6,69 @@ jobs:
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
+
       - name: Building package
         run: ./builder.ps1
+
         working-directory: ./pkg/msi
       - name: Installing package
         run: ./fim*.msi /q /l*v msi.log
+
         working-directory: ./pkg/msi
       - name: Print install log
         run: cat msi.log
+
         working-directory: ./pkg/msi
       - name: Start FIM service
         run: NET START FimService
+
       - name: Check FIM is running
         run: NET START | findstr "File Integrity"
+
+
+  Build-install-ubuntu:
+    runs-on: [self-hosted, ubuntu18]
+    steps:
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+
+      - name: Building package
+        run: ./builder.sh
+        working-directory: ./pkg/deb
+
+      - name: Installing package
+        run: sudo dpkg --install ./fim*.deb
+        working-directory: ./pkg/deb
+
+      - name: Start FIM service
+        run: sudo systemctl start fim
+
+      - name: Check FIM running
+        run: sudo systemctl status fim
+
+      - name: Remove package installation
+        run: sudo dpkg --purge fim
+
+
+  Build-install-centos:
+    runs-on: [self-hosted, centos7]
+    steps:
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+
+      - name: Building package
+        run: ./builder.sh
+        working-directory: ./pkg/rpm
+
+      - name: Installing package
+        run: sudo yum install -y ./fim*.rpm
+        working-directory: ./pkg/rpm
+
+      - name: Start FIM service
+        run: sudo systemctl start fim
+
+      - name: Check FIM running
+        run: sudo systemctl status fim
+
+      - name: Remove package installation
+        run: sudo yum remove -y fim
