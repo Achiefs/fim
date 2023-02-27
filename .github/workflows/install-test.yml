@@ -18,4 +18,4 @@ jobs:
       - name: Start FIM service
         run: NET START FimService
       - name: Check FIM is running
-        run: NET START | findstr "This should throw error"
+        run: NET START | findstr "File Integrity"
