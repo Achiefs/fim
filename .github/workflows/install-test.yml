@@ -9,3 +9,13 @@ jobs:
       - name: Building package
         run: ./builder.ps1
         working-directory: ./pkg/msi
+      - name: Installing package
+        run: ./fim*.msi /q /l*v msi.log
+        working-directory: ./pkg/msi
+      - name: Print install log
+        run: cat msi.log
+        working-directory: ./pkg/msi
+      - name: Start FIM service
+        run: NET START FimService
+      - name: Check FIM is running
+        run: NET START | findstr "File Integrity Monitor"
