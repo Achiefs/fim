@@ -8,6 +8,7 @@
       "file": { "type": "keyword" },
       "hostname": { "type": "keyword" },
       "operation": { "type": "keyword" },
+      "detailed_operation": { "type": "keyword" },
       "node": { "type": "keyword" },
       "version": { "type": "keyword" },
       "checksum": { "type": "keyword" },
