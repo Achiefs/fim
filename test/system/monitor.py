@@ -37,26 +37,65 @@ def test_file_close():
     cl = open(test_file, 'w')
     cl.close()
     data = json.loads(get_last_event())
-    assert data['operation'] == "CLOSE_WRITE"
+    assert data['operation'] == "ACCESS"
 
 def test_file_rename():
     os.rename(test_file, test_file + '.rmv')
     os.rename(test_file + '.rmv', test_file)
     data = json.loads(get_last_event())
-    assert data['operation'] == "RENAME"
+    assert data['operation'] == "WRITE"
 
 @pytest.mark.skipif(system == "Windows", reason="Cannot run on Windows")
 def test_file_chmod():
     os.chmod(test_file, 0o777)
     data = json.loads(get_last_event())
-    assert data['operation'] == "CHMOD"
-
-def test_file_rescan():
-    # Check https://docs.rs/notify/latest/notify/op/index.html#rescan to apply rescan test
-    # For now it will be always green
-    assert True
+    assert data['operation'] == "WRITE"
 
 def test_file_remove():
     os.remove(test_file)
     data = json.loads(get_last_event())
     assert data['operation'] == "REMOVE"
+
+
+# -----------------------------------------------------------------------------
+
+@pytest.mark.skipif(system == "Windows", reason="Cannot run on Windows")
+def test_file_create_detailed():
+    c = open(test_file, 'w')
+    data = json.loads(get_last_event())
+    assert data['detailed_operation'] == "CREATE_FILE"
+    c.close()
+
+@pytest.mark.skipif(system == "Windows", reason="Cannot run on Windows")
+def test_file_write_detailed():
+    w = open(test_file, 'w')
+    w.write("This is a test")
+    data = json.loads(get_last_event())
+    assert data['detailed_operation'] == "MODIFY_DATA_ANY"
+    w.close()
+
+@pytest.mark.skipif(system == "Windows", reason="Cannot run on Windows")
+def test_file_close_detailed():
+    cl = open(test_file, 'w')
+    cl.close()
+    data = json.loads(get_last_event())
+    assert data['detailed_operation'] == "ACCESS_CLOSE_WRITE"
+
+@pytest.mark.skipif(system == "Windows", reason="Cannot run on Windows")
+def test_file_rename_detailed():
+    os.rename(test_file, test_file + '.rmv')
+    os.rename(test_file + '.rmv', test_file)
+    data = json.loads(get_last_event())
+    assert data['detailed_operation'] == "MODIFY_RENAME_BOTH"
+
+@pytest.mark.skipif(system == "Windows", reason="Cannot run on Windows")
+def test_file_chmod_detailed():
+    os.chmod(test_file, 0o777)
+    data = json.loads(get_last_event())
+    assert data['detailed_operation'] == "MODIFY_METADATA_ANY"
+
+@pytest.mark.skipif(system == "Windows", reason="Cannot run on Windows")
+def test_file_remove_detailed():
+    os.remove(test_file)
+    data = json.loads(get_last_event())
+    assert data['detailed_operation'] == "REMOVE_FILE"

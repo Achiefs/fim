@@ -4,7 +4,7 @@
 
 // To manage aynchronous functions
 use futures::executor::block_on;
-use notify::{Op, RawEvent};
+use notify::event::{Event, EventKind, EventAttributes};
 // Monitor functions
 use crate::monitor;
 // To log the program process
@@ -12,7 +12,8 @@ use log::error;
 use std::{
     ffi::OsString,
     sync::mpsc,
-    time::Duration, path::PathBuf,
+    time::Duration,
+    path::PathBuf,
 };
 use windows_service::{
     define_windows_service,
@@ -70,11 +71,11 @@ pub fn run_service() -> Result<()> {
 
             // Handle stop
             ServiceControl::Stop => {
-                signal_handler.send(RawEvent {
-                    path: Some(PathBuf::from("DISCONNECT")),
-                    op: Ok(Op::WRITE),
-                    cookie: Some(0)
-                }).unwrap();
+                signal_handler.send(Ok(Event {
+                    paths: vec![PathBuf::from("DISCONNECT")],
+                    kind: EventKind::Any,
+                    attrs: EventAttributes::new()
+                })).unwrap();
                 ServiceControlHandlerResult::NoError
             },
 
