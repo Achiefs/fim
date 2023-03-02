@@ -253,7 +253,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                                     labels,
                                     operation: event::get_operation(kind.clone()),
                                     detailed_operation: event::get_detailed_operation(kind),
-                                    checksum: hash::get_checksum( String::from(path.to_str().unwrap()) ),
+                                    checksum: hash::get_checksum( String::from(path.to_str().unwrap()), config.events_max_file_checksum ),
                                     fpid: utils::get_pid(),
                                     system: config.system.clone()
                                 };

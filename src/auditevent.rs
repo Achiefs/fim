@@ -150,7 +150,8 @@ impl Event {
             path: utils::clean_path(&event_path),
             file: utils::get_filename_path(path["name"].clone().as_str()),
             checksum: hash::get_checksum(format!("{}/{}",
-                parent["name"].clone(), path["name"].clone())),
+                parent["name"].clone(), path["name"].clone()),
+                config.events_max_file_checksum),
             fpid: utils::get_pid(),
             system: utils::get_os(),
 
