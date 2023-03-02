@@ -12,6 +12,7 @@ use log::*;
 use std::str;
 // To manage files
 use std::fs::File;
+use std::path::Path;
 // To read file content
 use std::io::{BufRead, BufReader};
 
@@ -22,36 +23,41 @@ pub fn get_checksum(filename: String, read_limit: usize) -> String {
     let mut iteration = 0;
     let mut data_read = 0;
     
-    debug!("Getting hash of file: {}", filename);
-    match File::open(filename.clone()){
-        Ok(file) => {
-            let mut reader = BufReader::with_capacity(READ_CAPACITY, file);
+    if Path::new(&filename).is_file() { 
+        debug!("Getting hash of file: {}", filename);
+        match File::open(filename.clone()){
+            Ok(file) => {
+                let mut reader = BufReader::with_capacity(READ_CAPACITY, file);
 
-            while length > 0 && data_read <= read_limit {
-                if iteration == 2 {
-                    info!("Big file detected, the hash will take a while");
-                }
-                
-                length = {
-                    let buffer = reader.fill_buf().unwrap();
-                    hasher.update(&buffer);
-                    buffer.len()
+                while length > 0 && data_read <= read_limit {
+                    if iteration == 2 {
+                        info!("Big file detected, the hash will take a while");
+                    }
+                    
+                    length = {
+                        let buffer = reader.fill_buf().unwrap();
+                        hasher.update(&buffer);
+                        buffer.len()
+                    };
+                    reader.consume(length);
+                    data_read += length / (1024 * 1024);
+                    iteration += 1;
                 };
-                reader.consume(length);
-                data_read += length / (1024 * 1024);
-                iteration += 1;
-            };
-            if data_read > read_limit {
-                info!("File '{}' checksum skipped. File size is above limit", filename);
+                if data_read > read_limit {
+                    info!("File '{}' checksum skipped. File size is above limit", filename);
+                    String::from("UNKNOWN")
+                }else{
+                    encode(hasher.finalize())
+                }
+            },
+            Err(e) => {
+                debug!("Cannot open file to get checksum, error: {:?}", e);
                 String::from("UNKNOWN")
-            }else{
-                encode(hasher.finalize())
             }
-        },
-        Err(e) => {
-            debug!("Cannot open file to get checksum, error: {:?}", e);
-            String::from("UNKNOWN")
         }
+    }else{
+        debug!("Cannot produce checksum of a directory");
+        String::from("UNKNOWN")
     }
 }
 
