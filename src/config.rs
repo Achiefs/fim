@@ -28,6 +28,7 @@ pub struct Config {
     pub version: String,
     pub path: String,
     pub events_destination: String,
+    pub events_max_file_checksum: usize,
     pub endpoint_address: String,
     pub endpoint_user: String,
     pub endpoint_pass: String,
@@ -48,6 +49,7 @@ impl Config {
             version: self.version.clone(),
             path: self.path.clone(),
             events_destination: self.events_destination.clone(),
+            events_max_file_checksum: self.events_max_file_checksum,
             endpoint_address: self.endpoint_address.clone(),
             endpoint_user: self.endpoint_user.clone(),
             endpoint_pass: self.endpoint_pass.clone(),
@@ -88,6 +90,12 @@ impl Config {
                     String::from("Not_used")
                 }
             }
+        };
+
+        // Manage null value on events->max_file_checksum value
+        let events_max_file_checksum = match yaml[0]["events"]["max_file_checksum"].as_str() {
+            Some(value) => value.parse().unwrap(),
+            None => 64
         };
 
         // Manage null value on events->endpoint->insecure value
@@ -199,6 +207,7 @@ impl Config {
             version: String::from(VERSION),
             path: config_path,
             events_destination,
+            events_max_file_checksum,
             endpoint_address,
             endpoint_user,
             endpoint_pass,
@@ -362,6 +371,7 @@ mod tests {
             version: String::from(VERSION),
             path: String::from("test"),
             events_destination: String::from(events_destination),
+            events_max_file_checksum: 64,
             endpoint_address: String::from("test"),
             endpoint_user: String::from("test"),
             endpoint_pass: String::from("test"),
@@ -385,6 +395,7 @@ mod tests {
         assert_eq!(config.version, cloned.version);
         assert_eq!(config.path, cloned.path);
         assert_eq!(config.events_destination, cloned.events_destination);
+        assert_eq!(config.events_max_file_checksum, cloned.events_max_file_checksum);
         assert_eq!(config.endpoint_address, cloned.endpoint_address);
         assert_eq!(config.endpoint_user, cloned.endpoint_user);
         assert_eq!(config.endpoint_pass, cloned.endpoint_pass);
