@@ -36,7 +36,7 @@ pub fn get_checksum(filename: String, read_limit: usize) -> String {
                     
                     length = {
                         let buffer = reader.fill_buf().unwrap();
-                        hasher.update(&buffer);
+                        hasher.update(buffer);
                         buffer.len()
                     };
                     reader.consume(length);
