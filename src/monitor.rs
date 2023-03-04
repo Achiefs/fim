@@ -52,6 +52,7 @@ fn setup_logger(config: config::Config){
             .open(config.log_file)
             .expect("Unable to open log file")
     ).unwrap();
+    log_panics::init();
 }
 
 // ----------------------------------------------------------------------------
