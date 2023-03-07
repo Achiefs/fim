@@ -24,6 +24,7 @@ use crate::utils;
 
 // ----------------------------------------------------------------------------
 
+#[derive(Clone)]
 pub struct Config {
     pub version: String,
     pub path: String,
@@ -65,9 +66,9 @@ impl Config {
     }
 
     pub fn new(system: &str) -> Self {
-        println!("[INFO] System detected {}", system);
+        println!("System detected '{}'", system);
         let config_path = get_config_path(system);
-        println!("[INFO] Loaded config from: {}", config_path);
+        println!("Loaded config from: '{}'", config_path);
         let yaml = read_config(config_path.clone());
 
         // Manage null value on events->destination value

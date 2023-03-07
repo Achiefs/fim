@@ -7,7 +7,6 @@ use notify::{RecommendedWatcher, RecursiveMode, Watcher, Config as NConfig};
 use std::sync::mpsc;
 // To log the program process
 use log::{info, error, debug, warn};
-use simplelog::{WriteLogger, Config};
 // To manage paths
 use std::path::Path;
 // To manage date and time
@@ -34,30 +33,9 @@ use crate::event;
 // File reading continuously
 use crate::logreader;
 
-
 // ----------------------------------------------------------------------------
 
-fn setup_logger(config: config::Config){
-    // Create folders to store logs based on config.yml
-    fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
-
-    // Create logger output to write generated logs.
-    WriteLogger::init(
-        config.get_level_filter(),
-        Config::default(),
-        fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .append(true)
-            .open(config.log_file)
-            .expect("Unable to open log file")
-    ).unwrap();
-    log_panics::init();
-}
-
-// ----------------------------------------------------------------------------
-
-fn setup_events(destination: &str, config: config::Config){
+fn setup_events(destination: &str, gconfig: config::Config){
     // Perform actions depending on destination
     info!("Events destination selected: {}", destination);
     match destination {
@@ -65,20 +43,20 @@ fn setup_events(destination: &str, config: config::Config){
             debug!("Events folder not created in network mode");
         },
         _ => {
-            info!("Events file: {}", config.events_file);
-            fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap()
+            info!("Events file: {}", gconfig.events_file);
+            fs::create_dir_all(Path::new(&gconfig.events_file).parent().unwrap().to_str().unwrap()).unwrap()
         }
     }
 }
 
 // ----------------------------------------------------------------------------
 
-async fn push_template(destination: &str, config: config::Config){
+async fn push_template(destination: &str, gconfig: config::Config){
     // Perform actions depending on destination
     match destination {
         config::NETWORK_MODE|config::BOTH_MODE => {
             // On start push template (Include check if events won't be ingested by http)
-            index::push_template(config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
+            index::push_template(gconfig.endpoint_address, gconfig.endpoint_user, gconfig.endpoint_pass, gconfig.insecure).await;
         },
         _ => {
             debug!("Template not pushed in file mode");
@@ -91,13 +69,8 @@ async fn push_template(destination: &str, config: config::Config){
 // Function that monitorize files in loop
 pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
     rx: mpsc::Receiver<Result<notify::Event, notify::Error>>){
-    println!("Achiefs File Integrity Monitoring software started!");
-    println!("[INFO] Reading config...");
-    let config = config::Config::new(&utils::get_os());
-    println!("[INFO] Log file: {}", config.log_file);
-    println!("[INFO] Log level: {}", config.log_level);
 
-    setup_logger(config.clone());
+    let config = unsafe { super::GCONFIG.clone().unwrap() };
     let destination = config.get_events_destination();
     setup_events(destination.as_str(), config.clone());
 
@@ -283,15 +256,6 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
 mod tests {
     use super::*;
     use tokio_test::block_on;
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    fn test_setup_logger() {
-        let config = config::Config::new(&utils::get_os());
-        fs::create_dir_all(&Path::new(&config.events_file).parent().unwrap()).unwrap();
-        setup_logger(config.clone());
-    }
 
     // ------------------------------------------------------------------------
 
