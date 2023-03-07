@@ -1,0 +1,12 @@
+node: "FIM"
+
+# Events configuration, where to store produced events
+events:
+  destination: file
+  file: /var/lib/fim/events.json
+
+# App procedure and errors logging
+log:
+  file: /var/log/fim/fim.log
+  # Available levels [debug, info, error, warning]
+  level: info

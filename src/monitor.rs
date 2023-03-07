@@ -261,7 +261,7 @@ mod tests {
 
     #[test]
     fn test_push_template() {
-        let config = config::Config::new(&utils::get_os());
+        let config = config::Config::new(&utils::get_os(), None);
         fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
         block_on(push_template("file", config.clone()));
         block_on(push_template("network", config.clone()));
@@ -271,7 +271,7 @@ mod tests {
 
     #[test]
     fn test_setup_events() {
-        let config = config::Config::new(&utils::get_os());
+        let config = config::Config::new(&utils::get_os(), None);
         fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
         setup_events("file", config.clone());
         setup_events("network", config.clone());

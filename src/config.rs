@@ -65,11 +65,14 @@ impl Config {
         }
     }
 
-    pub fn new(system: &str) -> Self {
+    pub fn new(system: &str, config_path: Option<&str>) -> Self {
         println!("System detected '{}'", system);
-        let config_path = get_config_path(system);
-        println!("Loaded config from: '{}'", config_path);
-        let yaml = read_config(config_path.clone());
+        let cfg = match config_path {
+            Some(path) => String::from(path),
+            None => get_config_path(system)
+        };
+        println!("Loaded config from: '{}'", cfg);
+        let yaml = read_config(cfg.clone());
 
         // Manage null value on events->destination value
         let events_destination = match yaml[0]["events"]["destination"].as_str() {
@@ -94,8 +97,8 @@ impl Config {
         };
 
         // Manage null value on events->max_file_checksum value
-        let events_max_file_checksum = match yaml[0]["events"]["max_file_checksum"].as_str() {
-            Some(value) => value.parse().unwrap(),
+        let events_max_file_checksum = match yaml[0]["events"]["max_file_checksum"].as_i64() {
+            Some(value) => usize::try_from(value).unwrap(),
             None => 64
         };
 
@@ -176,8 +179,8 @@ impl Config {
             Some(value) => String::from(value),
             None => {
                 match system {
-                    "linux" => utils::get_machine_id(),
-                    "macos" => utils::get_machine_id(),
+                    "linux" => utils::get_hostname(),
+                    "macos" => utils::get_hostname(),
                     _ => {
                         println!("[WARN] node not found in config.yml, using hostname.");
                         utils::get_hostname()
@@ -206,7 +209,7 @@ impl Config {
 
         Config {
             version: String::from(VERSION),
-            path: config_path,
+            path: cfg,
             events_destination,
             events_max_file_checksum,
             endpoint_address,
@@ -415,7 +418,7 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_new_config_windows() {
-        let config = Config::new("windows");
+        let config = Config::new("windows", None);
         assert_eq!(config.version, String::from(VERSION));
         assert_eq!(config.events_destination, String::from("file"));
         assert_eq!(config.endpoint_address, String::from("Not_used"));
@@ -433,10 +436,332 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_new_config_windows_events_destination() {
+        let config = Config::new("windows", Some("test/unit/config/windows/events_destination_none.yml"));
+        assert_eq!(config.events_destination, String::from("file"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    #[should_panic]
+    fn test_new_config_windows_events_file() {
+        Config::new("windows", Some("test/unit/config/windows/events_file_none.yml"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_new_config_windows_events_destination_network() {
+        let config = Config::new("windows", Some("test/unit/config/windows/events_destination_network.yml"));
+        assert_eq!(config.events_file, String::from("Not_used"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_new_config_windows_events_max_file_checksum() {
+        let config = Config::new("windows", Some("test/unit/config/windows/events_max_file_checksum.yml"));
+        assert_eq!(config.events_max_file_checksum, 128);
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_new_config_windows_events_endpoint_insecure() {
+        let config = Config::new("windows", Some("test/unit/config/windows/events_endpoint_insecure.yml"));
+        assert_eq!(config.insecure, true);
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_new_config_windows_events_endpoint_insecure_none() {
+        let config = Config::new("windows", Some("test/unit/config/windows/events_endpoint_insecure_none.yml"));
+        assert_eq!(config.insecure, false);
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_new_config_windows_events_destination_network_address() {
+        let config = Config::new("windows", Some("test/unit/config/windows/events_destination_network_address.yml"));
+        assert_eq!(config.endpoint_address, "0.0.0.0");
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    #[should_panic]
+    fn test_new_config_windows_events_destination_network_address_none() {
+        Config::new("windows", Some("test/unit/config/windows/events_destination_network_address_none.yml"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_new_config_windows_events_credentials_user() {
+        let config = Config::new("windows", Some("test/unit/config/windows/events_credentials_user.yml"));
+        assert_eq!(config.endpoint_user, "test");
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    #[should_panic]
+    fn test_new_config_windows_events_credentials_user_none() {
+        Config::new("windows", Some("test/unit/config/windows/events_credentials_user_none.yml"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_new_config_windows_events_credentials_password() {
+        let config = Config::new("windows", Some("test/unit/config/windows/events_credentials_password.yml"));
+        assert_eq!(config.endpoint_pass, "test");
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    #[should_panic]
+    fn test_new_config_windows_events_credentials_password_none() {
+        Config::new("windows", Some("test/unit/config/windows/events_credentials_password_none.yml"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    #[should_panic]
+    fn test_new_config_windows_monitor_none() {
+        Config::new("windows", Some("test/unit/config/windows/monitor_none.yml"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_new_config_windows_node_none() {
+        let config = Config::new("windows", Some("test/unit/config/windows/node_none.yml"));
+        assert_eq!(config.node, utils::get_hostname());
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    #[should_panic]
+    fn test_new_config_windows_log_file_none() {
+        Config::new("windows", Some("test/unit/config/windows/log_file_none.yml"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_new_config_windows_log_level_none() {
+        let config = Config::new("windows", Some("test/unit/config/windows/log_level_none.yml"));
+        assert_eq!(config.log_level, "info");
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_new_config_linux_events_destination() {
+        let config = Config::new("linux", Some("test/unit/config/linux/events_destination_none.yml"));
+        assert_eq!(config.events_destination, String::from("file"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    #[should_panic]
+    fn test_new_config_linux_events_file() {
+        Config::new("linux", Some("test/unit/config/linux/events_file_none.yml"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_new_config_linux_events_destination_network() {
+        let config = Config::new("linux", Some("test/unit/config/linux/events_destination_network.yml"));
+        assert_eq!(config.events_file, String::from("Not_used"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_new_config_linux_events_max_file_checksum() {
+        let config = Config::new("linux", Some("test/unit/config/linux/events_max_file_checksum.yml"));
+        assert_eq!(config.events_max_file_checksum, 128);
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_new_config_linux_events_endpoint_insecure() {
+        let config = Config::new("linux", Some("test/unit/config/linux/events_endpoint_insecure.yml"));
+        assert_eq!(config.insecure, true);
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_new_config_linux_events_endpoint_insecure_none() {
+        let config = Config::new("linux", Some("test/unit/config/linux/events_endpoint_insecure_none.yml"));
+        assert_eq!(config.insecure, false);
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_new_config_linux_events_destination_network_address() {
+        let config = Config::new("linux", Some("test/unit/config/linux/events_destination_network_address.yml"));
+        assert_eq!(config.endpoint_address, "0.0.0.0");
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    #[should_panic]
+    fn test_new_config_linux_events_destination_network_address_none() {
+        Config::new("linux", Some("test/unit/config/linux/events_destination_network_address_none.yml"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_new_config_linux_events_credentials_user() {
+        let config = Config::new("linux", Some("test/unit/config/linux/events_credentials_user.yml"));
+        assert_eq!(config.endpoint_user, "test");
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    #[should_panic]
+    fn test_new_config_linux_events_credentials_user_none() {
+        Config::new("linux", Some("test/unit/config/linux/events_credentials_user_none.yml"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_new_config_linux_events_credentials_password() {
+        let config = Config::new("linux", Some("test/unit/config/linux/events_credentials_password.yml"));
+        assert_eq!(config.endpoint_pass, "test");
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    #[should_panic]
+    fn test_new_config_linux_events_credentials_password_none() {
+        Config::new("linux", Some("test/unit/config/linux/events_credentials_password_none.yml"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_new_config_linux_monitor_none() {
+        let config = Config::new("linux", Some("test/unit/config/linux/monitor_none.yml"));
+        assert_eq!(config.monitor, Vec::new());
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_new_config_linux_audit_none() {
+        let config = Config::new("linux", Some("test/unit/config/linux/audit_none.yml"));
+        assert_eq!(config.audit, Vec::new());
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    #[should_panic]
+    fn test_new_config_linux_audit_and_monitor_none() {
+        Config::new("linux", Some("test/unit/config/linux/audit_and_monitor_none.yml"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_new_config_linux_node_none() {
+        let config = Config::new("linux", Some("test/unit/config/linux/node_none.yml"));
+        assert_eq!(config.node, utils::get_hostname());
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    #[should_panic]
+    fn test_new_config_linux_log_file_none() {
+        Config::new("linux", Some("test/unit/config/linux/log_file_none.yml"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_new_config_linux_log_level_none() {
+        let config = Config::new("linux", Some("test/unit/config/linux/log_level_none.yml"));
+        assert_eq!(config.log_level, "info");
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // ------------------------------------------------------------------------
+
     #[test]
     fn test_new_config_linux() {
         if utils::get_os() == "linux" {
-            let config = Config::new("linux");
+            let config = Config::new("linux", None);
             assert_eq!(config.version, String::from(VERSION));
             assert_eq!(config.events_destination, String::from("file"));
             assert_eq!(config.endpoint_address, String::from("Not_used"));
@@ -457,7 +782,7 @@ mod tests {
 
     #[test]
     fn test_new_config_macos() {
-        let config = Config::new("macos");
+        let config = Config::new("macos", None);
         assert_eq!(config.version, String::from(VERSION));
         assert_eq!(config.events_destination, String::from("file"));
         assert_eq!(config.endpoint_address, String::from("Not_used"));
@@ -643,7 +968,7 @@ mod tests {
 
     #[test]
     fn test_path_in() {
-        let config = Config::new(&utils::get_os());
+        let config = Config::new(&utils::get_os(), None);
         if utils::get_os() == "linux" {
             assert!(config.path_in("/bin/", "", config.monitor.clone()));
             assert!(config.path_in("/bin", "", config.monitor.clone()));
@@ -662,7 +987,7 @@ mod tests {
 
     #[test]
     fn test_get_index() {
-        let config = Config::new(&utils::get_os());
+        let config = Config::new(&utils::get_os(), None);
         if utils::get_os() == "linux" {
             assert_eq!(config.get_index("/bin/", "", config.monitor.clone()), 0);
             assert_eq!(config.get_index("./", "/bin", config.monitor.clone()), 0);
@@ -681,7 +1006,7 @@ mod tests {
 
     #[test]
     fn test_get_labels() {
-        let config = Config::new(&utils::get_os());
+        let config = Config::new(&utils::get_os(), None);
         if utils::get_os() == "windows" {
             let labels = config.get_labels(0, config.monitor.clone());
             assert_eq!(labels[0], "Program Files");
@@ -701,7 +1026,7 @@ mod tests {
 
     #[test]
     fn test_match_ignore() {
-        let config = Config::new(&utils::get_os());
+        let config = Config::new(&utils::get_os(), None);
         if utils::get_os() == "linux" {
             assert!(config.match_ignore(0, "file.swp", config.audit.clone()));
             assert!(!config.match_ignore(0, "file.txt", config.audit.clone()));

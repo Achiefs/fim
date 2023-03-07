@@ -142,7 +142,7 @@ mod tests {
     #[test]
     fn test_read_log() {
         if utils::get_os() == "linux" {
-            let config = Config::new("linux");
+            let config = Config::new("linux", None);
             let (event, position) = read_log(String::from("test/unit/audit.log"),
                 config, 0, 0);
 

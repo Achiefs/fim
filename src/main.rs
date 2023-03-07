@@ -39,7 +39,7 @@ fn init(){
     println!("Achiefs File Integrity Monitoring software starting!");
     println!("Reading config...");
     unsafe{
-        GCONFIG = Some(config::Config::new(&utils::get_os()));    
+        GCONFIG = Some(config::Config::new(&utils::get_os(), None));    
 
         // Create folders to store logs based on config.yml
         fs::create_dir_all(

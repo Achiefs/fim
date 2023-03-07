@@ -561,7 +561,7 @@ mod tests {
     #[test]
     fn test_from() {
         if utils::get_os() == "linux" {
-            let config = Config::new(&utils::get_os());
+            let config = Config::new(&utils::get_os(), None);
             let syscall = HashMap::<String, String>::from([
                 (String::from("syscall"), String::from("syscall")),
                 (String::from("ppid"), String::from("ppid")),
@@ -920,7 +920,7 @@ mod tests {
 
     #[test]
     fn test_process() {
-        let config = Config::new(&utils::get_os());
+        let config = Config::new(&utils::get_os(), None);
         let event = create_test_event();
 
         block_on(event.process(config::NETWORK_MODE, String::from("test"), config.clone()));
