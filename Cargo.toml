@@ -26,7 +26,7 @@ ctrlc = { version = "3.2", default-features = false, features = ["termination"] 
 log-panics = { version = "2.1.0", features = ["with-backtrace"]}
 
 [target.'cfg(windows)'.dependencies]
-windows-service = "0.5.0"
+windows-service = "0.6.0"
 
 [dev-dependencies]
 tokio-test = "*"
