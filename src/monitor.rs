@@ -35,7 +35,7 @@ use crate::logreader;
 
 // ----------------------------------------------------------------------------
 
-fn setup_events(destination: &str, gconfig: config::Config){
+fn setup_events(destination: &str, config: config::Config){
     // Perform actions depending on destination
     info!("Events destination selected: {}", destination);
     match destination {
@@ -43,20 +43,20 @@ fn setup_events(destination: &str, gconfig: config::Config){
             debug!("Events folder not created in network mode");
         },
         _ => {
-            info!("Events file: {}", gconfig.events_file);
-            fs::create_dir_all(Path::new(&gconfig.events_file).parent().unwrap().to_str().unwrap()).unwrap()
+            info!("Events file: {}", config.events_file);
+            fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap()
         }
     }
 }
 
 // ----------------------------------------------------------------------------
 
-async fn push_template(destination: &str, gconfig: config::Config){
+async fn push_template(destination: &str, config: config::Config){
     // Perform actions depending on destination
     match destination {
         config::NETWORK_MODE|config::BOTH_MODE => {
             // On start push template (Include check if events won't be ingested by http)
-            index::push_template(gconfig.endpoint_address, gconfig.endpoint_user, gconfig.endpoint_pass, gconfig.insecure).await;
+            index::push_template(config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
         },
         _ => {
             debug!("Template not pushed in file mode");

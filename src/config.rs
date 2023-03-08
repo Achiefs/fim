@@ -179,8 +179,14 @@ impl Config {
             Some(value) => String::from(value),
             None => {
                 match system {
-                    "linux" => utils::get_hostname(),
-                    "macos" => utils::get_hostname(),
+                    "linux" => match utils::get_machine_id().is_empty() {
+                        true => utils::get_hostname(),
+                        false => utils::get_machine_id()
+                    },
+                    "macos" => match utils::get_machine_id().is_empty(){
+                        true => utils::get_hostname(),
+                        false => utils::get_machine_id()
+                    }
                     _ => {
                         println!("[WARN] node not found in config.yml, using hostname.");
                         utils::get_hostname()
@@ -739,22 +745,6 @@ mod tests {
         let config = Config::new("linux", Some("test/unit/config/linux/log_level_none.yml"));
         assert_eq!(config.log_level, "info");
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     // ------------------------------------------------------------------------
 

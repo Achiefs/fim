@@ -37,7 +37,7 @@ fn init(){
     use std::fs;
 
     println!("Achiefs File Integrity Monitoring software starting!");
-    println!("Reading config...");
+    println!("[INFO] Reading config...");
     unsafe{
         GCONFIG = Some(config::Config::new(&utils::get_os(), None));    
 
@@ -59,9 +59,9 @@ fn init(){
                 .expect("Unable to open log file")
         ).unwrap();
 
-        println!("Configuration successfully read, forwarding output to log file");
-        println!("Log file: '{}'", GCONFIG.clone().unwrap().log_file);
-        println!("Log level: '{}'", GCONFIG.clone().unwrap().log_level);
+        println!("[INFO] Configuration successfully read, forwarding output to log file");
+        println!("[INFO] Log file: '{}'", GCONFIG.clone().unwrap().log_file);
+        println!("[INFO] Log level: '{}'", GCONFIG.clone().unwrap().log_level);
     };
     log_panics::init();
 }
