@@ -725,7 +725,11 @@ mod tests {
     #[test]
     fn test_new_config_linux_node_none() {
         let config = Config::new("linux", Some("test/unit/config/linux/node_none.yml"));
-        assert_eq!(config.node, utils::get_hostname());
+        let machine_id = utils::get_machine_id();
+        match machine_id.is_empty(){
+            true => assert_eq!(config.node, utils::get_hostname()),
+            false => assert_eq!(config.node, machine_id)
+        }
     }
 
     // ------------------------------------------------------------------------
