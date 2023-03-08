@@ -7,7 +7,6 @@ use notify::{RecommendedWatcher, RecursiveMode, Watcher, Config as NConfig};
 use std::sync::mpsc;
 // To log the program process
 use log::{info, error, debug, warn};
-use simplelog::{WriteLogger, Config};
 // To manage paths
 use std::path::Path;
 // To manage date and time
@@ -33,26 +32,6 @@ use crate::index;
 use crate::event;
 // File reading continuously
 use crate::logreader;
-
-
-// ----------------------------------------------------------------------------
-
-fn setup_logger(config: config::Config){
-    // Create folders to store logs based on config.yml
-    fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
-
-    // Create logger output to write generated logs.
-    WriteLogger::init(
-        config.get_level_filter(),
-        Config::default(),
-        fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .append(true)
-            .open(config.log_file)
-            .expect("Unable to open log file")
-    ).unwrap();
-}
 
 // ----------------------------------------------------------------------------
 
@@ -90,13 +69,8 @@ async fn push_template(destination: &str, config: config::Config){
 // Function that monitorize files in loop
 pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
     rx: mpsc::Receiver<Result<notify::Event, notify::Error>>){
-    println!("Achiefs File Integrity Monitoring software started!");
-    println!("[INFO] Reading config...");
-    let config = config::Config::new(&utils::get_os());
-    println!("[INFO] Log file: {}", config.log_file);
-    println!("[INFO] Log level: {}", config.log_level);
 
-    setup_logger(config.clone());
+    let config = unsafe { super::GCONFIG.clone().unwrap() };
     let destination = config.get_events_destination();
     setup_events(destination.as_str(), config.clone());
 
@@ -286,17 +260,8 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    fn test_setup_logger() {
-        let config = config::Config::new(&utils::get_os());
-        fs::create_dir_all(&Path::new(&config.events_file).parent().unwrap()).unwrap();
-        setup_logger(config.clone());
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
     fn test_push_template() {
-        let config = config::Config::new(&utils::get_os());
+        let config = config::Config::new(&utils::get_os(), None);
         fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
         block_on(push_template("file", config.clone()));
         block_on(push_template("network", config.clone()));
@@ -306,7 +271,7 @@ mod tests {
 
     #[test]
     fn test_setup_events() {
-        let config = config::Config::new(&utils::get_os());
+        let config = config::Config::new(&utils::get_os(), None);
         fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
         setup_events("file", config.clone());
         setup_events("network", config.clone());
