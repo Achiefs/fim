@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="1">
+    <title>File Integrity Monitor</title>
+    <product id="com.Achiefs.fim" version="VERSION" />
+    <background file="background.png" mime-type="image/png" scaling="tofit" />
+    <background-darkAqua file="background-dark.png" mime-type="image/png" scaling="tofit" />
+    <welcome file="welcome.txt" mime-type="text/plain" />
+    <conclusion file="conclusion.rtf" mime-type="text/plain" />
+    <license file="license.rtf" mime-type="application/rtf" />
+
+    <options customize="never" require-scripts="false" hostArchitectures="ARCHITECTURE" rootVolumeOnly="true" />
+
+    <pkg-ref id="com.Achiefs.fim"/>
+    <choices-outline>
+        <line choice="default">
+            <line choice="com.Achiefs.fim"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="com.Achiefs.fim" visible="false">
+        <pkg-ref id="com.Achiefs.fim"/>
+    </choice>
+    <pkg-ref id="com.Achiefs.fim" version="VERSION" onConclusion="none">fim.pkg</pkg-ref>
+</installer-gui-script>
