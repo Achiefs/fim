@@ -51,7 +51,7 @@ jobs:
       - name: Create required files and folder
         run: mkdir -p D:\ProgramData\fim; echo '' > D:\ProgramData\fim\events.json; echo '' > D:\ProgramData\fim\fim.log
       - name: Change config
-        run: (Get-Content -path ./config/windows/config.yml -Raw) -replace 'C:','D:'
+        run: (Get-Content -path ./config/windows/config.yml -Raw) -replace 'C:\\ProgramData','D:\ProgramData' > ./config/windows/config.yml
       - name: Launch cargo
         run: cargo test
       - run: echo "Job's status is ${{ job.status }}."
