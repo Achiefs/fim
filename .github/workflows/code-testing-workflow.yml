@@ -48,8 +48,10 @@ jobs:
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
-      - name: Launch cargo test
-        run: cargo test
+      - name: Download Sysinternals PsTools
+        run: choco install -y --no-progress sysinternals
+      - name: Test with Maven
+        run: PsExec64 -accepteula -l cargo test
       - run: echo "Job's status is ${{ job.status }}."
 
   Unit-tests-macos:
@@ -57,6 +59,10 @@ jobs:
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
+      - name: Create events file and folder
+        run: sudo mkdir -p /var/lib/fim/ && sudo touch /var/lib/fim/events.json && sudo chown -R runner:runner /var/lib/fim
+      - name: Create log file and folder
+        run: sudo mkdir -p /var/log/fim/ && sudo touch /var/log/fim/fim.log && sudo chown -R runner:runner /var/log/fim
       - name: Launch cargo test
         run: sudo cargo test
       - run: echo "Job's status is ${{ job.status }}."
