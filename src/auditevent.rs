@@ -477,6 +477,7 @@ impl fmt::Debug for Event {
 
 // ----------------------------------------------------------------------------
 
+#[cfg(target_os = "linux")]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -558,7 +559,6 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    #[cfg(target_os = "linux")]
     #[test]
     fn test_from() {
         if utils::get_os() == "linux" {
@@ -710,7 +710,6 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    #[cfg(target_os = "linux")]
     #[test]
     fn test_clone() {
         let event = create_test_event();
@@ -774,7 +773,6 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    #[cfg(target_os = "linux")]
     #[test]
     fn test_is_empty() {
         let empty = create_empty_event();
@@ -785,7 +783,6 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    #[cfg(target_os = "linux")]
     #[test]
     fn test_get_json(){
         let event = create_test_event().get_json();
@@ -847,7 +844,6 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    #[cfg(target_os = "linux")]
     #[test]
     fn test_format_json() {
         let json = create_test_event().format_json();
@@ -872,7 +868,6 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    #[cfg(target_os = "linux")]
     #[test]
     fn test_log() {
         let filename = "test_log.json";
@@ -906,7 +901,6 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    #[cfg(target_os = "linux")]
     #[test]
     #[should_panic]
     fn test_log_panic() {
@@ -915,7 +909,6 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    #[cfg(target_os = "linux")]
     #[test]
     fn test_send() {
         let event = create_test_event();
@@ -926,7 +919,6 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    #[cfg(target_os = "linux")]
     #[test]
     fn test_process() {
         let config = Config::new(&utils::get_os(), None);
@@ -939,7 +931,6 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    #[cfg(target_os = "linux")]
     #[test]
     fn test_event_fmt(){
         let out = format!("{:?}", create_test_event());
