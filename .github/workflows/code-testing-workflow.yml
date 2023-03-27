@@ -51,7 +51,7 @@ jobs:
       - name: Download Sysinternals PsTools
         run: choco install -y --no-progress sysinternals
       - name: Test with Maven
-        run: PsExec64 -accepteula -l cargo test
+        run: PsExec64 -accepteula cargo test
       - run: echo "Job's status is ${{ job.status }}."
 
   Unit-tests-macos:
