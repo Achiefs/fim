@@ -53,7 +53,7 @@ jobs:
       - name: Change config
         run: (Get-Content -path ./config/windows/config.yml -Raw) -replace 'C:\\ProgramData','D:\ProgramData' > ./config/windows/config_edited.yml
       - name: Copy edited config
-        run: mv ./config/windows/config_edited.yml ./config/windows/config.yml
+        run: mv -Force ./config/windows/config_edited.yml ./config/windows/config.yml
       - name: Launch cargo test
         run: cargo test
       - run: echo "Job's status is ${{ job.status }}."
