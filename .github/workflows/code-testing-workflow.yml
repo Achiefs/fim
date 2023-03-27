@@ -19,7 +19,16 @@ jobs:
         run: cargo build
       - run: echo "Job's status is ${{ job.status }}."
 
-  Unit-tests:
+  Compilation-test-macos:
+    runs-on: macos-11
+    steps:
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+      - name: Building the rust code
+        run: cargo build
+      - run: echo "Job's status is ${{ job.status }}."
+
+  Unit-tests-linux:
     runs-on: ubuntu-20.04
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
@@ -32,4 +41,22 @@ jobs:
         run: sudo mkdir -p /var/log/fim/ && sudo touch /var/log/fim/fim.log && sudo chown -R runner:runner /var/log/fim
       - name: Launch cargo test
         run: cargo test
+      - run: echo "Job's status is ${{ job.status }}."
+
+  Unit-tests-windows:
+    runs-on: windows-2019
+    steps:
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+      - name: Launch cargo test
+        run: cargo test
+      - run: echo "Job's status is ${{ job.status }}."
+
+  Unit-tests-macos:
+    runs-on: macos-11
+    steps:
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+      - name: Launch cargo test
+        run: sudo cargo test
       - run: echo "Job's status is ${{ job.status }}."

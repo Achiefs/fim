@@ -1008,6 +1008,10 @@ mod tests {
             let labels = config.get_labels(0, config.monitor.clone());
             assert_eq!(labels[0], "Program Files");
             assert_eq!(labels[1], "windows");
+        }else if utils::get_os() == "macos"{
+            let labels = config.get_labels(2, config.monitor.clone());
+            assert_eq!(labels[0], "usr/bin");
+            assert_eq!(labels[1], "macos");
         }else{
             let labels = config.get_labels(1, config.monitor.clone());
             assert_eq!(labels[0], "usr/bin");
