@@ -81,7 +81,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Building package
-        run: sudo ./builder.sh
+        run: ls && sudo ./builder.sh
         working-directory: ./pkg/macos
 
       - name: Installing package
