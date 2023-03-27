@@ -35,3 +35,9 @@ productbuild  --distribution ./distribution.xml \
               fim-"${version}-${architecture}".pkg
 
 rm -rf fim.pkg
+
+if [ "$1" = "-s" ]; then
+    productsign --sign "$2" \
+    fim-"${version}-${architecture}".pkg \
+    fim-"${version}-${architecture}"-signed.pkg
+fi
