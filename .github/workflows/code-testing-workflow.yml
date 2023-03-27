@@ -60,9 +60,9 @@ jobs:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
       - name: Create events file and folder
-        run: sudo mkdir -p /var/lib/fim/ && sudo touch /var/lib/fim/events.json && sudo chown -R runner:runner /var/lib/fim
+        run: sudo mkdir -p /var/lib/fim/ && sudo touch /var/lib/fim/events.json
       - name: Create log file and folder
-        run: sudo mkdir -p /var/log/fim/ && sudo touch /var/log/fim/fim.log && sudo chown -R runner:runner /var/log/fim
+        run: sudo mkdir -p /var/log/fim/ && sudo touch /var/log/fim/fim.log
       - name: Launch cargo test
         run: sudo cargo test
       - run: echo "Job's status is ${{ job.status }}."
