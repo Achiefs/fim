@@ -72,3 +72,24 @@ jobs:
 
       - name: Remove package installation
         run: sudo yum remove -y fim
+
+
+  Build-install-macos:
+    runs-on: macos-11
+    steps:
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+
+      - name: Building package
+        run: sudo ./builder.sh
+        working-directory: ./pkg/macos
+
+      - name: Installing package
+        run: sudo installer -pkg fim*.pkg -target /
+        working-directory: ./pkg/macos
+
+      - name: Start FIM service
+        run: sudo launchctl load -w /Library/LaunchDaemons/com.Achiefs.fim.launchd.plist
+
+      - name: Check FIM running
+        run: sudo launchctl print system/com.Achiefs.fim | grep "state = running"
