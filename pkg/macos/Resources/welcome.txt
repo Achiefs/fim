@@ -1,0 +1,10 @@
+FIM is a File Integrity Monitoring tool that tracks any event over your files. 
+It is capable of keeping historical data of your files. 
+It checks the filesystem changes in the background.
+
+FIM is the fastest alternative to other software like Ossec, which performs file integrity monitoring.
+
+The produced data can be ingested and analyzed with tools like ElasticSearch/OpenSearch. 
+It has developed with Rust, a popular programming language.
+
+This installer will deploy FIM in your system.

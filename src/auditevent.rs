@@ -477,6 +477,7 @@ impl fmt::Debug for Event {
 
 // ----------------------------------------------------------------------------
 
+#[cfg(target_os = "linux")]
 #[cfg(test)]
 mod tests {
     use super::*;

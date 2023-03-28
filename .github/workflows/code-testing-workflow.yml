@@ -19,7 +19,16 @@ jobs:
         run: cargo build
       - run: echo "Job's status is ${{ job.status }}."
 
-  Unit-tests:
+  Compilation-test-macos:
+    runs-on: macos-11
+    steps:
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+      - name: Building the rust code
+        run: cargo build
+      - run: echo "Job's status is ${{ job.status }}."
+
+  Unit-tests-linux:
     runs-on: ubuntu-20.04
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
@@ -32,4 +41,36 @@ jobs:
         run: sudo mkdir -p /var/log/fim/ && sudo touch /var/log/fim/fim.log && sudo chown -R runner:runner /var/log/fim
       - name: Launch cargo test
         run: cargo test
+      - run: echo "Job's status is ${{ job.status }}."
+
+  Unit-tests-windows:
+    runs-on: windows-2019
+    steps:
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+      - name: Create required files and folder
+        run: mkdir -p D:\ProgramData\fim; echo '' > D:\ProgramData\fim\events.json; echo '' > D:\ProgramData\fim\fim.log
+      - name: Change config
+        run: (Get-Content -path ./config/windows/config.yml -Raw) -replace 'C:\\ProgramData','D:\ProgramData' > ./config/windows/config_edited.yml
+      - name: Move edited config
+        run: mv -Force ./config/windows/config_edited.yml ./config/windows/config.yml
+      - name: Change config.rs code
+        run: (Get-Content -path ./src/config.rs -Raw) -replace 'C:\\\\ProgramData','D:\\ProgramData' > ./src/config_edited.rs
+      - name: Move edited code
+        run: mv -Force ./src/config_edited.rs ./src/config.rs
+      - name: Launch cargo test
+        run: cargo test
+      - run: echo "Job's status is ${{ job.status }}."
+
+  Unit-tests-macos:
+    runs-on: macos-11
+    steps:
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+      - name: Create events file and folder
+        run: sudo mkdir -p /var/lib/fim/ && sudo touch /var/lib/fim/events.json
+      - name: Create log file and folder
+        run: sudo mkdir -p /var/log/fim/ && sudo touch /var/log/fim/fim.log
+      - name: Launch cargo test
+        run: sudo cargo test
       - run: echo "Job's status is ${{ job.status }}."

@@ -1,11 +1,12 @@
 // Copyright (C) 2021, Achiefs.
 
 // Global constants definitions
-pub const VERSION: &str = "0.4.5";
+pub const VERSION: &str = "0.4.6";
 pub const NETWORK_MODE: &str = "NETWORK";
 pub const FILE_MODE: &str = "FILE";
 pub const BOTH_MODE: &str = "BOTH";
 pub const MACHINE_ID_PATH: &str = "/etc/machine-id";
+const CONFIG_MACOS_PATH: &str = "/Applications/FileMonitor.app/config.yml";
 const CONFIG_LINUX_PATH: &str = "/etc/fim/config.yml";
 const CONFIG_WINDOWS_PATH: &str = "C:\\Program Files\\File Integrity Monitor\\config.yml";
 
@@ -352,7 +353,7 @@ pub fn get_config_path(system: &str) -> String {
             relative_path
         }else{
             String::from(CONFIG_WINDOWS_PATH)
-        }  
+        }
     }else{
         let default_path: String = format!("{}/config/{}/config.yml", current_dir, system);
         let relative_path: String = format!("{}/../../config/{}/config.yml", current_dir, system);
@@ -362,6 +363,8 @@ pub fn get_config_path(system: &str) -> String {
             format!("{}/config.yml", current_dir)
         }else if Path::new(relative_path.as_str()).exists() {
             relative_path
+        }else if system == "macos" {
+            String::from(CONFIG_MACOS_PATH)
         }else{
             String::from(CONFIG_LINUX_PATH)
         } 
@@ -1005,6 +1008,10 @@ mod tests {
             let labels = config.get_labels(0, config.monitor.clone());
             assert_eq!(labels[0], "Program Files");
             assert_eq!(labels[1], "windows");
+        }else if utils::get_os() == "macos"{
+            let labels = config.get_labels(2, config.monitor.clone());
+            assert_eq!(labels[0], "usr/bin");
+            assert_eq!(labels[1], "macos");
         }else{
             let labels = config.get_labels(1, config.monitor.clone());
             assert_eq!(labels[0], "usr/bin");
