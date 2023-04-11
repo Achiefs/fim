@@ -191,6 +191,8 @@ mod tests {
     #[cfg(any(target_os = "linux", target_os = "darwin"))]
     #[test]
     fn test_get_event_integration_unix() {
+        use crate::utils;
+
         let os = utils::get_os();
         let config = Config::new(&os, Some(format!("test/unit/config/{}/monitor_integration.yml", os).as_str()));
         let event = Event{
