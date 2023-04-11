@@ -152,8 +152,9 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
+    #[cfg(target_os = "windows")]
     #[test]
-    fn test_get_event_integration() {
+    fn test_get_event_integration_windows() {
         let config = Config::new("windows", Some("test/unit/config/windows/monitor_integration.yml"));
         let event = Event{
             id: "Test_id".to_string(),
@@ -182,6 +183,43 @@ mod tests {
         assert_eq!(integration.condition[2], "CREATE");
         assert_eq!(integration.binary, "powershell.exe");
         assert_eq!(integration.script, "C:\\tmp\\remover.ps1");
+        assert_eq!(integration.parameters, "");
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(any(target_os = "linux", target_os = "darwin"))]
+    #[test]
+    fn test_get_event_integration_unix() {
+        let os = utils::get_os();
+        let config = Config::new(&os, Some(format!("test/unit/config/{}/monitor_integration.yml", os).as_str()));
+        let event = Event{
+            id: "Test_id".to_string(),
+            timestamp: "Timestamp".to_string(),
+            hostname: "Hostname".to_string(),
+            node: "FIM".to_string(),
+            version: "x.x.x".to_string(),
+            kind: EventKind::Create(CreateKind::Any),
+            path: PathBuf::from("\\tmp\\test.txt"),
+            labels: Vec::new(),
+            operation: "CREATE".to_string(),
+            detailed_operation: "CREATE_FILE".to_string(),
+            checksum: "UNKNOWN".to_string(),
+            fpid: 0,
+            system: "test".to_string()
+        };
+
+        let index = config.get_index(event.path.to_str().unwrap(), "", config.monitor.clone());
+        let integrations = config.get_integrations(index, config.monitor.clone());
+
+        let integration = get_event_integration(event, integrations).unwrap();
+
+        assert_eq!(integration.name, "rmfile");
+        assert_eq!(integration.condition[0], "operation");
+        assert_eq!(integration.condition[1], "==");
+        assert_eq!(integration.condition[2], "CREATE");
+        assert_eq!(integration.binary, "bash");
+        assert_eq!(integration.script, "\\tmp\\remover.sh");
         assert_eq!(integration.parameters, "");
     }
 
