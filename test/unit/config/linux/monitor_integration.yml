@@ -22,7 +22,7 @@ monitor:
       - name: rmfile
         condition: ["operation", "==", "CREATE"]
         binary: bash
-        script: \tmp\remover.sh
+        script: /tmp/remover.sh
         parameters: ""
 
 # App procedure and errors logging

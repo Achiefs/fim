@@ -9,7 +9,8 @@ use crate::config;
 use crate::event::Event;
 // Manage integration launch
 use crate::integration;
-//use crate::integration::Integration;
+// To log the program process
+use log::debug;
 
 // ----------------------------------------------------------------------------
 
@@ -20,7 +21,7 @@ pub fn check_integrations(event: Event, config: config::Config) {
         let integration = integration::get_event_integration(event.clone(), integrations);
         match integration {
             Some(int) => int.launch(event.clone().format_json()),
-            None => println!("No integration match on this event")
+            None => debug!("No integration match on this event")
         }
     }
 }

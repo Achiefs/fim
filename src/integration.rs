@@ -3,7 +3,7 @@
 // To implement Debug and fmt method
 use std::fmt;
 // To log the program process
-use log::{debug, error};
+use log::{debug, warn};
 // To manage script execution
 use std::process::Command;
 
@@ -58,7 +58,7 @@ impl Integration {
             .expect("Failed to execute integration script");
         debug!("Integration output: '{}'", String::from_utf8(output.stdout).unwrap());
         let stderr = String::from_utf8(output.stderr).unwrap();
-        if !stderr.is_empty() { error!("Integration error: '{}'", stderr) }
+        if !stderr.is_empty() { warn!("Integration error: '{}'", stderr) }
     }
 
 }
@@ -202,7 +202,7 @@ mod tests {
             node: "FIM".to_string(),
             version: "x.x.x".to_string(),
             kind: EventKind::Create(CreateKind::Any),
-            path: PathBuf::from("\\tmp\\test.txt"),
+            path: PathBuf::from("/etc/test.txt"),
             labels: Vec::new(),
             operation: "CREATE".to_string(),
             detailed_operation: "CREATE_FILE".to_string(),
@@ -221,7 +221,7 @@ mod tests {
         assert_eq!(integration.condition[1], "==");
         assert_eq!(integration.condition[2], "CREATE");
         assert_eq!(integration.binary, "bash");
-        assert_eq!(integration.script, "\\tmp\\remover.sh");
+        assert_eq!(integration.script, "/tmp/remover.sh");
         assert_eq!(integration.parameters, "");
     }
 
