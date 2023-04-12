@@ -9,6 +9,7 @@ use std::process::Command;
 
 // Single event data management
 use crate::event::Event;
+use crate::utils;
 
 // ----------------------------------------------------------------------------
 
@@ -50,13 +51,17 @@ impl Integration {
     // ------------------------------------------------------------------------
 
     pub fn launch(&self, event: String) {
+        let formatted_event = match utils::get_os().as_str() {
+            "windows" => format!("'{}'", event),
+            _ => format!("{}", event)
+        };
         let output = Command::new(self.binary.clone())
             .arg(self.script.clone())
-            .arg(format!("'{}'", event))
+            .arg(formatted_event)
             .arg(self.parameters.clone())
             .output()
             .expect("Failed to execute integration script");
-        debug!("Integration output: '{}'", String::from_utf8(output.stdout).unwrap());
+        debug!("Integration output: [{}]", String::from_utf8(output.stdout).unwrap());
         let stderr = String::from_utf8(output.stderr).unwrap();
         if !stderr.is_empty() { warn!("Integration error: '{}'", stderr) }
     }
@@ -191,8 +196,6 @@ mod tests {
     #[cfg(any(target_os = "linux", target_os = "darwin"))]
     #[test]
     fn test_get_event_integration_unix() {
-        use crate::utils;
-
         let os = utils::get_os();
         let config = Config::new(&os, Some(format!("test/unit/config/{}/monitor_integration.yml", os).as_str()));
         let event = Event{
