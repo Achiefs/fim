@@ -53,7 +53,7 @@ impl Integration {
     pub fn launch(&self, event: String) {
         let formatted_event = match utils::get_os().as_str() {
             "windows" => format!("'{}'", event),
-            _ => format!("{}", event)
+            _ => event
         };
         let output = Command::new(self.binary.clone())
             .arg(self.script.clone())
