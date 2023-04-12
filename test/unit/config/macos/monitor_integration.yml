@@ -5,12 +5,6 @@ events:
   destination: file
   file: /var/lib/fim/events.json
 
-# Audit extended files and folders information
-audit:
-  - path: /tmp
-    labels: ["tmp", "macos"]
-    ignore: [".swp"]
-
 # Simple files and folders information
 monitor:
   - path: /bin/
