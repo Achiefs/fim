@@ -32,6 +32,8 @@ use crate::index;
 use crate::event;
 // File reading continuously
 use crate::logreader;
+// integrations checker
+use crate::launcher;
 
 // ----------------------------------------------------------------------------
 
@@ -234,6 +236,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
 
                                 debug!("Event processed: {:?}", event);
                                 event.process(destination.clone().as_str(), index_name.clone(), config.clone()).await;
+                                launcher::check_integrations(event.clone(), config.clone());
                             }else{
                                 debug!("Event ignored not stored in alerts");
                             }
