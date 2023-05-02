@@ -1043,4 +1043,23 @@ mod tests {
         }
     }
 
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_match_allowed() {
+        if utils::get_os() == "windows" {
+            let config = Config::new(&utils::get_os(), Some("test/unit/config/windows/monitor_allowed.yml"));
+            assert!(!config.match_allowed(1, "file.swp", config.monitor.clone()));
+            assert!(config.match_allowed(1, "file.txt", config.monitor.clone()));
+        } else if utils::get_os() == "linux" {
+            let config = Config::new(&utils::get_os(), Some("test/unit/config/linux/monitor_allowed.yml"));
+            assert!(!config.match_allowed(2, "file.swp", config.monitor.clone()));
+            assert!(config.match_allowed(2, "file.txt", config.monitor.clone()));
+
+            let config_audit = Config::new(&utils::get_os(), Some("test/unit/config/linux/audit_allowed.yml"));
+            assert!(!config_audit.match_allowed(0, "file.swp", config_audit.audit.clone()));
+            assert!(config_audit.match_allowed(0, "file.txt", config_audit.audit.clone()));
+        }
+    }
+
 }
