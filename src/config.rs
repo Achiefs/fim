@@ -305,6 +305,15 @@ impl Config {
 
     // ------------------------------------------------------------------------
 
+    pub fn match_allowed(&self, index: usize, filename: &str, array: Array) -> bool {
+        match array[index]["allowed"].as_vec() {
+            Some(allowed) => allowed.to_vec().iter().any(|allw| filename.contains(allw.as_str().unwrap())),
+            None => true
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
     // Returns if a given path and filename is in the configuration paths
     pub fn path_in(&self, raw_path: &str, cwd: &str, vector: Vec<Yaml>) -> bool {
         // Iterate over monitoring paths to match ignore string and ignore event or not

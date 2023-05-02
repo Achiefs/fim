@@ -83,15 +83,26 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
     if ! config.monitor.is_empty() {
         for element in config.monitor.clone() {
             let path = element["path"].as_str().unwrap();
-            info!("Monitoring path: {}", path);
+            info!("Checking path: {}", path);
+
             match element["ignore"].as_vec() {
                 Some(ig) => {
-                    let ignore_list_vec  = ig.iter().map(|e| { e.as_str().unwrap() });
-                    let ignore_list : String = Itertools::intersperse(ignore_list_vec, ", ").collect();
+                    let ignore_vec  = ig.iter().map(|e| e.as_str().unwrap() );
+                    let ignore_list : String = Itertools::intersperse(ignore_vec, ", ").collect();
                     info!("Ignoring files with: {} inside {}", ignore_list, path);
                 },
                 None => info!("Ignore for '{}' not set", path)
             };
+
+            match element["allowed"].as_vec(){
+                Some(allowed) => {
+                    let allowed_vec = allowed.iter().map(|e| e.as_str().unwrap());
+                    let allowed_list : String = Itertools::intersperse(allowed_vec, ", ").collect();
+                    info!("Only files with '{}' will trigger event inside '{}'", allowed_list, path)
+                },
+                None => debug!("Monitoring all files under this path '{}'", path)
+            }
+
             match watcher.watch(Path::new(path), RecursiveMode::Recursive) {
                 Ok(_d) => debug!("Monitoring path: {}", path),
                 Err(e) => warn!("Could not monitor given path '{}', description: {}", path, e)
@@ -108,10 +119,20 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                 Ok(d) => debug!("Auditctl command info: {:?}", d),
                 Err(e) => error!("Auditctl command error: {}", e)
             };
-            info!("Monitoring audit path: {}", path);
+            info!("Checking audit path: {}", path);
+
+            match element["allowed"].as_vec() {
+                Some(allowed) => {
+                    let allowed_vec  = allowed.iter().map(|e| e.as_str().unwrap() );
+                    let allowed_list : String = Itertools::intersperse(allowed_vec, ", ").collect();
+                    info!("Only files with '{}' will trigger event inside '{}'", allowed_list, path)
+                },
+                None => debug!("Monitoring all files under this path '{}'", path)
+            };
+
             match element["ignore"].as_vec() {
                 Some(ig) => {
-                    let ignore_list_vec  = ig.iter().map(|e| { e.as_str().unwrap() });
+                    let ignore_list_vec  = ig.iter().map(|e| e.as_str().unwrap() );
                     let ignore_list : String = Itertools::intersperse(ignore_list_vec, ", ").collect();
                     info!("Ignoring files with: {} inside {}", ignore_list, path);
                 },
@@ -199,6 +220,9 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                                     // If event contains ignored string ignore event
                                     if ! config.match_ignore(index,
                                             audit_event.clone().file.as_str(),
+                                            config.audit.clone())  &&
+                                        config.match_allowed(index,
+                                            audit_event.clone().file.as_str(),
                                             config.audit.clone()) {
                                         audit_event.process(destination.clone().as_str(), index_name.clone(), config.clone()).await;
                                     }else{
@@ -215,7 +239,8 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                         if index != usize::MAX {
                             let labels = config.get_labels(index, config.monitor.clone());
                             if ! config.match_ignore(index,
-                                event_filename.to_str().unwrap(), config.monitor.clone()){
+                                event_filename.to_str().unwrap(), config.monitor.clone()) &&
+                                config.match_allowed(index, event_filename.to_str().unwrap(), config.monitor.clone()) {
                                 let event = event::Event {
                                     id: utils::get_uuid(),
                                     timestamp: current_timestamp,
