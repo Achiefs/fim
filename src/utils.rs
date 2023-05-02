@@ -17,7 +17,7 @@ use std::path::{Path, PathBuf};
 // To run commands
 use std::process::Command;
 // To log the program process
-use log::{warn, error, debug};
+use log::{warn, debug};
 // To manage maps
 use std::collections::HashMap;
 
@@ -132,7 +132,7 @@ pub fn check_auditd() -> bool {
             true
         },
         _ => {
-            error!("Auditctl command unavailable");
+            warn!("Auditctl command unavailable");
             false
         }
     }

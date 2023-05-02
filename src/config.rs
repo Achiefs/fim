@@ -22,6 +22,8 @@ use std::path::Path;
 use simplelog::LevelFilter;
 // To manage common functions
 use crate::utils;
+// Integrate FIM with external code
+use crate::integration::Integration;
 
 // ----------------------------------------------------------------------------
 
@@ -36,6 +38,7 @@ pub struct Config {
     pub endpoint_pass: String,
     pub events_file: String,
     pub monitor: Array,
+    //pub monitor_integrations: Array,
     pub audit: Array,
     pub node: String,
     pub log_file: String,
@@ -327,6 +330,27 @@ impl Config {
             true => true,
             false => false
         }
+    }
+
+    // ------------------------------------------------------------------------
+
+    pub fn get_integrations(&self, index: usize, array: Array) -> Vec<Integration> {
+        let data = match array[index]["integrations"].clone().into_vec() {
+            Some(integrations) => integrations,
+            None => Vec::new()
+        };
+        let mut integrations: Vec<Integration> = Vec::new();
+        data.iter().for_each(|info|
+            integrations.push(Integration::new(
+                String::from(info["name"].as_str().unwrap()), 
+                info["condition"]
+                    .clone().into_vec().unwrap().iter().map(|element| 
+                        String::from(element.as_str().unwrap()) ).collect(), 
+                String::from(info["binary"].as_str().unwrap()), 
+                String::from(info["script"].as_str().unwrap()), 
+                String::from(info["parameters"].as_str().unwrap()) ))
+        );
+        integrations
     }
 
 }
@@ -1059,6 +1083,31 @@ mod tests {
             let config_audit = Config::new(&utils::get_os(), Some("test/unit/config/linux/audit_allowed.yml"));
             assert!(!config_audit.match_allowed(0, "file.swp", config_audit.audit.clone()));
             assert!(config_audit.match_allowed(0, "file.txt", config_audit.audit.clone()));
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_get_integrations() {
+        let os = utils::get_os();
+        let config = Config::new(&os,
+            Some(format!("test/unit/config/{}/monitor_integration.yml", os)
+                .as_str())
+        );
+        if os.clone() == "windows" {
+            let integrations = config.get_integrations(2, config.monitor.clone());
+            assert_eq!(integrations.len(), 1);
+        }else if os.clone() == "macos"{
+            let integrations = config.get_integrations(2, config.monitor.clone());
+            assert_eq!(integrations.len(), 1);
+        }else{
+            let integrations_monitor = config.get_integrations(2, config.monitor.clone());
+            assert_eq!(integrations_monitor.len(), 1);
+
+            // Not implemented yet
+            //let integrations_audit = config.get_integrations(2, config.audit.clone());
+            //assert_eq!(integrations_audit.len(), 1);
         }
     }
 

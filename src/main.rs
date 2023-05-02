@@ -25,6 +25,9 @@ mod auditevent;
 mod service;
 // Manage monitor methods
 mod monitor;
+// Manage integrations
+mod integration;
+mod launcher;
 
 static mut GCONFIG: Option<config::Config> = None;
 

@@ -39,7 +39,7 @@ pub struct Event {
 
 impl Event {
     // Get formatted string with all required data
-    fn format_json(&self) -> String {
+    pub fn format_json(&self) -> String {
         let obj = json!({
             "id": self.id.clone(),
             "timestamp": self.timestamp.clone(),
@@ -55,6 +55,26 @@ impl Event {
             "system": self.system.clone()
         });
         to_string(&obj).unwrap()
+    }
+
+    // ------------------------------------------------------------------------
+
+    pub fn clone(&self) -> Self {
+        Event {
+            id: self.id.clone(),
+            timestamp: self.timestamp.clone(),
+            hostname: self.hostname.clone(),
+            node: self.node.clone(),
+            version: self.version.clone(),
+            path: self.path.clone(),
+            kind: self.kind.clone(),
+            labels: self.labels.clone(),
+            operation: self.operation.clone(),
+            detailed_operation: self.detailed_operation.clone(),
+            checksum: self.checksum.clone(),
+            fpid: self.fpid,
+            system: self.system.clone()
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -124,6 +144,21 @@ impl Event {
         }
     }
 
+    // ------------------------------------------------------------------------
+
+    pub fn get_string(&self, field: String) -> String {
+        match field.as_str() {
+            "path" => String::from(self.path.to_str().unwrap()),
+            "hostname" => self.hostname.clone(),
+            "node" => self.node.clone(),
+            "version" => self.version.clone(),
+            "operation" => self.operation.clone(),
+            "detailed_operation" => self.detailed_operation.clone(),
+            "checksum" => self.checksum.clone(),
+            "system" => self.system.clone(),
+            _ => "".to_string()
+        }
+    }
 }
 
 // ----------------------------------------------------------------------------
