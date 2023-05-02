@@ -70,15 +70,16 @@ impl Integration {
 
 // ----------------------------------------------------------------------------
 
-pub fn get_event_integration(event: Event, integrations: Vec<Integration>) -> Option<Integration> {
+pub fn get_event_integration(event: Box<dyn Event>, integrations: Vec<Integration>) -> Option<Integration> {
+    let evt = Box::leak(event);
     let option = integrations.iter().find(|integration|
         match integration.condition[1].as_str() {
-            "==" => event.get_string(integration.condition[0].clone()) == integration.condition[2],
-            ">" => event.get_string(integration.condition[0].clone()) > integration.condition[2],
-            "<" => event.get_string(integration.condition[0].clone()) < integration.condition[2],
-            ">=" => event.get_string(integration.condition[0].clone()) >= integration.condition[2],
-            "<=" => event.get_string(integration.condition[0].clone()) <= integration.condition[2],
-            "!=" => event.get_string(integration.condition[0].clone()) != integration.condition[2],
+            "==" => evt.get_string(integration.condition[0].clone()) == integration.condition[2],
+            ">" => evt.get_string(integration.condition[0].clone()) > integration.condition[2],
+            "<" => evt.get_string(integration.condition[0].clone()) < integration.condition[2],
+            ">=" => evt.get_string(integration.condition[0].clone()) >= integration.condition[2],
+            "<=" => evt.get_string(integration.condition[0].clone()) <= integration.condition[2],
+            "!=" => evt.get_string(integration.condition[0].clone()) != integration.condition[2],
             _ => false
         }
     );
@@ -161,7 +162,7 @@ mod tests {
     #[test]
     fn test_get_event_integration_windows() {
         let config = Config::new("windows", Some("test/unit/config/windows/monitor_integration.yml"));
-        let event = Event{
+        let event = MonitorEvent{
             id: "Test_id".to_string(),
             timestamp: "Timestamp".to_string(),
             hostname: "Hostname".to_string(),
@@ -198,7 +199,7 @@ mod tests {
     fn test_get_event_integration_unix() {
         let os = utils::get_os();
         let config = Config::new(&os, Some(format!("test/unit/config/{}/monitor_integration.yml", os).as_str()));
-        let event = Event{
+        let event = MonitorEvent{
             id: "Test_id".to_string(),
             timestamp: "Timestamp".to_string(),
             hostname: "Hostname".to_string(),

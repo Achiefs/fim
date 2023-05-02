@@ -26,6 +26,7 @@ use crate::hash;
 
 // ----------------------------------------------------------------------------
 
+#[derive(Clone)]
 pub struct Event {
     pub id: String,
     pub timestamp: String,
@@ -85,6 +86,25 @@ pub struct Event {
 }
 
 impl Event {
+
+    // ------------------------------------------------------------------------
+
+    pub fn get_string(&self, _field: &str) -> String {
+        //match field.as_str() {
+        //    "path" => String::from(self.path.to_str().unwrap()),
+        //    "hostname" => self.hostname.clone(),
+        //    "node" => self.node.clone(),
+        //    "version" => self.version.clone(),
+        //    "operation" => self.operation.clone(),
+            //"detailed_operation" => self.detailed_operation.clone(),
+        //    "checksum" => self.checksum.clone(),
+        //    "system" => self.system.clone(),
+        //    _ => "".to_string()
+        //}
+        String::from("")
+    }
+
+
     pub fn new() -> Self {
         let empty = String::from("0");
         Event{
@@ -331,7 +351,7 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Get formatted string with all required data
-    fn format_json(&self) -> String { to_string(&self.get_json()).unwrap() }
+    pub fn format_json(&self) -> String { to_string(&self.get_json()).unwrap() }
 
     // ------------------------------------------------------------------------
 

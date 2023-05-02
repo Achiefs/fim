@@ -8,19 +8,20 @@ use crate::config;
 // Single event data management
 use crate::event::Event;
 // Manage integration launch
-use crate::integration;
+//use crate::integration;
 // To log the program process
 use log::debug;
 
 // ----------------------------------------------------------------------------
 
-pub fn check_integrations(event: Event, config: config::Config) {
-    let index = config.get_index(event.path.to_str().unwrap(), "", config.monitor.clone());
+pub fn check_integrations(event: Box<dyn Event>, config: config::Config) {
+    let evt = Box::leak(event);
+    let index = config.get_index(&evt.get_string(String::from("path")), "", config.monitor.clone());
     if index != usize::MAX {
         let integrations = config.get_integrations(index, config.monitor.clone());
-        let integration = integration::get_event_integration(event.clone(), integrations);
+        let integration = Some(integrations[0].clone());//integration::get_event_integration(Box::new(evt), integrations);
         match integration {
-            Some(int) => int.launch(event.clone().format_json()),
+            Some(int) => int.launch(evt.format_json()),
             None => debug!("No integration match on this event")
         }
     }
@@ -32,15 +33,15 @@ pub fn check_integrations(event: Event, config: config::Config) {
 mod tests {
     use super::*;
     use std::path::PathBuf;
-    use crate::event::Event;
+    use crate::event::MonitorEvent;
     use crate::config::*;
     use notify::event::*;
     use yaml_rust::yaml::Array;
 
     // ------------------------------------------------------------------------
 
-    fn create_test_event() -> Event {
-        Event {
+    fn create_test_event() -> MonitorEvent {
+        MonitorEvent {
             id: "Test_id".to_string(),
             timestamp: "Timestamp".to_string(),
             hostname: "Hostname".to_string(),

@@ -29,11 +29,17 @@ use crate::config;
 // Index management functions
 use crate::index;
 // Single event data management
-use crate::event;
+//use crate::event;
 // File reading continuously
 use crate::logreader;
 // integrations checker
 use crate::launcher;
+
+use crate::event::monitorevent::MonitorEvent;
+use crate::event::monitorevent::get_operation;
+use crate::event::monitorevent::get_detailed_operation;
+
+//use event::monitorevent;
 
 // ----------------------------------------------------------------------------
 
@@ -203,6 +209,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                                             audit_event.clone().file.as_str(),
                                             config.audit.clone()) {
                                         audit_event.process(destination.clone().as_str(), index_name.clone(), config.clone()).await;
+                                        //launcher::check_integrations::<auditevent::Event, format_json>(audit_event.clone(), config.clone());
                                     }else{
                                         debug!("Event ignored not stored in alerts");
                                     }
@@ -218,7 +225,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                             let labels = config.get_labels(index, config.monitor.clone());
                             if ! config.match_ignore(index,
                                 event_filename.to_str().unwrap(), config.monitor.clone()){
-                                let event = event::Event {
+                                let event = MonitorEvent {
                                     id: utils::get_uuid(),
                                     timestamp: current_timestamp,
                                     hostname: current_hostname,
@@ -227,8 +234,8 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                                     kind: kind.clone(),
                                     path: path.clone(),
                                     labels,
-                                    operation: event::get_operation(kind.clone()),
-                                    detailed_operation: event::get_detailed_operation(kind),
+                                    operation: get_operation(kind.clone()),
+                                    detailed_operation: get_detailed_operation(kind),
                                     checksum: hash::get_checksum( String::from(path.to_str().unwrap()), config.events_max_file_checksum ),
                                     fpid: utils::get_pid(),
                                     system: config.system.clone()
@@ -236,7 +243,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
 
                                 debug!("Event processed: {:?}", event);
                                 event.process(destination.clone().as_str(), index_name.clone(), config.clone()).await;
-                                launcher::check_integrations(event.clone(), config.clone());
+                                launcher::check_integrations(Box::new(event.clone()), config.clone());
                             }else{
                                 debug!("Event ignored not stored in alerts");
                             }
