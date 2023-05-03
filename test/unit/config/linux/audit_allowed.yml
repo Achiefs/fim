@@ -10,6 +10,7 @@ audit:
   - path: /tmp
     labels: ["tmp", "linux"]
     ignore: [".swp"]
+    allowed: [".txt", ".rs"]
 
 # Simple files and folders information
 monitor:
@@ -18,20 +19,6 @@ monitor:
     labels: ["usr/bin", "linux"]
   - path: /etc
     labels: ["etc", "linux"]
-    integrations:
-      - name: rmfile
-        condition: ["operation", "==", "CREATE"]
-        binary: bash
-        script: /tmp/remover.sh
-        parameters: ""
-  - path: /etc2
-    labels: ["etc2", "linux"]
-    integrations:
-      - name: rmfile2
-        condition: ["operation", "!=", "REMOVE"]
-        binary: bash
-        script: /tmp/remover.sh
-        parameters: ""
 
 # App procedure and errors logging
 log:

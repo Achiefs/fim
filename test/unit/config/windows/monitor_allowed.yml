@@ -11,20 +11,7 @@ monitor:
     labels: ["Program Files", "windows"]
   - path: C:\Users\
     labels: ["Users", "windows"]
-  - path: C:\tmp\
-    integrations:
-      - name: rmfile
-        condition: ["operation", "==", "CREATE"]
-        binary: powershell.exe
-        script: C:\tmp\remover.ps1
-        parameters: ""
-  - path: C:\tmp2\
-    integrations:
-      - name: rmfile2
-        condition: ["operation", "!=", "REMOVE"]
-        binary: powershell.exe
-        script: C:\tmp\remover.ps1
-        parameters: ""
+    allowed: [".txt", ".rs"]
 
 # App procedure and errors logging
 log:

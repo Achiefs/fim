@@ -308,6 +308,15 @@ impl Config {
 
     // ------------------------------------------------------------------------
 
+    pub fn match_allowed(&self, index: usize, filename: &str, array: Array) -> bool {
+        match array[index]["allowed"].as_vec() {
+            Some(allowed) => allowed.to_vec().iter().any(|allw| filename.contains(allw.as_str().unwrap())),
+            None => true
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
     // Returns if a given path and filename is in the configuration paths
     pub fn path_in(&self, raw_path: &str, cwd: &str, vector: Vec<Yaml>) -> bool {
         // Iterate over monitoring paths to match ignore string and ignore event or not
@@ -1055,6 +1064,25 @@ mod tests {
         if utils::get_os() == "linux" {
             assert!(config.match_ignore(0, "file.swp", config.audit.clone()));
             assert!(!config.match_ignore(0, "file.txt", config.audit.clone()));
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_match_allowed() {
+        if utils::get_os() == "windows" {
+            let config = Config::new(&utils::get_os(), Some("test/unit/config/windows/monitor_allowed.yml"));
+            assert!(!config.match_allowed(1, "file.swp", config.monitor.clone()));
+            assert!(config.match_allowed(1, "file.txt", config.monitor.clone()));
+        } else if utils::get_os() == "linux" {
+            let config = Config::new(&utils::get_os(), Some("test/unit/config/linux/monitor_allowed.yml"));
+            assert!(!config.match_allowed(2, "file.swp", config.monitor.clone()));
+            assert!(config.match_allowed(2, "file.txt", config.monitor.clone()));
+
+            let config_audit = Config::new(&utils::get_os(), Some("test/unit/config/linux/audit_allowed.yml"));
+            assert!(!config_audit.match_allowed(0, "file.swp", config_audit.audit.clone()));
+            assert!(config_audit.match_allowed(0, "file.txt", config_audit.audit.clone()));
         }
     }
 
