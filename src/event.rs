@@ -285,6 +285,27 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
+    fn test_clone() {
+        let event = create_test_event();
+        let cloned = event.clone();
+        assert_eq!(event.id, cloned.id);
+        assert_eq!(event.timestamp, cloned.timestamp);
+        assert_eq!(event.hostname, cloned.hostname);
+        assert_eq!(event.node, cloned.node);
+        assert_eq!(event.version, cloned.version);
+        assert_eq!(event.path, cloned.path);
+        assert_eq!(event.kind, cloned.kind);
+        assert_eq!(event.labels, cloned.labels);
+        assert_eq!(event.operation, cloned.operation);
+        assert_eq!(event.detailed_operation, cloned.detailed_operation);
+        assert_eq!(event.checksum, cloned.checksum);
+        assert_eq!(event.fpid, cloned.fpid);
+        assert_eq!(event.system, cloned.system);
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
     fn test_create_event() {
         let evt = create_test_event();
         assert_eq!(evt.id, "Test_id".to_string());

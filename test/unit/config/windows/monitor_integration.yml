@@ -18,6 +18,13 @@ monitor:
         binary: powershell.exe
         script: C:\tmp\remover.ps1
         parameters: ""
+  - path: C:\tmp2\
+    integrations:
+      - name: rmfile2
+        condition: ["operation", "!=", "REMOVE"]
+        binary: powershell.exe
+        script: C:\tmp\remover.ps1
+        parameters: ""
 
 # App procedure and errors logging
 log:

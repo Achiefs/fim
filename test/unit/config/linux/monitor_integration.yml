@@ -24,6 +24,14 @@ monitor:
         binary: bash
         script: /tmp/remover.sh
         parameters: ""
+  - path: /etc2
+    labels: ["etc2", "linux"]
+    integrations:
+      - name: rmfile2
+        condition: ["operation", "!=", "REMOVE"]
+        binary: bash
+        script: /tmp/remover.sh
+        parameters: ""
 
 # App procedure and errors logging
 log:
