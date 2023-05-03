@@ -296,7 +296,7 @@ mod tests {
             parameters: String::from("")
         };
 
-        integration.launch(create_dummy_event_windows("tmp", "C").format_json());
+        integration.launch(create_dummy_event_unix("etc", "C").format_json());
     }
 
 }
