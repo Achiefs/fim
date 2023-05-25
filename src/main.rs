@@ -28,6 +28,7 @@ mod monitor;
 // Manage integrations
 mod integration;
 mod launcher;
+mod multiwatcher;
 
 static mut GCONFIG: Option<config::Config> = None;
 

@@ -3,7 +3,7 @@
 // To read and write directories and files
 use std::fs;
 // To get file system changes
-use notify::{RecommendedWatcher, RecursiveMode, Watcher, Config as NConfig};
+use notify::RecursiveMode;
 use std::sync::mpsc;
 // To log the program process
 use log::{info, error, debug, warn};
@@ -34,6 +34,7 @@ use crate::event;
 use crate::logreader;
 // integrations checker
 use crate::launcher;
+use crate::multiwatcher::MultiWatcher;
 
 // ----------------------------------------------------------------------------
 
@@ -79,7 +80,11 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
     // Check if we have to push index template
     push_template(destination.as_str(), config.clone()).await;
 
-    let mut watcher = RecommendedWatcher::new(tx, NConfig::default()).unwrap();
+    let mut watcher = MultiWatcher::new(config.events_watcher.as_str(), tx);
+    /*match config.events_watcher.as_str() {
+        "Poll" => PollWatcher::new(tx, NConfig::default()).unwrap(),
+        _ => RecommendedWatcher::new(tx, NConfig::default()).unwrap()
+    };*/
     
     // Iterating over monitor paths and set watcher on each folder to watch.
     if ! config.monitor.is_empty() {

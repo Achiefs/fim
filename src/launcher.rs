@@ -63,6 +63,7 @@ mod tests {
         Config {
             version: String::from(VERSION),
             path: String::from("test"),
+            events_watcher: String::from("Recommended"),
             events_destination: String::from(events_destination),
             events_max_file_checksum: 64,
             endpoint_address: String::from("test"),

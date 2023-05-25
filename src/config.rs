@@ -31,6 +31,7 @@ use crate::integration::Integration;
 pub struct Config {
     pub version: String,
     pub path: String,
+    pub events_watcher: String,
     pub events_destination: String,
     pub events_max_file_checksum: usize,
     pub endpoint_address: String,
@@ -53,6 +54,7 @@ impl Config {
         Config {
             version: self.version.clone(),
             path: self.path.clone(),
+            events_watcher: self.events_watcher.clone(),
             events_destination: self.events_destination.clone(),
             events_max_file_checksum: self.events_max_file_checksum,
             endpoint_address: self.endpoint_address.clone(),
@@ -85,6 +87,12 @@ impl Config {
                 println!("[WARN] events->destination not found in config.yml, using 'file'.");
                 String::from("file")
             }
+        };
+
+        // Manage value on events->watcher value
+        let events_watcher = match yaml[0]["events"]["watcher"].as_str() {
+            Some("poll|P|POLL|Poll") => String::from("Poll"),
+            _ => String::from("Recommended")
         };
 
         // Manage null value on events->file value
@@ -220,6 +228,7 @@ impl Config {
         Config {
             version: String::from(VERSION),
             path: cfg,
+            events_watcher,
             events_destination,
             events_max_file_checksum,
             endpoint_address,
@@ -416,6 +425,7 @@ mod tests {
         Config {
             version: String::from(VERSION),
             path: String::from("test"),
+            events_watcher: String::from("Recommended"),
             events_destination: String::from(events_destination),
             events_max_file_checksum: 64,
             endpoint_address: String::from("test"),
