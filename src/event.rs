@@ -28,7 +28,7 @@ pub struct Event {
     pub node: String,
     pub version: String,
     pub path: PathBuf,
-    pub kind: EventKind,
+    pub kind: notify::EventKind,
     pub labels: Vec<String>,
     pub operation: String,
     pub detailed_operation: String,

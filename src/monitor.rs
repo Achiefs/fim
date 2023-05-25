@@ -81,10 +81,6 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
     push_template(destination.as_str(), config.clone()).await;
 
     let mut watcher = MultiWatcher::new(config.events_watcher.as_str(), tx);
-    /*match config.events_watcher.as_str() {
-        "Poll" => PollWatcher::new(tx, NConfig::default()).unwrap(),
-        _ => RecommendedWatcher::new(tx, NConfig::default()).unwrap()
-    };*/
     
     // Iterating over monitor paths and set watcher on each folder to watch.
     if ! config.monitor.is_empty() {
@@ -188,7 +184,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                     let index_name = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
                     let current_timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
                     let current_hostname = utils::get_hostname();
-                    let kind = event.kind.clone();
+                    let kind: notify::EventKind = event.kind.clone();
                     let path = event.paths[0].clone();
 
                     // Reset reading position due to log rotation
