@@ -94,7 +94,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                     let ignore_list : String = Itertools::intersperse(ignore_vec, ", ").collect();
                     info!("Ignoring files with: {} inside {}", ignore_list, path);
                 },
-                None => info!("Ignore for '{}' not set", path)
+                None => debug!("Ignore for '{}' not set", path)
             };
 
             match element["allowed"].as_vec(){

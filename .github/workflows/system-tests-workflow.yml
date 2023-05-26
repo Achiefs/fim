@@ -86,6 +86,10 @@ jobs:
         if: always()
         run: cat /var/log/fim/fim.log || true
 
+      - name: Stop FIM process
+        if: always()
+        run: sudo pkill fim || true
+
       - name: Clean temporal folder
         if: always()
         run: sudo rm -rf /tmp/test
@@ -105,10 +109,6 @@ jobs:
       - name: Clean test output
         if: always()
         run: sudo rm -rf ${{ github.workspace }}/test_*
-
-      - name: Stop FIM process
-        if: always()
-        run: sudo pkill fim || true
 
       - run: echo "Job's status is ${{ job.status }}."
 
@@ -152,28 +152,28 @@ jobs:
         if: always()
         run: cat /var/log/fim/fim.log || true
 
-      - name: Clean temporal folder
-        if: always()
-        run: sudo rm -rf /tmp/test
+#      - name: Stop FIM process
+#        if: always()
+#        run: sudo pkill fim || true
 
-      - name: Clean log folder
-        if: always()
-        run: sudo rm -rf /var/log/fim/
+#      - name: Clean temporal folder
+#        if: always()
+#        run: sudo rm -rf /tmp/test
 
-      - name: Clean lib folder
-        if: always()
-        run: sudo rm -rf /var/lib/fim/
+#      - name: Clean log folder
+#        if: always()
+#        run: sudo rm -rf /var/log/fim/
 
-      - name: Clean workspace
-        if: always()
-        run: sudo rm -rf ${{ github.workspace }}/test/system/__pycache__/ ${{ github.workspace }}/test/system/.pytest_cache ${{ github.workspace }}/.pytest_cache
+#      - name: Clean lib folder
+#        if: always()
+#        run: sudo rm -rf /var/lib/fim/
 
-      - name: Clean test output
-        if: always()
-        run: sudo rm -rf ${{ github.workspace }}/test_*
+#      - name: Clean workspace
+#        if: always()
+#        run: sudo rm -rf ${{ github.workspace }}/test/system/__pycache__/ ${{ github.workspace }}/test/system/.pytest_cache ${{ github.workspace }}/.pytest_cache
 
-      - name: Stop FIM process
-        if: always()
-        run: sudo pkill fim || true
+#      - name: Clean test output
+#        if: always()
+#        run: sudo rm -rf ${{ github.workspace }}/test_*
 
       - run: echo "Job's status is ${{ job.status }}."
