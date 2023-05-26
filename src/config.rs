@@ -91,7 +91,10 @@ impl Config {
 
         // Manage value on events->watcher value
         let events_watcher = match yaml[0]["events"]["watcher"].as_str() {
-            Some("poll|P|POLL|Poll") => String::from("Poll"),
+            Some(value) => match value {
+                "poll"|"P"|"POLL"|"Poll" => String::from("Poll"),
+                _ => String::from("Recommended")
+            },
             _ => String::from("Recommended")
         };
 
@@ -1119,6 +1122,14 @@ mod tests {
             //let integrations_audit = config.get_integrations(2, config.audit.clone());
             //assert_eq!(integrations_audit.len(), 1);
         }
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_new_config_watcher() {
+        let config = Config::new("windows", Some("test/unit/config/windows/events_watcher.yml"));
+        assert_eq!(config.events_watcher, "Poll");
     }
 
 }

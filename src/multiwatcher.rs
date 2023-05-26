@@ -44,3 +44,55 @@ impl MultiWatcher {
         }
     }
 }
+
+// ----------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ------------------------------------------------------------------------
+
+    pub fn create() {
+        
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_new() {
+        let (_tx, _rx) = mpsc::channel();
+        let watcher = MultiWatcher::new("Pool", _tx);
+        assert_eq!(watcher.kind, "Pool");
+
+        let (_tx2, _rx2) = mpsc::channel();
+        let watcher2 = MultiWatcher::new("Recommended", _tx2);
+        assert_eq!(watcher2.kind, "Recommended");
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_watch() {
+        let (_tx, _rx) = mpsc::channel();
+        let mut watcher = MultiWatcher::new("Recommended", _tx);
+        match watcher.watch(Path::new("C:"), RecursiveMode::NonRecursive) {
+            Ok(()) => (),
+            _ => assert_eq!(1, 2)
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_watch() {
+        let (_tx, _rx) = mpsc::channel();
+        let mut watcher = MultiWatcher::new("Recommended", _tx);
+        match watcher.watch(Path::new("/etc"), RecursiveMode::NonRecursive) {
+            Ok(()) => (),
+            _ => assert_eq!(1, 2)
+        }
+    }
+}
