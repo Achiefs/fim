@@ -99,6 +99,9 @@ rm -fr %{buildroot}
 # -----------------------------------------------------------------------------
 
 %changelog
+* Fri May 26 2023 support <support@achiefs.com> - 0.4.7
+- More info: https://github.com/Achiefs/fim/releases/tag/v0.4.7
+
 * Tue Mar 21 2023 support <support@achiefs.com> - 0.4.6
 - More info: https://github.com/Achiefs/fim/releases/tag/v0.4.6
 
