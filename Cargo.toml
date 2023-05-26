@@ -22,7 +22,7 @@ tokio = { version = "1.18.4", default-features = false, features = ["rt", "rt-mu
 tokio-util = { version = "0.7.1", default-features = false, features = ["codec"] }
 serde_json = { version = "1.0.79", default-features = false }
 time = { version = "0.3.17", default-features = false }
-ctrlc = { version = "3.2", default-features = false, features = ["termination"] }
+ctrlc = { version = "3.3.1", default-features = false, features = ["termination"] }
 log-panics = { version = "2.1.0", features = ["with-backtrace"]}
 
 [target.'cfg(windows)'.dependencies]

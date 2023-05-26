@@ -81,8 +81,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
     // Check if we have to push index template
     push_template(destination.as_str(), config.clone()).await;
 
-    let mut watcher = RecommendedWatcher::new(tx, NConfig::default()).unwrap();
-    //MultiWatcher::new(config.events_watcher.as_str(), tx);
+    let mut watcher = MultiWatcher::new(config.events_watcher.as_str(), tx);
     
     // Iterating over monitor paths and set watcher on each folder to watch.
     if ! config.monitor.is_empty() {
@@ -144,13 +143,15 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                 None => info!("Ignore for '{}' not set", path)
             };
         }
-        // Detect if file is moved or renamed (rotation)
+        // Detect if Audit file is moved or renamed (rotation)
         watcher.watch(Path::new(logreader::AUDIT_PATH), RecursiveMode::NonRecursive).unwrap();
         last_position = utils::get_file_end(logreader::AUDIT_LOG_PATH, 0);
+       
         // Remove auditd rules introduced by FIM
-        let cconfig = config.clone();
+        // Setting ctrl + C handler
+        let copied_config = config.clone();
         ctrlc::set_handler(move || {
-            for element in &cconfig.audit {
+            for element in &copied_config.audit {
                 let path = element["path"].as_str().unwrap();
                 match Command::new("/usr/sbin/auditctl")
                     .args(["-W", path, "-k", "fim", "-p", "wax"])
