@@ -35,7 +35,6 @@ use crate::logreader;
 // integrations checker
 use crate::launcher;
 use crate::multiwatcher::MultiWatcher;
-use notify::{RecommendedWatcher, Watcher, Config as NConfig};
 
 // ----------------------------------------------------------------------------
 
