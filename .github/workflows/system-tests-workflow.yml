@@ -141,6 +141,9 @@ jobs:
       - name: Start FIM process
         run: sudo ./fim &
 
+      - name: Check FIM running
+        run: sleep 5 && ps a | grep fim | grep -v grep
+
       - name: Launch test suite
         run: sudo python3 -m pytest test/system/audit.py -v
 
