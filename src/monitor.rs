@@ -35,6 +35,7 @@ use crate::logreader;
 // integrations checker
 use crate::launcher;
 use crate::multiwatcher::MultiWatcher;
+use notify::{RecommendedWatcher, Watcher, Config as NConfig};
 
 // ----------------------------------------------------------------------------
 
@@ -80,7 +81,8 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
     // Check if we have to push index template
     push_template(destination.as_str(), config.clone()).await;
 
-    let mut watcher = MultiWatcher::new(config.events_watcher.as_str(), tx);
+    let mut watcher = RecommendedWatcher::new(tx, NConfig::default()).unwrap();
+    //MultiWatcher::new(config.events_watcher.as_str(), tx);
     
     // Iterating over monitor paths and set watcher on each folder to watch.
     if ! config.monitor.is_empty() {
