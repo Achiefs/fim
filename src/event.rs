@@ -67,7 +67,7 @@ impl Event {
             node: self.node.clone(),
             version: self.version.clone(),
             path: self.path.clone(),
-            kind: self.kind.clone(),
+            kind: self.kind,
             labels: self.labels.clone(),
             operation: self.operation.clone(),
             detailed_operation: self.detailed_operation.clone(),

@@ -189,7 +189,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                     let index_name = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
                     let current_timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
                     let current_hostname = utils::get_hostname();
-                    let kind: notify::EventKind = event.kind.clone();
+                    let kind: notify::EventKind = event.kind;
                     let path = event.paths[0].clone();
 
                     // Reset reading position due to log rotation
@@ -255,10 +255,10 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                                     hostname: current_hostname,
                                     node: config.node.clone(),
                                     version: String::from(config::VERSION),
-                                    kind: kind.clone(),
+                                    kind,
                                     path: path.clone(),
                                     labels,
-                                    operation: event::get_operation(kind.clone()),
+                                    operation: event::get_operation(kind),
                                     detailed_operation: event::get_detailed_operation(kind),
                                     checksum: hash::get_checksum( String::from(path.to_str().unwrap()), config.events_max_file_checksum ),
                                     fpid: utils::get_pid(),
