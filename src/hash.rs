@@ -31,7 +31,7 @@ pub fn get_checksum(filename: String, read_limit: usize) -> String {
 
                 while length > 0 && data_read <= read_limit {
                     if iteration == 2 {
-                        info!("Big file detected, the hash will take a while");
+                        debug!("Big file detected, the hash will take a while");
                     }
                     
                     length = {

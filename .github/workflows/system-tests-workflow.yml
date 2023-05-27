@@ -75,6 +75,9 @@ jobs:
       - name: Start FIM process
         run: sudo ./fim &
 
+      - name: Check FIM running
+        run: sleep 5 && ps a | grep fim | grep -v grep
+
       - name: Launch test suite
         run: sudo python3 -m pytest test/system/audit.py -v
 
@@ -85,6 +88,10 @@ jobs:
       - name: Print log file
         if: always()
         run: cat /var/log/fim/fim.log || true
+
+      - name: Stop FIM process
+        if: always()
+        run: sudo pkill fim || true
 
       - name: Clean temporal folder
         if: always()
@@ -105,10 +112,6 @@ jobs:
       - name: Clean test output
         if: always()
         run: sudo rm -rf ${{ github.workspace }}/test_*
-
-      - name: Stop FIM process
-        if: always()
-        run: sudo pkill fim || true
 
       - run: echo "Job's status is ${{ job.status }}."
 
@@ -141,6 +144,9 @@ jobs:
       - name: Start FIM process
         run: sudo ./fim &
 
+      - name: Check FIM running
+        run: sleep 5 && ps a | grep fim | grep -v grep
+
       - name: Launch test suite
         run: sudo python3 -m pytest test/system/audit.py -v
 
@@ -151,6 +157,10 @@ jobs:
       - name: Print log file
         if: always()
         run: cat /var/log/fim/fim.log || true
+
+      - name: Stop FIM process
+        if: always()
+        run: sudo pkill fim || true
 
       - name: Clean temporal folder
         if: always()
@@ -171,9 +181,5 @@ jobs:
       - name: Clean test output
         if: always()
         run: sudo rm -rf ${{ github.workspace }}/test_*
-
-      - name: Stop FIM process
-        if: always()
-        run: sudo pkill fim || true
 
       - run: echo "Job's status is ${{ job.status }}."

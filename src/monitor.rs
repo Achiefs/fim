@@ -3,7 +3,7 @@
 // To read and write directories and files
 use std::fs;
 // To get file system changes
-use notify::{RecommendedWatcher, RecursiveMode, Watcher, Config as NConfig};
+use notify::RecursiveMode;
 use std::sync::mpsc;
 // To log the program process
 use log::{info, error, debug, warn};
@@ -34,6 +34,7 @@ use crate::event;
 use crate::logreader;
 // integrations checker
 use crate::launcher;
+use crate::multiwatcher::MultiWatcher;
 
 // ----------------------------------------------------------------------------
 
@@ -79,7 +80,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
     // Check if we have to push index template
     push_template(destination.as_str(), config.clone()).await;
 
-    let mut watcher = RecommendedWatcher::new(tx, NConfig::default()).unwrap();
+    let mut watcher = MultiWatcher::new(config.events_watcher.as_str(), tx);
     
     // Iterating over monitor paths and set watcher on each folder to watch.
     if ! config.monitor.is_empty() {
@@ -93,7 +94,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                     let ignore_list : String = Itertools::intersperse(ignore_vec, ", ").collect();
                     info!("Ignoring files with: {} inside {}", ignore_list, path);
                 },
-                None => info!("Ignore for '{}' not set", path)
+                None => debug!("Ignore for '{}' not set", path)
             };
 
             match element["allowed"].as_vec(){
@@ -141,13 +142,15 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                 None => info!("Ignore for '{}' not set", path)
             };
         }
-        // Detect if file is moved or renamed (rotation)
+        // Detect if Audit file is moved or renamed (rotation)
         watcher.watch(Path::new(logreader::AUDIT_PATH), RecursiveMode::NonRecursive).unwrap();
         last_position = utils::get_file_end(logreader::AUDIT_LOG_PATH, 0);
+       
         // Remove auditd rules introduced by FIM
-        let cconfig = config.clone();
-        ctrlc::set_handler(move || {
-            for element in &cconfig.audit {
+        // Setting ctrl + C handler
+        let copied_config = config.clone();
+        match ctrlc::set_handler(move || {
+            for element in &copied_config.audit {
                 let path = element["path"].as_str().unwrap();
                 match Command::new("/usr/sbin/auditctl")
                     .args(["-W", path, "-k", "fim", "-p", "wax"])
@@ -158,7 +161,10 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                     };
             }
             std::process::exit(0);
-        }).expect("Error setting Ctrl-C handler");
+        }) {
+            Ok(_v) => debug!("Handler Ctrl-C set and listening"),
+            Err(e) => error!("Error setting Ctrl-C handler, the process will continue without signal handling, Error: '{}'", e)
+        }
     }
 
 
@@ -183,7 +189,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                     let index_name = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
                     let current_timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
                     let current_hostname = utils::get_hostname();
-                    let kind = event.kind.clone();
+                    let kind: notify::EventKind = event.kind;
                     let path = event.paths[0].clone();
 
                     // Reset reading position due to log rotation
@@ -249,10 +255,10 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                                     hostname: current_hostname,
                                     node: config.node.clone(),
                                     version: String::from(config::VERSION),
-                                    kind: kind.clone(),
+                                    kind,
                                     path: path.clone(),
                                     labels,
-                                    operation: event::get_operation(kind.clone()),
+                                    operation: event::get_operation(kind),
                                     detailed_operation: event::get_detailed_operation(kind),
                                     checksum: hash::get_checksum( String::from(path.to_str().unwrap()), config.events_max_file_checksum ),
                                     fpid: utils::get_pid(),

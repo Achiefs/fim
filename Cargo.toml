@@ -1,6 +1,6 @@
 [package]
 name = "fim"
-version = "0.4.6"
+version = "0.4.7"
 authors = ["José Fernández <´pylott@gmail.com´>"]
 edition = "2021"
 
@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 yaml-rust = "0.4"
-notify = "5.1.0"
+notify = "5.2.0"
 simplelog = "0.12.0" # Candidate to remove
 itertools = "0.10.3"
 hex = "0.4.3"
@@ -17,12 +17,12 @@ sha3 = { version = "0.10.0", default-features = false }
 log = { version = "0.4.11", default-features = false }
 gethostname = { version = "0.4.0", default-features = false }
 uuid = { version = "1.0.0", default-features = false, features = ["v4"] }
-reqwest = { version = "0.11", default-features = false, features = ["json", "stream", "rustls-tls"] }
+reqwest = { version = "0.11.18", default-features = false, features = ["json", "stream", "rustls-tls"] }
 tokio = { version = "1.18.4", default-features = false, features = ["rt", "rt-multi-thread", "macros"] }
-tokio-util = { version = "0.7.1", default-features = false, features = ["codec"] }
+tokio-util = { version = "0.7.8", default-features = false, features = ["codec"] }
 serde_json = { version = "1.0.79", default-features = false }
 time = { version = "0.3.17", default-features = false }
-ctrlc = { version = "3.2", default-features = false, features = ["termination"] }
+ctrlc = { version = "3.3.1", default-features = false, features = ["termination"] }
 log-panics = { version = "2.1.0", features = ["with-backtrace"]}
 
 [target.'cfg(windows)'.dependencies]
