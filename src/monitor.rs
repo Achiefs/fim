@@ -149,7 +149,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
         // Remove auditd rules introduced by FIM
         // Setting ctrl + C handler
         let copied_config = config.clone();
-        ctrlc::set_handler(move || {
+        match ctrlc::set_handler(move || {
             for element in &copied_config.audit {
                 let path = element["path"].as_str().unwrap();
                 match Command::new("/usr/sbin/auditctl")
@@ -161,7 +161,10 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                     };
             }
             std::process::exit(0);
-        }).expect("Error setting Ctrl-C handler");
+        }) {
+            Ok(_v) => debug!("Handler Ctrl-C set and listening"),
+            Err(e) => error!("Error setting Ctrl-C handler, the process will continue without signal handling, Error: '{}'", e)
+        }
     }
 
 

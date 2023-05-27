@@ -75,6 +75,9 @@ jobs:
       - name: Start FIM process
         run: sudo ./fim &
 
+      - name: Check FIM running
+        run: sleep 5 && ps a | grep fim | grep -v grep
+
       - name: Launch test suite
         run: sudo python3 -m pytest test/system/audit.py -v
 
@@ -155,28 +158,28 @@ jobs:
         if: always()
         run: cat /var/log/fim/fim.log || true
 
-#      - name: Stop FIM process
-#        if: always()
-#        run: sudo pkill fim || true
+      - name: Stop FIM process
+        if: always()
+        run: sudo pkill fim || true
 
-#      - name: Clean temporal folder
-#        if: always()
-#        run: sudo rm -rf /tmp/test
+      - name: Clean temporal folder
+        if: always()
+        run: sudo rm -rf /tmp/test
 
-#      - name: Clean log folder
-#        if: always()
-#        run: sudo rm -rf /var/log/fim/
+      - name: Clean log folder
+        if: always()
+        run: sudo rm -rf /var/log/fim/
 
-#      - name: Clean lib folder
-#        if: always()
-#        run: sudo rm -rf /var/lib/fim/
+      - name: Clean lib folder
+        if: always()
+        run: sudo rm -rf /var/lib/fim/
 
-#      - name: Clean workspace
-#        if: always()
-#        run: sudo rm -rf ${{ github.workspace }}/test/system/__pycache__/ ${{ github.workspace }}/test/system/.pytest_cache ${{ github.workspace }}/.pytest_cache
+      - name: Clean workspace
+        if: always()
+        run: sudo rm -rf ${{ github.workspace }}/test/system/__pycache__/ ${{ github.workspace }}/test/system/.pytest_cache ${{ github.workspace }}/.pytest_cache
 
-#      - name: Clean test output
-#        if: always()
-#        run: sudo rm -rf ${{ github.workspace }}/test_*
+      - name: Clean test output
+        if: always()
+        run: sudo rm -rf ${{ github.workspace }}/test_*
 
       - run: echo "Job's status is ${{ job.status }}."
