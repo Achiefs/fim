@@ -7,11 +7,9 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
+      - name: Install Rust (Stable)
+        run:
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
       - name: Create config folder
         run: sudo mkdir -p /etc/fim/ && sudo chown -R runner:runner /etc/fim
       - name: Create events file and folder
