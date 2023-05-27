@@ -37,7 +37,7 @@ impl MultiWatcher {
     // ------------------------------------------------------------------------
 
     pub fn watch(&mut self, path: &Path, mode: RecursiveMode) -> notify::Result<()> {
-        if self.kind != "Pool" {
+        if self.kind != "Poll" {
             self.recommended_watcher.watch(path, mode)
         }else{
             self.poll_watcher.watch(path, mode)
