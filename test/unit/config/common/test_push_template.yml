@@ -2,22 +2,21 @@ node: "FIM"
 
 # Events configuration, where to store produced events
 events:
-  destination: network
+  destination: both
+  file: C:\ProgramData\fim\events.json
   endpoint:
-    address: 0.0.0.0
+    address: https://127.0.0.1:9200
+    insecure: true
     credentials:
-      user: test_user
-      password: test
+      user: admin
+      password: admin
 
 # Monitor folder or files.
 monitor:
-  - path: C:\Program Files\
-    labels: ["Program Files", "windows"]
-  - path: C:\Users\
-    labels: ["Users", "windows"]
+  - path: /common/path
 
 # App procedure and errors logging
 log:
-  file: C:\ProgramData\fim\fim.log
+  file: /
   # Available levels [debug, info, error, warning]
   level: info

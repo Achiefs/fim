@@ -1,7 +1,7 @@
 // Copyright (C) 2021, Achiefs.
 
 // Global constants definitions
-pub const VERSION: &str = "0.4.7";
+pub const VERSION: &str = "0.4.8";
 pub const NETWORK_MODE: &str = "NETWORK";
 pub const FILE_MODE: &str = "FILE";
 pub const BOTH_MODE: &str = "BOTH";
@@ -34,12 +34,13 @@ pub struct Config {
     pub events_watcher: String,
     pub events_destination: String,
     pub events_max_file_checksum: usize,
+    pub endpoint_type: String,
     pub endpoint_address: String,
     pub endpoint_user: String,
     pub endpoint_pass: String,
+    pub endpoint_token: String,
     pub events_file: String,
     pub monitor: Array,
-    //pub monitor_integrations: Array,
     pub audit: Array,
     pub node: String,
     pub log_file: String,
@@ -57,9 +58,11 @@ impl Config {
             events_watcher: self.events_watcher.clone(),
             events_destination: self.events_destination.clone(),
             events_max_file_checksum: self.events_max_file_checksum,
+            endpoint_type: self.endpoint_type.clone(),
             endpoint_address: self.endpoint_address.clone(),
             endpoint_user: self.endpoint_user.clone(),
             endpoint_pass: self.endpoint_pass.clone(),
+            endpoint_token: self.endpoint_token.clone(),
             events_file: self.events_file.clone(),
             monitor: self.monitor.clone(),
             audit: self.audit.clone(),
@@ -106,7 +109,7 @@ impl Config {
                     println!("[ERROR] events->file not found in config.yml.");
                     panic!("events->file not found in config.yml.");
                 }else{
-                    String::from("Not_used")
+                    String::from("Not_defined")
                 }
             }
         };
@@ -136,20 +139,26 @@ impl Config {
                     println!("[ERROR] events->endpoint->address not found in config.yml.");
                     panic!("events->endpoint->address not found in config.yml.");
                 }else{
-                    String::from("Not_used")
+                    String::from("Not_defined")
                 }
             }
+        };
+
+        // Manage null value on events->endpoint->credentials->token value
+        let endpoint_token = match yaml[0]["events"]["endpoint"]["credentials"]["token"].as_str() {
+            Some(value) => String::from(value),
+            None => String::from("Not_defined")
         };
 
         // Manage null value on events->endpoint->credentials->user value
         let endpoint_user = match yaml[0]["events"]["endpoint"]["credentials"]["user"].as_str() {
             Some(value) => String::from(value),
             None => {
-                if events_destination != *"file" {
+                if events_destination != *"file" && endpoint_token.is_empty() {
                     println!("[ERROR] events->endpoint->credentials->user not found in config.yml.");
                     panic!("events->endpoint->credentials->user not found in config.yml.");
                 }else{
-                    String::from("Not_used")
+                    String::from("Not_defined")
                 }
             }
         };
@@ -158,14 +167,29 @@ impl Config {
         let endpoint_pass = match yaml[0]["events"]["endpoint"]["credentials"]["password"].as_str() {
             Some(value) => String::from(value),
             None => {
-                if events_destination != *"file" {
+                if events_destination != *"file" && endpoint_token.is_empty()  {
                     println!("[ERROR] events->endpoint->credentials->password not found in config.yml.");
                     panic!("events->endpoint->credentials->password not found in config.yml.");
                 }else{
-                    String::from("Not_used")
+                    String::from("Not_defined")
                 }
             }
         };
+
+        let endpoint_type = if endpoint_token != "Not_defined" {
+            String::from("Splunk")
+        }else if endpoint_user != "Not_defined" && endpoint_pass != "Not_defined" {
+            String::from("Elastic")
+        }else{
+            String::from("Not_defined")
+        };
+
+        if endpoint_token == "Not_defined" && (endpoint_user == "Not_defined" ||
+            endpoint_pass == "Not_defined") && events_destination != *"file" {
+            println!("[ERROR] events->endpoint->credentials->[token or user and password] not found in config.yml.");
+            panic!("No endpoint credentials provided in config.yml.");
+        }
+
 
         // Manage null value on monitor value
         let monitor = match yaml[0]["monitor"].as_vec() {
@@ -234,9 +258,11 @@ impl Config {
             events_watcher,
             events_destination,
             events_max_file_checksum,
+            endpoint_type,
             endpoint_address,
             endpoint_user,
             endpoint_pass,
+            endpoint_token,
             events_file,
             monitor,
             audit,
@@ -431,9 +457,11 @@ mod tests {
             events_watcher: String::from("Recommended"),
             events_destination: String::from(events_destination),
             events_max_file_checksum: 64,
+            endpoint_type: String::from("Elastic"),
             endpoint_address: String::from("test"),
             endpoint_user: String::from("test"),
             endpoint_pass: String::from("test"),
+            endpoint_token: String::from("test"),
             events_file: String::from("test"),
             monitor: Array::new(),
             audit: Array::new(),
@@ -455,9 +483,11 @@ mod tests {
         assert_eq!(config.path, cloned.path);
         assert_eq!(config.events_destination, cloned.events_destination);
         assert_eq!(config.events_max_file_checksum, cloned.events_max_file_checksum);
+        assert_eq!(config.endpoint_type, cloned.endpoint_type);
         assert_eq!(config.endpoint_address, cloned.endpoint_address);
         assert_eq!(config.endpoint_user, cloned.endpoint_user);
         assert_eq!(config.endpoint_pass, cloned.endpoint_pass);
+        assert_eq!(config.endpoint_token, cloned.endpoint_token);
         assert_eq!(config.events_file, cloned.events_file);
         assert_eq!(config.monitor, cloned.monitor);
         assert_eq!(config.audit, cloned.audit);
@@ -476,9 +506,11 @@ mod tests {
         let config = Config::new("windows", None);
         assert_eq!(config.version, String::from(VERSION));
         assert_eq!(config.events_destination, String::from("file"));
-        assert_eq!(config.endpoint_address, String::from("Not_used"));
-        assert_eq!(config.endpoint_user, String::from("Not_used"));
-        assert_eq!(config.endpoint_pass, String::from("Not_used"));
+        assert_eq!(config.endpoint_address, String::from("Not_defined"));
+        assert_eq!(config.endpoint_type, String::from("Not_defined"));
+        assert_eq!(config.endpoint_user, String::from("Not_defined"));
+        assert_eq!(config.endpoint_pass, String::from("Not_defined"));
+        assert_eq!(config.endpoint_token, String::from("Not_defined"));
         assert_eq!(config.events_file, String::from("C:\\ProgramData\\fim\\events.json"));
         // monitor
         // audit
@@ -513,7 +545,7 @@ mod tests {
     #[test]
     fn test_new_config_windows_events_destination_network() {
         let config = Config::new("windows", Some("test/unit/config/windows/events_destination_network.yml"));
-        assert_eq!(config.events_file, String::from("Not_used"));
+        assert_eq!(config.events_file, String::from("Not_defined"));
     }
 
     // ------------------------------------------------------------------------
@@ -567,7 +599,7 @@ mod tests {
     #[test]
     fn test_new_config_windows_events_credentials_user() {
         let config = Config::new("windows", Some("test/unit/config/windows/events_credentials_user.yml"));
-        assert_eq!(config.endpoint_user, "test");
+        assert_eq!(config.endpoint_user, "test_user");
     }
 
     // ------------------------------------------------------------------------
@@ -585,7 +617,16 @@ mod tests {
     #[test]
     fn test_new_config_windows_events_credentials_password() {
         let config = Config::new("windows", Some("test/unit/config/windows/events_credentials_password.yml"));
-        assert_eq!(config.endpoint_pass, "test");
+        assert_eq!(config.endpoint_pass, "test_password");
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_new_config_windows_events_credentials_token() {
+        let config = Config::new("windows", Some("test/unit/config/windows/events_credentials_token.yml"));
+        assert_eq!(config.endpoint_token, "test_token");
     }
 
     // ------------------------------------------------------------------------
@@ -657,7 +698,7 @@ mod tests {
     #[test]
     fn test_new_config_linux_events_destination_network() {
         let config = Config::new("linux", Some("test/unit/config/linux/events_destination_network.yml"));
-        assert_eq!(config.events_file, String::from("Not_used"));
+        assert_eq!(config.events_file, String::from("Not_defined"));
     }
 
     // ------------------------------------------------------------------------
@@ -711,7 +752,7 @@ mod tests {
     #[test]
     fn test_new_config_linux_events_credentials_user() {
         let config = Config::new("linux", Some("test/unit/config/linux/events_credentials_user.yml"));
-        assert_eq!(config.endpoint_user, "test");
+        assert_eq!(config.endpoint_user, "test_user");
     }
 
     // ------------------------------------------------------------------------
@@ -729,7 +770,16 @@ mod tests {
     #[test]
     fn test_new_config_linux_events_credentials_password() {
         let config = Config::new("linux", Some("test/unit/config/linux/events_credentials_password.yml"));
-        assert_eq!(config.endpoint_pass, "test");
+        assert_eq!(config.endpoint_pass, "test_password");
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_new_config_linux_events_credentials_token() {
+        let config = Config::new("linux", Some("test/unit/config/linux/events_credentials_token.yml"));
+        assert_eq!(config.endpoint_token, "test_token");
     }
 
     // ------------------------------------------------------------------------
@@ -807,9 +857,11 @@ mod tests {
             let config = Config::new("linux", None);
             assert_eq!(config.version, String::from(VERSION));
             assert_eq!(config.events_destination, String::from("file"));
-            assert_eq!(config.endpoint_address, String::from("Not_used"));
-            assert_eq!(config.endpoint_user, String::from("Not_used"));
-            assert_eq!(config.endpoint_pass, String::from("Not_used"));
+            assert_eq!(config.endpoint_type, String::from("Not_defined"));
+            assert_eq!(config.endpoint_address, String::from("Not_defined"));
+            assert_eq!(config.endpoint_user, String::from("Not_defined"));
+            assert_eq!(config.endpoint_pass, String::from("Not_defined"));
+            assert_eq!(config.endpoint_token, String::from("Not_defined"));
             assert_eq!(config.events_file, String::from("/var/lib/fim/events.json"));
             // monitor
             // audit
@@ -828,9 +880,11 @@ mod tests {
         let config = Config::new("macos", None);
         assert_eq!(config.version, String::from(VERSION));
         assert_eq!(config.events_destination, String::from("file"));
-        assert_eq!(config.endpoint_address, String::from("Not_used"));
-        assert_eq!(config.endpoint_user, String::from("Not_used"));
-        assert_eq!(config.endpoint_pass, String::from("Not_used"));
+        assert_eq!(config.endpoint_type, String::from("Not_defined"));
+        assert_eq!(config.endpoint_address, String::from("Not_defined"));
+        assert_eq!(config.endpoint_user, String::from("Not_defined"));
+        assert_eq!(config.endpoint_pass, String::from("Not_defined"));
+        assert_eq!(config.endpoint_token, String::from("Not_defined"));
         assert_eq!(config.events_file, String::from("/var/lib/fim/events.json"));
         // monitor
         // audit

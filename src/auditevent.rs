@@ -354,22 +354,50 @@ impl Event {
 
     // Function to send events through network
     pub async fn send(&self, index: String, address: String, user: String, pass: String, insecure: bool) {
-        let data = self.get_json();
-
-        let request_url = format!("{}/{}/_doc/{}", address, index, self.id);
-        let client = Client::builder()
-            .danger_accept_invalid_certs(insecure)
-            .timeout(Duration::from_secs(30))
-            .build().unwrap();
-        match client
-            .post(request_url)
-            .basic_auth(user, Some(pass))
-            .json(&data)
-            .send()
-            .await{
-            Ok(response) => debug!("Response received: {:?}", response),
-            Err(e) => debug!("Error on request: {:?}", e)
-        };
+        let event = self.get_json();
+        let config = unsafe { super::GCONFIG.clone().unwrap() };
+        // Splunk endpoint integration
+        if config.endpoint_type == "Splunk" {
+            let data = json!({
+                "source": self.node.clone(),
+                "sourcetype": "_json",
+                "event": event,
+                "index": "fim_events"
+            });
+            debug!("Sending received event to Splunk integration, event: {}", data);
+            let request_url = format!("{}/services/collector/event", address);
+            let client = Client::builder()
+                .danger_accept_invalid_certs(insecure)
+                .timeout(Duration::from_secs(30))
+                .build().unwrap();
+            match client
+                .post(request_url)
+                .header("Authorization", format!("Splunk {}", config.endpoint_token))
+                .json(&data)
+                .send()
+                .await {
+                    Ok(response) => debug!("Response received: {:?}",
+                        response.text().await.unwrap()),
+                    Err(e) => debug!("Error on request: {:?}", e)
+            }
+        // Elastic endpoint integration
+        } else {
+            let request_url = format!("{}/{}/_doc/{}", address, index, self.id);
+            let client = Client::builder()
+                .danger_accept_invalid_certs(insecure)
+                .timeout(Duration::from_secs(30))
+                .build().unwrap();
+            match client
+                .post(request_url)
+                .basic_auth(user, Some(pass))
+                .json(&event)
+                .send()
+                .await {
+                    Ok(response) => debug!("Response received: {:?}",
+                        response.text().await.unwrap()),
+                    Err(e) => debug!("Error on request: {:?}", e)
+            }
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -490,6 +518,12 @@ mod tests {
 
     fn remove_test_file(filename: &str) {
         fs::remove_file(filename).unwrap()
+    }
+
+    fn initialize() {
+        unsafe{
+            super::super::GCONFIG = Some(config::Config::new(&utils::get_os(), None)); 
+        }
     }
 
     fn create_empty_event() -> Event {
@@ -911,6 +945,7 @@ mod tests {
 
     #[test]
     fn test_send() {
+        initialize();
         let event = create_test_event();
         block_on( event.send(
             String::from("test"), String::from("https://127.0.0.1:9200"),
