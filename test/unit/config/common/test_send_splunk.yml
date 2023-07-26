@@ -1,0 +1,19 @@
+node: "FIM"
+
+# Events configuration, where to store produced events
+events:
+  destination: network
+  endpoint:
+    address: 0.0.0.0
+    credentials:
+      token: test_token
+
+# Monitor folder or files.
+monitor:
+  - path: /test
+
+# App procedure and errors logging
+log:
+  file: /test
+  # Available levels [debug, info, error, warning]
+  level: info

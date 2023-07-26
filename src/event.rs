@@ -97,7 +97,7 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to send events through network
-    pub async fn send(&self, index: String, address: String, user: String, pass: String, insecure: bool) {
+    pub async fn send(&self, index: String) {
         let config = unsafe { super::GCONFIG.clone().unwrap() };
         // Splunk endpoint integration
         if config.endpoint_type == "Splunk" {
@@ -120,9 +120,9 @@ impl Event {
                 "index": "fim_events"
             });
             debug!("Sending received event to Splunk integration, event: {}", data);
-            let request_url = format!("{}/services/collector/event", address);
+            let request_url = format!("{}/services/collector/event", config.endpoint_address);
             let client = Client::builder()
-                .danger_accept_invalid_certs(insecure)
+                .danger_accept_invalid_certs(config.insecure)
                 .timeout(Duration::from_secs(30))
                 .build().unwrap();
             match client
@@ -150,14 +150,14 @@ impl Event {
                 "checksum": self.checksum.clone(),
                 "system": self.system.clone()
             });
-            let request_url = format!("{}/{}/_doc/{}", address, index, self.id);
+            let request_url = format!("{}/{}/_doc/{}", config.endpoint_address, index, self.id);
             let client = Client::builder()
-                .danger_accept_invalid_certs(insecure)
+                .danger_accept_invalid_certs(config.insecure)
                 .timeout(Duration::from_secs(30))
                 .build().unwrap();
             match client
                 .post(request_url)
-                .basic_auth(user, Some(pass))
+                .basic_auth(config.endpoint_user, Some(config.endpoint_pass))
                 .json(&data)
                 .send()
                 .await {
@@ -176,10 +176,10 @@ impl Event {
         match destination {
             config::BOTH_MODE => {
                 self.log(config.events_file);
-                self.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
+                self.send(index_name).await;
             },
             config::NETWORK_MODE => {
-                self.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
+                self.send(index_name).await;
             },
             _ => self.log(config.events_file)
         }
@@ -377,9 +377,19 @@ mod tests {
     fn test_send() {
         initialize();
         let evt = create_test_event();
-        block_on( evt.send(
-            String::from("test"), String::from("https://127.0.0.1:9200"),
-            String::from("admin"), String::from("admin"), true) );
+        block_on( evt.send(String::from("test")) );
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_send_splunk() {
+        initialize();
+        let evt = create_test_event();
+        unsafe {
+            super::super::GCONFIG = Some(config::Config::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml")));
+        }
+        block_on( evt.send(String::from("test")) );
     }
 
     // ------------------------------------------------------------------------
