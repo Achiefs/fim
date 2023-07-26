@@ -99,6 +99,7 @@ impl Event {
     // Function to send events through network
     pub async fn send(&self, index: String) {
         let config = unsafe { super::GCONFIG.clone().unwrap() };
+        
         // Splunk endpoint integration
         if config.endpoint_type == "Splunk" {
             let data = json!({
@@ -504,6 +505,7 @@ mod tests {
 
     #[test]
     fn test_process() {
+        initialize();
         let config = Config::new(&utils::get_os(), None);
         let event = create_test_event();
 
