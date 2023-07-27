@@ -97,35 +97,77 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to send events through network
-    pub async fn send(&self, index: String, address: String, user: String, pass: String, insecure: bool) {
-        let data = json!({
-            "timestamp": self.timestamp.clone(),
-            "hostname": self.hostname.clone(),
-            "node": self.node.clone(),
-            "fpid": self.fpid.clone(),
-            "version": self.version.clone(),
-            "labels": self.labels.clone(),
-            "operation": self.operation.clone(),
-            "detailed_operation": self.detailed_operation.clone(),
-            "file": String::from(self.path.clone().to_str().unwrap()),
-            "checksum": self.checksum.clone(),
-            "system": self.system.clone()
-        });
+    pub async fn send(&self, index: String) {
+        let config = unsafe { super::GCONFIG.clone().unwrap() };
+        
+        // Splunk endpoint integration
+        if config.endpoint_type == "Splunk" {
+            let data = json!({
+                "source": self.node.clone(),
+                "sourcetype": "_json",
+                "event": json!({
+                    "timestamp": self.timestamp.clone(),
+                    "hostname": self.hostname.clone(),
+                    "node": self.node.clone(),
+                    "fpid": self.fpid.clone(),
+                    "version": self.version.clone(),
+                    "labels": self.labels.clone(),
+                    "operation": self.operation.clone(),
+                    "detailed_operation": self.detailed_operation.clone(),
+                    "file": String::from(self.path.clone().to_str().unwrap()),
+                    "checksum": self.checksum.clone(),
+                    "system": self.system.clone()
+                }),
+                "index": "fim_events"
+            });
+            debug!("Sending received event to Splunk integration, event: {}", data);
+            let request_url = format!("{}/services/collector/event", config.endpoint_address);
+            let client = Client::builder()
+                .danger_accept_invalid_certs(config.insecure)
+                .timeout(Duration::from_secs(30))
+                .build().unwrap();
+            match client
+                .post(request_url)
+                .header("Authorization", format!("Splunk {}", config.endpoint_token))
+                .json(&data)
+                .send()
+                .await {
+                    Ok(response) => debug!("Response received: {:?}",
+                        response.text().await.unwrap()),
+                    Err(e) => debug!("Error on request: {:?}", e)
+            }
+        // Elastic endpoint integration
+        } else {
+            let data = json!({
+                "timestamp": self.timestamp.clone(),
+                "hostname": self.hostname.clone(),
+                "node": self.node.clone(),
+                "fpid": self.fpid.clone(),
+                "version": self.version.clone(),
+                "labels": self.labels.clone(),
+                "operation": self.operation.clone(),
+                "detailed_operation": self.detailed_operation.clone(),
+                "file": String::from(self.path.clone().to_str().unwrap()),
+                "checksum": self.checksum.clone(),
+                "system": self.system.clone()
+            });
+            let request_url = format!("{}/{}/_doc/{}", config.endpoint_address, index, self.id);
+            let client = Client::builder()
+                .danger_accept_invalid_certs(config.insecure)
+                .timeout(Duration::from_secs(30))
+                .build().unwrap();
+            match client
+                .post(request_url)
+                .basic_auth(config.endpoint_user, Some(config.endpoint_pass))
+                .json(&data)
+                .send()
+                .await {
+                    Ok(response) => debug!("Response received: {:?}",
+                        response.text().await.unwrap()),
+                    Err(e) => debug!("Error on request: {:?}", e)
+            }
+        }
 
-        let request_url = format!("{}/{}/_doc/{}", address, index, self.id);
-        let client = Client::builder()
-            .danger_accept_invalid_certs(insecure)
-            .timeout(Duration::from_secs(30))
-            .build().unwrap();
-        match client
-            .post(request_url)
-            .basic_auth(user, Some(pass))
-            .json(&data)
-            .send()
-            .await {
-            Ok(response) => debug!("Response received: {:?}", response),
-            Err(e) => debug!("Error on request: {:?}", e)
-        };
     }
 
     // ------------------------------------------------------------------------
@@ -135,10 +177,10 @@ impl Event {
         match destination {
             config::BOTH_MODE => {
                 self.log(config.events_file);
-                self.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
+                self.send(index_name).await;
             },
             config::NETWORK_MODE => {
-                self.send( index_name, config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
+                self.send(index_name).await;
             },
             _ => self.log(config.events_file)
         }
@@ -258,6 +300,8 @@ mod tests {
     use tokio_test::block_on;
     use std::fs;
 
+    //static mut GCONFIG: Option<config::Config> = None;
+
     // ------------------------------------------------------------------------
 
     fn remove_test_file(filename: String) {
@@ -279,6 +323,12 @@ mod tests {
             checksum: "UNKNOWN".to_string(),
             fpid: 0,
             system: "test".to_string()
+        }
+    }
+
+    fn initialize() {
+        unsafe{
+            super::super::GCONFIG = Some(config::Config::new(&utils::get_os(), None)); 
         }
     }
 
@@ -326,10 +376,21 @@ mod tests {
 
     #[test]
     fn test_send() {
+        initialize();
         let evt = create_test_event();
-        block_on( evt.send(
-            String::from("test"), String::from("https://127.0.0.1:9200"),
-            String::from("admin"), String::from("admin"), true) );
+        block_on( evt.send(String::from("test")) );
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_send_splunk() {
+        initialize();
+        let evt = create_test_event();
+        unsafe {
+            super::super::GCONFIG = Some(config::Config::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml")));
+        }
+        block_on( evt.send(String::from("test")) );
     }
 
     // ------------------------------------------------------------------------
@@ -444,6 +505,7 @@ mod tests {
 
     #[test]
     fn test_process() {
+        initialize();
         let config = Config::new(&utils::get_os(), None);
         let event = create_test_event();
 

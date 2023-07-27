@@ -6,18 +6,14 @@ events:
   endpoint:
     address: 0.0.0.0
     credentials:
-      user: test_user
-      password: test
+      token: test_token
 
 # Monitor folder or files.
 monitor:
-  - path: C:\Program Files\
-    labels: ["Program Files", "windows"]
-  - path: C:\Users\
-    labels: ["Users", "windows"]
+  - path: /test
 
 # App procedure and errors logging
 log:
-  file: C:\ProgramData\fim\fim.log
+  file: /test
   # Available levels [debug, info, error, warning]
   level: info

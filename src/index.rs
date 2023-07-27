@@ -7,7 +7,7 @@ use tokio_util::codec::{BytesCodec, FramedRead};
 use reqwest::{Client, Body};
 use reqwest::header;
 // To log the program process
-use log::{info, debug};
+use log::{info, debug, error};
 // To manage paths
 use std::path::Path;
 // Handle time intervals
@@ -30,27 +30,32 @@ fn get_template_path() -> String {
 
 // ----------------------------------------------------------------------------
 
-pub async fn push_template(address: String, user: String, pass: String, insecure: bool){
+pub async fn push_template(){
+    let config = unsafe { super::GCONFIG.clone().unwrap() };
     let template_path = get_template_path();
     info!("Loaded index template from: {}", template_path);
     let file = File::open(template_path).await.unwrap();
     let stream = FramedRead::new(file, BytesCodec::new());
     let body = Body::wrap_stream(stream);
-    let url = format!("{}/_template/fim", address);
+    let url = format!("{}/_template/fim", config.endpoint_address);
 
     let client = Client::builder()
         .timeout(Duration::from_secs(120))
-        .danger_accept_invalid_certs(insecure)
+        .danger_accept_invalid_certs(config.insecure)
         .build().unwrap();
     let response = client
         .put(url)
         .header(header::CONTENT_TYPE, "application/json")
-        .basic_auth(user, Some(pass))
+        .basic_auth(config.endpoint_user, Some(config.endpoint_pass))
         .body(body)
         .send()
         .await;
 
-    debug!("Push index template response: {:?}", response.unwrap().text().await);
+    match response {
+        Ok(response) => debug!("Push index template response: {:?}",
+                        response.text().await.unwrap()),
+        Err(e) => error!("Error on request: {:?}", e)
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -58,12 +63,15 @@ pub async fn push_template(address: String, user: String, pass: String, insecure
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config;
+    use crate::utils;
 
     #[test]
     fn test_push_template() {
-        tokio_test::block_on( push_template(
-            String::from("https://127.0.0.1:9200"),
-            String::from("admin"), String::from("admin"), true) );
+        unsafe{
+            super::super::GCONFIG = Some(config::Config::new(&utils::get_os(), Some("test/unit/config/common/test_push_template.yml")));
+        }
+        tokio_test::block_on( push_template());
     }
 
     #[test]

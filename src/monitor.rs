@@ -54,12 +54,12 @@ fn setup_events(destination: &str, config: config::Config){
 
 // ----------------------------------------------------------------------------
 
-async fn push_template(destination: &str, config: config::Config){
+async fn push_template(destination: &str){
     // Perform actions depending on destination
     match destination {
         config::NETWORK_MODE|config::BOTH_MODE => {
             // On start push template (Include check if events won't be ingested by http)
-            index::push_template(config.endpoint_address, config.endpoint_user, config.endpoint_pass, config.insecure).await;
+            index::push_template().await;
         },
         _ => {
             debug!("Template not pushed in file mode");
@@ -78,7 +78,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
     setup_events(destination.as_str(), config.clone());
 
     // Check if we have to push index template
-    push_template(destination.as_str(), config.clone()).await;
+    push_template(destination.as_str()).await;
 
     let mut watcher = MultiWatcher::new(config.events_watcher.as_str(), tx);
     
@@ -297,8 +297,8 @@ mod tests {
     fn test_push_template() {
         let config = config::Config::new(&utils::get_os(), None);
         fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
-        block_on(push_template("file", config.clone()));
-        block_on(push_template("network", config.clone()));
+        block_on(push_template("file"));
+        block_on(push_template("network"));
     }
 
     // ------------------------------------------------------------------------
