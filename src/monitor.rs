@@ -176,7 +176,10 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                     // Get the event path and filename
                     debug!("Event received: {:?}", event);
 
-                    let plain_path: &str = event.paths[0].to_str().unwrap();
+                    let plain_path: &str = match event.paths.len() {
+                        0 => "UNKNOWN",
+                        _ => event.paths[0].to_str().unwrap()
+                    };
                     if plain_path == "DISCONNECT" {
                         info!("Received exit signal, exiting...");
                         break;
