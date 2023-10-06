@@ -7,6 +7,8 @@
 // To manage event channels
 use std::sync::mpsc;
 
+use std::thread;
+
 // Utils functions
 mod utils;
 // Hashing functions
@@ -30,6 +32,8 @@ mod integration;
 mod launcher;
 mod multiwatcher;
 
+mod rotator;
+
 static mut GCONFIG: Option<config::Config> = None;
 
 // ----------------------------------------------------------------------------
@@ -40,7 +44,7 @@ fn init(){
     use simplelog::Config;
     use std::fs;
 
-    println!("Achiefs File Integrity Monitoring software starting!");
+    println!("[INFO] Achiefs File Integrity Monitoring software starting!");
     println!("[INFO] Reading config...");
     unsafe{
         GCONFIG = Some(config::Config::new(&utils::get_os(), None));    
@@ -79,6 +83,7 @@ async fn main() {
     init();
 
     let (tx, rx) = mpsc::channel();
+    thread::spawn(|| rotator::rotator());
     monitor::monitor(tx, rx).await;
 }
 
@@ -96,6 +101,7 @@ async fn main() -> windows_service::Result<()> {
         match args[1].as_str() {
             "--foreground"|"-f" => {
                 let (tx, rx) = mpsc::channel();
+                thread::spawn(|| rotator::rotator());
                 monitor::monitor(tx, rx).await;
                 Ok(())
             },
