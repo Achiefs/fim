@@ -15,19 +15,16 @@ fn get_iteration(file: &str) -> u32{
     let mut iteration = 0;
     let mut path = Path::new(file).parent().unwrap().to_path_buf();
     path.push(Path::new("archive"));
-    for entry in path.read_dir().expect("read_dir call failed") {
-        if let Ok(entry) = entry {
-            let path = entry.path();
-            let filename = Path::new(path.file_name().unwrap());
-            let extension = filename.extension().unwrap();
+    for entry in path.read_dir().expect("read_dir call failed").flatten() {
+        let path = entry.path();
+        let filename = Path::new(path.file_name().unwrap());
+        let extension = filename.extension().unwrap();
 
-            if extension.len() == 1 {
-                let int_extension = extension.to_str().unwrap().parse::<u32>().unwrap();
+        if extension.len() == 1 {
+            let int_extension = extension.to_str().unwrap().parse::<u32>().unwrap();
 
-                if int_extension == iteration {
-                    iteration += 1;
-
-                }
+            if int_extension == iteration {
+                iteration += 1;
             }
         }
     }

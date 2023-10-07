@@ -66,6 +66,7 @@ mod tests {
             events_watcher: String::from("Recommended"),
             events_destination: String::from(events_destination),
             events_max_file_checksum: 64,
+            events_max_file_size: 128,
             endpoint_type: String::from("Not_defined"),
             endpoint_address: String::from("test"),
             endpoint_user: String::from("test"),
@@ -77,6 +78,7 @@ mod tests {
             node: String::from("test"),
             log_file: String::from("./test.log"),
             log_level: String::from(filter),
+            log_max_file_size: 64,
             system: String::from("test"),
             insecure: true
         }

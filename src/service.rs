@@ -99,7 +99,7 @@ pub fn run_service() -> Result<()> {
         process_id: None,
     })?;
 
-    thread::spawn(|| rotator::rotator());
+    thread::spawn(rotator::rotator);
     block_on(monitor::monitor(tx, rx));
 
     // Tell the system that service has stopped.

@@ -62,8 +62,8 @@ impl Config {
             path: self.path.clone(),
             events_watcher: self.events_watcher.clone(),
             events_destination: self.events_destination.clone(),
-            events_max_file_checksum: self.events_max_file_checksum.clone(),
-            events_max_file_size: self.events_max_file_size.clone(),
+            events_max_file_checksum: self.events_max_file_checksum,
+            events_max_file_size: self.events_max_file_size,
             endpoint_type: self.endpoint_type.clone(),
             endpoint_address: self.endpoint_address.clone(),
             endpoint_user: self.endpoint_user.clone(),
@@ -75,7 +75,7 @@ impl Config {
             node: self.node.clone(),
             log_file: self.log_file.clone(),
             log_level: self.log_level.clone(),
-            log_max_file_size: self.log_max_file_size.clone(),
+            log_max_file_size: self.log_max_file_size,
             system: self.system.clone(),
             insecure: self.insecure
         }
@@ -128,7 +128,7 @@ impl Config {
         };
 
         // Manage null value on events->max_file_size value
-        let events_max_file_size = match yaml[0]["events"]["events_max_file_size"].as_i64() {
+        let events_max_file_size = match yaml[0]["events"]["max_file_size"].as_i64() {
             Some(value) => usize::try_from(value).unwrap(),
             None => 128
         };
@@ -416,7 +416,7 @@ impl Config {
 
     pub fn get_events_file(&self) -> String {
         unsafe {
-            if TMP_EVENTS == true {
+            if TMP_EVENTS {
                 format!("{}.tmp", self.events_file.clone())
             }else{
                 self.events_file.clone()

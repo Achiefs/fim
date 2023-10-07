@@ -83,7 +83,7 @@ async fn main() {
     init();
 
     let (tx, rx) = mpsc::channel();
-    thread::spawn(|| rotator::rotator());
+    thread::spawn(rotator::rotator);
     monitor::monitor(tx, rx).await;
 }
 
@@ -101,7 +101,7 @@ async fn main() -> windows_service::Result<()> {
         match args[1].as_str() {
             "--foreground"|"-f" => {
                 let (tx, rx) = mpsc::channel();
-                thread::spawn(|| rotator::rotator());
+                thread::spawn(rotator::rotator);
                 monitor::monitor(tx, rx).await;
                 Ok(())
             },
