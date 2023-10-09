@@ -41,7 +41,7 @@ pub fn get_checksum(filename: String, read_limit: usize) -> String {
                                 buffer.len()
                             },
                             Err(e) => {
-                                error!("Cannot read file, error: {}", e);
+                                debug!("Cannot read file. Checksum set to 'UNKNOWN', error: {}", e);
                                 0
                             }
                         }

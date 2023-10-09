@@ -86,7 +86,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
     if ! config.monitor.is_empty() {
         for element in config.monitor.clone() {
             let path = element["path"].as_str().unwrap();
-            info!("Checking path: {}", path);
+            info!("Monitoring path: {}", path);
 
             match element["ignore"].as_vec() {
                 Some(ig) => {
