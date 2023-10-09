@@ -9,7 +9,7 @@ use std::thread;
 use crate::monitor;
 use crate::rotator;
 
-use log::error;
+use log::{error, info};
 use std::{
     ffi::OsString,
     sync::mpsc,
@@ -99,7 +99,11 @@ pub fn run_service() -> Result<()> {
         process_id: None,
     })?;
 
-    thread::spawn(rotator::rotator);
+    match thread::Builder::new()
+        .name("FIM_Rotator".to_string()).spawn(rotator::rotator){
+        Ok(_v) => info!("FIM rotator thread started."),
+        Err(e) => error!("Could not start FIM rotator thread, error: {}", e)
+    };
     block_on(monitor::monitor(tx, rx));
 
     // Tell the system that service has stopped.

@@ -14,6 +14,7 @@ use crate::utils;
 
 // Compress given file into zip.
 fn compress_file(filepath: &str) -> Result<String, String> {
+    #[cfg(windows)]
     if utils::get_os() == "windows"{
         use zip::write::FileOptions;
 
@@ -60,6 +61,9 @@ fn compress_file(filepath: &str) -> Result<String, String> {
             }
         }
     }else{ Ok(String::from("OK")) }
+
+    #[cfg(not(windows))]
+    Ok(String::from("OK"))
 }
 
 // ----------------------------------------------------------------------------
@@ -167,6 +171,3 @@ pub fn rotator(){
         }
     }
 }
-
-// ----------------------------------------------------------------------------
-
