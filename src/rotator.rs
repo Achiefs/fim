@@ -89,10 +89,7 @@ fn compress_tgz_file(filepath: &str) -> Result<String, String> {
 // ----------------------------------------------------------------------------
 
 fn get_iteration(filepath: &str) -> u32{
-    let mut path = Path::new(filepath).parent().unwrap().to_path_buf();
-    path.push(Path::new("archive"));
-    
-    path.read_dir().expect("read_dir call failed").count() as u32
+    Path::new(filepath).read_dir().expect("read_dir call failed").count() as u32
 }
 
 // ----------------------------------------------------------------------------
@@ -116,22 +113,24 @@ fn rotate_file(filepath: &str, iteration: u32, lock: &mut bool){
                 Ok(truncated_file) => {
                     debug!("File truncated successfully.");
                     let tmp_file = format!("{}.tmp", filepath);
-                    // Include case temporal file doesnt exists.
-                    let data = match read_to_string(tmp_file.clone()){
-                        Ok(read_data) => read_data,
-                        Err(_e) => {
-                            debug!("No temporal data to copy.");
-                            String::new()
-                        }
-                    };
-                    match write!(&truncated_file, "{}", data){
-                        Ok(_v) => debug!("Temporal file data written into destination file."),
-                        Err(e) => error!("Cannot write temporal data to destination file skipping, error: {}", e)
-                    };
-                    match remove_file(tmp_file){
-                        Ok(_v) => debug!("Temporal file removed successfully."),
-                        Err(e) => info!("Cannot remove temporal file skipping, message: {}", e)
-                    };
+                    let tmp_path = Path::new(&tmp_file);
+                    if tmp_path.exists(){
+                        let data = match read_to_string(tmp_file.clone()){
+                            Ok(read_data) => read_data,
+                            Err(_e) => {
+                                debug!("No temporal data to copy.");
+                                String::new()
+                            }
+                        };
+                        match write!(&truncated_file, "{}", data){
+                            Ok(_v) => debug!("Temporal file data written into destination file."),
+                            Err(e) => error!("Cannot write temporal data to destination file skipping, error: {}", e)
+                        };
+                        match remove_file(tmp_file){
+                            Ok(_v) => debug!("Temporal file removed successfully."),
+                            Err(e) => info!("Cannot remove temporal file skipping, message: {}", e)
+                        };
+                    }
                 },
                 Err(e) => error!("Error truncating file, retrying on next iteration, error: {}", e)
             };
@@ -189,22 +188,57 @@ pub fn rotator(){
                 parent_path.push(Path::new("archive"));
     
                 if ! parent_path.exists(){
-                    match create_dir(parent_path){
+                    match create_dir(parent_path.clone()){
                         Ok(_v) => debug!("Archive directory created successfully."),
                         Err(e) => error!("Cannot create archive directory, error: {}", e)
                     };
                 }
 
                 unsafe { rotate_file(config.clone().events_file.as_str(),
-                    get_iteration(config.clone().events_file.as_str()), &mut config::TMP_EVENTS) };
+                    get_iteration(parent_path.to_str().unwrap()), &mut config::TMP_EVENTS) };
             }
 
             if log_size >= config.log_max_file_size * 1000000 {
+                let log_path = Path::new(config.log_file.as_str());
+                let mut parent_path = log_path.parent().unwrap().to_path_buf();
+                parent_path.push(Path::new("archive"));
+
+                if ! parent_path.exists(){
+                    match create_dir(parent_path.clone()){
+                        Ok(_v) => debug!("Archive directory created successfully."),
+                        Err(e) => error!("Cannot create archive directory, error: {}", e)
+                    };
+                }
+
                 unsafe { rotate_file(config.clone().log_file.as_str(),
-                    get_iteration(config.clone().log_file.as_str()), &mut config::TMP_LOG) };
+                    get_iteration(parent_path.to_str().unwrap()), &mut config::TMP_LOG) };
             }
 
             start_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
         }
     }
+}
+
+// ----------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::{create_dir, remove_dir};
+    use std::env;
+
+    #[test]
+    fn test_get_iteration() {
+        
+        let mut current_path = env::current_dir().unwrap();
+        current_path.push("test_get_iteration");
+        let test_path = current_path.to_str().unwrap();
+        create_dir(test_path).unwrap();
+        assert_eq!(get_iteration(test_path), 0);
+        assert_ne!(get_iteration(test_path), 1);
+        remove_dir(test_path).unwrap();
+    }
+
+    // ------------------------------------------------------------------------
+
 }

@@ -300,8 +300,6 @@ mod tests {
     use tokio_test::block_on;
     use std::fs;
 
-    //static mut GCONFIG: Option<config::Config> = None;
-
     // ------------------------------------------------------------------------
 
     fn remove_test_file(filename: String) {
