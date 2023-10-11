@@ -1,7 +1,7 @@
 // Copyright (C) 2023, Achiefs.
 
 use std::fs::{metadata, File, copy, read_to_string, remove_file, create_dir};
-use std::io::{BufReader, BufRead, Write};
+use std::io::Write;
 use std::path::Path;
 use std::time::{SystemTime, Duration, UNIX_EPOCH};
 use std::thread;
@@ -13,57 +13,77 @@ use crate::utils;
 // ----------------------------------------------------------------------------
 
 // Compress given file into zip.
-fn compress_file(filepath: &str) -> Result<String, String> {
-    #[cfg(windows)]
-    if utils::get_os() == "windows"{
-        use zip::write::FileOptions;
+#[cfg(windows)]
+fn compress_zip_file(filepath: &str) -> Result<String, String> {
+    use zip::write::FileOptions;
+    use std::io::{BufReader, BufRead};
+    let filename = Path::new(filepath).file_name().unwrap().to_str().unwrap();
+    let zipfilename = format!("{}.zip", filepath);
+    let path = Path::new(&zipfilename);
+    let zipfile = File::create(path).unwrap();
 
-        let filename = Path::new(filepath).file_name().unwrap().to_str().unwrap();
-        let zipfilename = format!("{}.zip", filepath);
-        let path = Path::new(&zipfilename);
-        let zipfile = File::create(path).unwrap();
-    
-        let mut zip = zip::ZipWriter::new(zipfile);
-        match zip.start_file(filename, FileOptions::default()){
-            Ok(_v) => {
-                let file = File::open(filepath).unwrap();
-                let reader = BufReader::new(file);
+    let mut zip = zip::ZipWriter::new(zipfile);
+    match zip.start_file(filename, FileOptions::default()){
+        Ok(_v) => {
+            let file = File::open(filepath).unwrap();
+            let reader = BufReader::new(file);
 
-                let mut counter: u64 = 0;
-                let mut broken = false;
-                for line in reader.lines() {
-                    // Sleep during compression to avoid increase CPU load.
-                    if counter == 4096 {
-                        thread::sleep(Duration::from_millis(500));
-                        counter = 0;
+            let mut counter: u64 = 0;
+            let mut broken = false;
+            for line in reader.lines() {
+                // Sleep during compression to avoid increase CPU load.
+                if counter == 4096 {
+                    thread::sleep(Duration::from_millis(500));
+                    counter = 0;
+                }
+                match zip.write_all(line.unwrap().as_bytes()){
+                    Ok(_v) => debug!("Line written into zip file from rotated file."),
+                    Err(e) => {
+                        error!("Error writting line to zip file, error: {}", e);
+                        broken = true;
+                        break;
                     }
-                    match zip.write_all(line.unwrap().as_bytes()){
-                        Ok(_v) => debug!("Line written into zip file from rotated file."),
-                        Err(e) => {
-                            error!("Error writting line to zip file, error: {}", e);
-                            broken = true;
-                            break;
-                        }
-                    };
-                    counter += 1;
-                }
-                if ! broken {
-                    match zip.finish(){
-                        Ok(_v) => debug!("File compressed successfully, result: {}", zipfilename),
-                        Err(e) => error!("Error compressing rotated file, error:{}", e)
-                    };
-                }
-                Ok(format!("File {} compressed successfully", filename))
-            },
-            Err(e) => {
-                error!("Could not create file inside zip file, error: {}", e);
-                Err(format!("{}", e))
+                };
+                counter += 1;
             }
+            if ! broken {
+                match zip.finish(){
+                    Ok(_v) => debug!("File compressed successfully, result: {}", zipfilename),
+                    Err(e) => error!("Error compressing rotated file, error:{}", e)
+                };
+            }
+            Ok(format!("File {} compressed successfully.", filename))
+        },
+        Err(e) => {
+            error!("Could not create file inside zip file, error: {}", e);
+            Err(format!("{}", e))
         }
-    }else{ Ok(String::from("OK")) }
+    }
+}
 
-    #[cfg(not(windows))]
-    Ok(String::from("OK"))
+// ----------------------------------------------------------------------------
+
+// Compress given file into tar.gz.
+#[cfg(not(windows))]
+fn compress_tgz_file(filepath: &str) -> Result<String, String> {
+    use flate2::Compression;
+    use flate2::write::GzEncoder;
+
+    let filename = Path::new(filepath).file_name().unwrap().to_str().unwrap();
+    let parent_path = Path::new(filepath).parent().unwrap();
+    let tarname = format!("{}/{}.tar.gz", parent_path.to_str().unwrap(), filename);
+    let tgz = File::create(tarname).unwrap();
+    let enc = GzEncoder::new(tgz, Compression::default());
+    let mut tar = tar::Builder::new(enc);
+    let mut file = File::open(filepath).unwrap();
+    
+    match tar.append_file(filename, &mut file){
+        Ok(()) => Ok(format!("File {} compressed successfully.", filename)),
+        Err(e) => {
+            error!("Could not create tar.gz archive, error: {}", e);
+            Err(format!("{}", e))
+        }
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -96,6 +116,7 @@ fn rotate_file(filepath: &str, iteration: u32, lock: &mut bool){
                 Ok(truncated_file) => {
                     debug!("File truncated successfully.");
                     let tmp_file = format!("{}.tmp", filepath);
+                    // Include case temporal file doesnt exists.
                     let data = match read_to_string(tmp_file.clone()){
                         Ok(read_data) => read_data,
                         Err(_e) => {
@@ -109,7 +130,7 @@ fn rotate_file(filepath: &str, iteration: u32, lock: &mut bool){
                     };
                     match remove_file(tmp_file){
                         Ok(_v) => debug!("Temporal file removed successfully."),
-                        Err(e) => error!("Cannot remove temporal file skipping, error: {}", e)
+                        Err(e) => info!("Cannot remove temporal file skipping, message: {}", e)
                     };
                 },
                 Err(e) => error!("Error truncating file, retrying on next iteration, error: {}", e)
@@ -121,16 +142,32 @@ fn rotate_file(filepath: &str, iteration: u32, lock: &mut bool){
     *lock = false;
     info!("File {} rotated.", filepath);
     info!("Compressing rotated file {}", file_rotated);
-    match compress_file(&file_rotated){
-        Ok(message) => {
-            info!("{}", message);
-            match remove_file(file_rotated.clone()) {
-                Ok(_v) => info!("File {} removed.", file_rotated),
-                Err(e) => error!("Cannot remove rotated file, error: {}", e)
-            }
-        },
-        Err(e) => error!("Error compressing file, error: {}", e)
-    };
+    #[cfg(windows)]
+    if utils::get_os() == "windows" {
+        match compress_zip_file(&file_rotated){
+            Ok(message) => {
+                info!("{}", message);
+                match remove_file(file_rotated.clone()) {
+                    Ok(_v) => info!("File {} removed.", file_rotated),
+                    Err(e) => error!("Cannot remove rotated file, error: {}", e)
+                }
+            },
+            Err(e) => error!("Error compressing file, error: {}", e)
+        };
+    }
+    #[cfg(not(windows))]
+    if utils::get_os() != "windows" {
+        match compress_tgz_file(&file_rotated){
+            Ok(message) => {
+                info!("{}", message);
+                match remove_file(file_rotated.clone()) {
+                    Ok(_v) => info!("File {} removed.", file_rotated),
+                    Err(e) => error!("Cannot remove rotated file, error: {}", e)
+                }
+            },
+            Err(e) => error!("Error compressing file, error: {}", e)
+        };
+    }
     
     
 }
