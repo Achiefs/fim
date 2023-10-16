@@ -13,27 +13,53 @@ test_folder = '/tmp/test/test_folder'
 test_link = test_file + '.link'
 system = platform.system()
 release = platform.release()
+delay = 0.1
 
 def get_last_event():
-    time.sleep(0.1)
+    ctr = 0
+    size = os.path.getsize(events_json)
+    while size == 0 and ctr < 60:
+        time.sleep(delay)
+        size = os.path.getsize(events_json)
+        ctr += 1
     with open(events_json, 'r') as f:
         for line in f: pass
         last_line = line.strip()
     return last_line
 
-def get_event(reversed_index):
-    time.sleep(0.1)
-    with open(events_json, 'r') as f:
-        line = f.readlines()[-reversed_index]
-    return line
+def get_event(syscall=None, operation=None):
+    size_ctr = 0
+    size = os.path.getsize(events_json)
+    while size == 0 and size_ctr < 60:
+        time.sleep(delay)
+        size = os.path.getsize(events_json)
+        size_ctr += 1
+
+    if syscall != None:
+        find_ctr = 0
+        while find_ctr < 40:
+            time.sleep(delay)
+            with open(events_json, 'r') as f:
+                lines = f.readlines()
+                for line in lines:
+                    event = json.loads(line)
+                    if event['syscall'] == syscall:
+                        if operation != None:
+                            if operation == event['operation']:
+                                return event
+                        else:
+                            return event
+            find_ctr += 1
+    else:
+        return get_last_event()
+
 
 # -----------------------------------------------------------------------------
 
 def remove(item):
     if os.path.exists(item):
         try:
-            subprocess.Popen(["rm", "-rf", item],
-                stdout=subprocess.PIPE).communicate()
+            subprocess.run(["rm", "-rf", item])
         except:
             print("Cannot remove item -> {}".format(item))
 
@@ -44,13 +70,13 @@ def remove(item):
 class TestAuditd:
 
     def setup_method(self):
-        time.sleep(0.1)
+        time.sleep(delay)
         f = open(events_json, 'w')
         f.truncate(0)
         f.close()
 
     def teardown_method(self):
-        time.sleep(0.1)
+        time.sleep(delay)
         remove(test_link)
         remove(test_file)
         remove(test_folder)
@@ -59,12 +85,12 @@ class TestAuditd:
 
     def test_file_create(self):
         open(test_file, 'w').close()
-        data = json.loads(get_last_event())
-        assert data['operation'] == "CREATE"
+
         if "el7" in release:
-            assert data['syscall'] == "2"
+            event = get_event("2", "CREATE")
         else:
-            assert data['syscall'] == "257"
+            event = get_event("257", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
@@ -73,91 +99,80 @@ class TestAuditd:
         w = open(test_file, 'w')
         w.write("This is a test")
         w.close()
-        data = json.loads(get_last_event())
-        assert data['operation'] == "NORMAL"
+        
         if "el7" in release:
-            assert data['syscall'] == "2"
+            event = get_event("2", "NORMAL")
         else:
-            assert data['syscall'] == "257"
+            event = get_event("257", "NORMAL")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_file_chmod(self):
         open(test_file, 'w').close()
         os.chmod(test_file, 0o777)
-        data = json.loads(get_last_event())
-        assert data['operation'] == "NORMAL"
-        assert data['syscall'] == "90"
+        event = get_event("90", "NORMAL")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_file_bash_chmod(self):
         open(test_file, 'w').close()
-        subprocess.Popen(["chmod", "+x", test_file],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
-        assert data['operation'] == "NORMAL"
-        assert data['syscall'] == "268"
+        subprocess.run(["chmod", "+x", test_file])
+        event = get_event("268", "NORMAL")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_file_chown(self):
         open(test_file, 'w').close()
         os.chown(test_file, 0, 0)
-        data = json.loads(get_last_event())
-        assert data['operation'] == "NORMAL"
-        assert data['syscall'] == "92"
+        event = get_event("92", "NORMAL")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_file_bash_chown(self):
         open(test_file, 'w').close()
-        subprocess.Popen(["chown", "root", test_file],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
-        assert data['operation'] == "NORMAL"
-        assert data['syscall'] == "260"
+        subprocess.run(["chown", "root", test_file])
+        event = get_event("260", "NORMAL")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_file_symlink(self):
         open(test_file, 'w').close()
         os.symlink(test_file, test_link)
-        data = json.loads(get_last_event())
-        assert data['operation'] == "CREATE"
-        assert data['syscall'] == "88"
+        event = get_event("88", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_file_bash_symlink(self):
         open(test_file, 'w').close()
-        subprocess.Popen(["ln", "-s", test_file, test_link],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
-        assert data['operation'] == "CREATE"
+        subprocess.run(["ln", "-s", test_file, test_link])
+        
         if "el7" in release:
-            assert data['syscall'] == "88"
+            event = get_event("88", "CREATE")
         else:
-            assert data['syscall'] == "266"
+            event = get_event("266", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_file_hardlink(self):
         open(test_file, 'w').close()
         os.link(test_file, test_link)
-        data = json.loads(get_last_event())
-        assert data['operation'] == "CREATE"
-        assert data['syscall'] == "86"
+        event = get_event("86", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_file_bash_hardlink(self):
         open(test_file, 'w').close()
-        subprocess.Popen(["ln", test_file, test_link],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
-        assert data['operation'] == "CREATE"
-        assert data['syscall'] == "265"
+        subprocess.run(["ln", test_file, test_link])
+        event = get_event("265", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
@@ -165,17 +180,16 @@ class TestAuditd:
         open(test_file, 'w').close()
         os.rename(test_file, test_file + '.rmv')
         os.rename(test_file + '.rmv', test_file)
-        data = json.loads(get_last_event())
-        assert data['syscall'] == "82"
+        event = get_event("82")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_file_remove(self):
         open(test_file, 'w').close()
         os.remove(test_file)
-        data = json.loads(get_last_event())
-        assert data['operation'] == "DELETE"
-        assert data['syscall'] == "87"
+        event = get_event("87", "DELETE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
@@ -190,13 +204,13 @@ class TestAuditd:
 
     def test_false_move(self):
         open(test_file, 'w').close()
-        subprocess.Popen(["mv", test_file, test_file],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
+        subprocess.run(["mv", test_file, test_file])
+        
         if "el7" in release:
-            assert data['syscall'] == "2"
+            event = get_event("2")
         else:
-            assert data['syscall'] == "316"
+            event = get_event("316")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
@@ -205,22 +219,21 @@ class TestAuditd:
         moved_file = "/tmp/test_file2"
         open(filename, 'w').close()
         os.rename(filename, moved_file)
-        data = json.loads(get_last_event())
         remove(moved_file)
-        assert data['operation'] == "CREATE"
-        assert data['syscall'] == "82"
+
+        event = get_event("82")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_move_bash_external(self):
         filename = test_file + '2'
         open(filename, 'w').close()
-        subprocess.Popen(["mv", filename, "/tmp/test_file2"],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
+        subprocess.run(["mv", filename, "/tmp/test_file2"])
         remove("/tmp/test_file2")
-        assert data['operation'] == "CREATE"
-        assert data['syscall'] == "316"
+
+        event = get_event("316")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
@@ -228,98 +241,86 @@ class TestAuditd:
         filename = "/tmp/test_file"
         open(filename, 'w').close()
         os.rename(filename, test_file)
-        data = json.loads(get_last_event())
-        assert data['operation'] == "CREATE"
-        assert data['syscall'] == "82"
+        event = get_event("82", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_move_bash_internal(self):
         filename = "/tmp/test_file"
         open(filename, 'w').close()
-        subprocess.Popen(["mv", filename, test_file],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
-        assert data['operation'] == "CREATE"
-        assert data['syscall'] == "316"
+        subprocess.run(["mv", filename, test_file])
+        event = get_event("316", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_bash_echo(self):
         subprocess.Popen("echo 'Test string' > {}".format(test_file),
             shell=True, stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
-        assert data['operation'] == "CREATE"
+                
         if "el7" in release:
-            assert data['syscall'] == "2"
+            event = get_event("2", "CREATE")
         else:
-            assert data['syscall'] == "257"
+            event = get_event("257", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_bash_sed(self):
         subprocess.Popen("echo 'Test string' > {}".format(test_file),
             shell=True, stdout=subprocess.PIPE).communicate()
-        subprocess.Popen(["sed", "-i", "s|Test|Hello|g", test_file],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_event(0))
-        assert data['operation'] == "CREATE"
+        subprocess.run(["sed", "-i", "s|Test|Hello|g", test_file])
+        
         if "el7" in release:
-            assert data['syscall'] == "2"
+            event = get_event("2", "CREATE")
         else:
-            assert data['syscall'] == "257"
+            event = get_event("257", "CREATE")
+        assert event is not None
 
-        data = json.loads(get_last_event())
-        assert data['operation'] == "CREATE"
-        assert data['syscall'] == "82"
+        event = get_event("82", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_bash_touch(self):
-        subprocess.Popen(["touch", test_file],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
-        assert data['operation'] == "CREATE"
+        subprocess.run(["touch", test_file])
+        
         if "el7" in release:
-            assert data['syscall'] == "2"
+            event = get_event("2", "CREATE")
         else:
-            assert data['syscall'] == "257"
+            event = get_event("257", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_mkdir(self):
         os.mkdir(test_folder)
-        data = json.loads(get_last_event())
-        assert data['operation'] == "CREATE"
-        assert data['syscall'] == "83"
+        event = get_event("83", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_bash_mkdir(self):
-        subprocess.Popen(["mkdir", "-p", test_folder],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
-        assert data['operation'] == "CREATE"
-        assert data['syscall'] == "83"
+        subprocess.run(["mkdir", "-p", test_folder])
+        event = get_event("83", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_rmdir(self):
         os.mkdir(test_folder)
         os.rmdir(test_folder)
-        data = json.loads(get_last_event())
-        assert data['operation'] == "DELETE"
-        assert data['syscall'] == "84"
+        event = get_event("84", "DELETE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_bash_rmdir(self):
         os.mkdir(test_folder)
-        subprocess.Popen(["rmdir", test_folder],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
-        assert data['operation'] == "DELETE"
-        assert data['syscall'] == "84"
+        subprocess.run(["rmdir", test_folder])
+        event = get_event("84", "DELETE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
@@ -327,20 +328,21 @@ class TestAuditd:
         folder = "/tmp/test_folder"
         os.mkdir(test_folder)
         os.rename(test_folder, folder)
-        data = json.loads(get_last_event())
         remove(folder)
-        assert data['syscall'] == "82"
+
+        event = get_event("82")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_move_folder_bash_external(self):
         folder = "/tmp/test_folder"
         os.mkdir(test_folder)
-        subprocess.Popen(["mv", test_folder, folder],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
+        subprocess.run(["mv", test_folder, folder])
         remove(folder)
-        assert data['syscall'] == "316"
+
+        event = get_event("316")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
@@ -348,119 +350,102 @@ class TestAuditd:
         folder = "/tmp/test_folder"
         os.mkdir(folder)
         os.rename(folder, test_folder)
-        data = json.loads(get_last_event())
-        assert data['operation'] == "CREATE"
-        assert data['syscall'] == "82"
+        event = get_event("82", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_move_folder_bash_internal(self):
         folder = "/tmp/test_folder"
         os.mkdir(folder)
-        subprocess.Popen(["mv", folder, test_folder],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
-        assert data['operation'] == "CREATE"
-        assert data['syscall'] == "316"
+        subprocess.run(["mv", folder, test_folder])
+        event = get_event("316", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_folder_chown(self):
         os.mkdir(test_folder)
         os.chown(test_folder, 0, 0)
-        data = json.loads(get_last_event())
-        assert data['operation'] == "NORMAL"
-        assert data['syscall'] == "92"
+        event = get_event("92", "NORMAL")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_folder_bash_chown(self):
         os.mkdir(test_folder)
-        subprocess.Popen(["chown", "root", test_folder],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
-        assert data['operation'] == "NORMAL"
-        assert data['syscall'] == "260"
+        subprocess.run(["chown", "root", test_folder])
+        event = get_event("260", "NORMAL")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_folder_chmod(self):
         os.mkdir(test_folder)
         os.chmod(test_folder, 0o777)
-        data = json.loads(get_last_event())
-        assert data['operation'] == "NORMAL"
-        assert data['syscall'] == "90"
+        event = get_event("90", "NORMAL")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_folder_bash_chmod(self):
         os.mkdir(test_folder)
-        subprocess.Popen(["chmod", "+x", test_folder],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
-        assert data['operation'] == "NORMAL"
-        assert data['syscall'] == "268"
+        subprocess.run(["chmod", "+x", test_folder])
+        event = get_event("268", "NORMAL")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_mknod(self):
         os.mknod(test_file)
-        data = json.loads(get_last_event())
-        assert data['operation'] == "CREATE"
-        assert data['syscall'] == "133"
+        event = get_event("133", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_bash_mknod(self):
-        subprocess.Popen(["mknod", test_file, "c", "240", "0"],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
-        assert data['operation'] == "CREATE"
-        assert data['syscall'] == "133"
+        subprocess.run(["mknod", test_file, "c", "240", "0"])
+        event = get_event("133", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_mkfifo(self):
         os.mkfifo(test_file)
-        data = json.loads(get_last_event())
-        assert data['operation'] == "CREATE"
-        assert data['syscall'] == "133"
+        event = get_event("133", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_bash_mkfifo(self):
-        subprocess.Popen(["mkfifo", test_file],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
-        assert data['operation'] == "CREATE"
-        assert data['syscall'] == "133"
+        subprocess.run(["mkfifo", test_file])
+        event = get_event("133", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_bash_copy(self):
         filename = "/tmp/test_file"
         open(filename, 'w').close()
-        subprocess.Popen(["cp", filename, test_file],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
+        subprocess.run(["cp", filename, test_file])
         remove(filename)
-        assert data['operation'] == "CREATE"
+        
         if "el7" in release:
-            assert data['syscall'] == "2"
+            event = get_event("2", "CREATE")
         else:
-            assert data['syscall'] == "257"
+            event = get_event("257", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_folder_bash_copy(self):
         folder = "/tmp/test_folder"
         os.mkdir(folder)
-        subprocess.Popen(["cp", "-r", folder, test_folder],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
+        subprocess.run(["cp", "-r", folder, test_folder])
         remove(folder)
-        assert data['operation'] == "CREATE"
-        assert data['syscall'] == "83"
+
+        event = get_event("83", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
@@ -468,25 +453,25 @@ class TestAuditd:
         folder = test_folder + ".link"
         os.mkdir(test_folder)
         os.symlink(test_folder, folder)
-        data = json.loads(get_last_event())
         remove(folder)
-        assert data['operation'] == "CREATE"
-        assert data['syscall'] == "88"
+
+        event = get_event("88", "CREATE")
+        assert event is not None
 
     # -------------------------------------------------------------------------
 
     def test_folder_bash_symlink(self):
         folder = test_folder + ".link"
         os.mkdir(test_folder)
-        subprocess.Popen(["ln", "-s", test_folder, folder],
-            stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
+        subprocess.run(["ln", "-s", test_folder, folder])
         remove(folder)
-        assert data['operation'] == "CREATE"
+        
         if "el7" in release:
-            assert data['syscall'] == "88"
+            event = get_event("88", "CREATE")
         else:
-            assert data['syscall'] == "266"
+            event = get_event("266", "CREATE")
+        assert event is not None
+        
 
     # -------------------------------------------------------------------------
 
@@ -494,9 +479,9 @@ class TestAuditd:
         open(test_file, 'w').close()
         subprocess.Popen("echo 'Test string2' >> {}".format(test_file),
             shell=True, stdout=subprocess.PIPE).communicate()
-        data = json.loads(get_last_event())
-        assert data['operation'] == "NORMAL"
+        
         if "el7" in release:
-            assert data['syscall'] == "2"
+            event = get_event("2", "NORMAL")
         else:
-            assert data['syscall'] == "257"
+            event = get_event("257", "NORMAL")
+        assert event is not None

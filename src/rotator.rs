@@ -100,7 +100,6 @@ fn rotate_file(filepath: &str, iteration: u32, lock: &mut bool){
     thread::sleep(Duration::new(15, 0));
     let path = Path::new(filepath);
     let mut parent_path = path.parent().unwrap().to_path_buf();
-    parent_path.push(Path::new("archive"));
     parent_path.push(Path::new(path.file_name().unwrap()));
 
     let file_rotated = format!("{}.{}",
@@ -179,13 +178,14 @@ pub fn rotator(){
 
     loop{
         if (start_time + Duration::new(10, 0)).as_millis() < SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis() {
+            // Include check if files are created.
             let log_size = metadata(config.clone().log_file).unwrap().len() as usize;
             let events_size = metadata(config.clone().events_file).unwrap().len() as usize;
 
             if events_size >= config.events_max_file_size * 1000000 {
                 let events_path = Path::new(config.events_file.as_str());
                 let mut parent_path = events_path.parent().unwrap().to_path_buf();
-                parent_path.push(Path::new("archive"));
+                parent_path.push("archive");
     
                 if ! parent_path.exists(){
                     match create_dir(parent_path.clone()){
@@ -201,7 +201,7 @@ pub fn rotator(){
             if log_size >= config.log_max_file_size * 1000000 {
                 let log_path = Path::new(config.log_file.as_str());
                 let mut parent_path = log_path.parent().unwrap().to_path_buf();
-                parent_path.push(Path::new("archive"));
+                parent_path.push("archive");
 
                 if ! parent_path.exists(){
                     match create_dir(parent_path.clone()){
@@ -229,10 +229,10 @@ mod tests {
 
     #[test]
     fn test_get_iteration() {
-        
         let mut current_path = env::current_dir().unwrap();
         current_path.push("test_get_iteration");
         let test_path = current_path.to_str().unwrap();
+
         create_dir(test_path).unwrap();
         assert_eq!(get_iteration(test_path), 0);
         assert_ne!(get_iteration(test_path), 1);
@@ -240,5 +240,59 @@ mod tests {
     }
 
     // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_compress_zip_file() {
+        let mut current_path = env::current_dir().unwrap();
+        current_path.push("LICENSE");
+        let test_path = current_path.to_str().unwrap();
+        let zip_path = format!("{}.zip", test_path);
+
+        compress_zip_file(test_path).unwrap();
+        assert_eq!(Path::new(&zip_path).exists(), true);
+        remove_file(zip_path).unwrap();
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_compress_tgz_file() {
+        let mut current_path = env::current_dir().unwrap();
+        current_path.push("LICENSE");
+        let test_path = current_path.to_str().unwrap();
+        let tgz_path = format!("{}.tar.gz", test_path);
+
+        compress_tgz_file(test_path).unwrap();
+        assert_eq!(Path::new(&tgz_path).exists(), true);
+        remove_file(tgz_path).unwrap();
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_rotate_file() {
+        let mut current_path = env::current_dir().unwrap();
+        current_path.push("LICENSE");
+        let license_path = current_path.to_str().unwrap();
+
+        let mut current_path = env::current_dir().unwrap();
+        current_path.push("LICENSE.bk");
+        let copy_path = current_path.to_str().unwrap();
+
+        copy(license_path, copy_path).unwrap();
+
+        let mut lock = false;
+        let iteration = 0;
+        let extension = if utils::get_os() == "windows" { "zip"
+        }else{ "tar.gz" };
+        let compressed_file = format!("{}.{}.{}", copy_path, iteration, extension);
+        rotate_file(copy_path, iteration, &mut lock);
+        assert_eq!(metadata(copy_path).unwrap().len(), 0);
+        assert_ne!(metadata(compressed_file.clone()).unwrap().len(), 0);
+        remove_file(copy_path).unwrap();
+        remove_file(compressed_file).unwrap();
+    }
 
 }
