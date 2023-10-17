@@ -42,7 +42,7 @@ pub fn read_log(file: String, config: config::Config, position: u64, itx: u64) -
         debug!("Reading start: {}", current_position);
         let bytes_read = match buff.read_line(&mut line){
             Ok(bytes) => {
-                debug!("Read string: '{}', bytes read: {}", line.as_str(), bytes);
+                debug!("Read string: '{}', bytes read: {}", line, bytes);
                 bytes as u64
             },
             Err(e) => {
