@@ -64,6 +64,7 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[cfg(target_os = "linux")]
+    #[test]
     fn test_check_integrations_linux() {
         let event = create_test_event();
         let config = Config::new("linux", Some("test/unit/config/linux/monitor_integration.yml"));
