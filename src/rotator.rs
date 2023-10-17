@@ -172,15 +172,22 @@ fn rotate_file(filepath: &str, iteration: u32, lock: &mut bool){
 
 // ----------------------------------------------------------------------------
 
+#[cfg(not(tarpaulin_include))]
 pub fn rotator(){
     let config = unsafe { super::GCONFIG.clone().unwrap() };
     let mut start_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
 
     loop{
-        if (start_time + Duration::new(10, 0)).as_millis() < SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis() {
-            // Include check if files are created.
-            let log_size = metadata(config.clone().log_file).unwrap().len() as usize;
-            let events_size = metadata(config.clone().events_file).unwrap().len() as usize;
+        if (start_time + Duration::new(10, 0)).as_millis() < 
+            SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis() {
+
+            let log_size = if Path::new(config.clone().log_file.as_str()).exists() {
+                metadata(config.clone().log_file).unwrap().len() as usize
+            }else{ 0 };
+             
+            let events_size = if Path::new(config.clone().events_file.as_str()).exists() {
+                metadata(config.clone().events_file).unwrap().len() as usize
+            }else{ 0 };
 
             if events_size >= config.events_max_file_size * 1000000 {
                 let events_path = Path::new(config.events_file.as_str());
@@ -210,8 +217,8 @@ pub fn rotator(){
                     };
                 }
 
-                unsafe { rotate_file(config.clone().log_file.as_str(),
-                    get_iteration(parent_path.to_str().unwrap()), &mut config::TMP_LOG) };
+                rotate_file(config.clone().log_file.as_str(),
+                    get_iteration(parent_path.to_str().unwrap()), &mut true);
             }
 
             start_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();

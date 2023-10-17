@@ -52,7 +52,6 @@ pub struct Config {
 }
 
 pub static mut TMP_EVENTS: bool = false;
-pub static mut TMP_LOG: bool = false;
 
 impl Config {
 
@@ -425,8 +424,6 @@ impl Config {
     }
 
 }
-
-
 
 // ----------------------------------------------------------------------------
 
@@ -925,6 +922,7 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn test_new_config_linux() {
         if utils::get_os() == "linux" {
@@ -950,6 +948,7 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn test_new_config_macos() {
         let config = Config::new("macos", None);
@@ -1118,6 +1117,7 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
+    #[cfg(not(target_os = "windows"))]
     #[test]
     fn test_get_config_path_unix() {
         let current_dir = utils::get_current_dir();
