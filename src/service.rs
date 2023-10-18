@@ -2,13 +2,14 @@
 // Parts of the code here is based on mullvad/windows-service-rs crate examples
 // Crate link: https://github.com/mullvad/windows-service-rs
 
-// To manage aynchronous functions
 use futures::executor::block_on;
 use notify::event::{Event, EventKind, EventAttributes};
-// Monitor functions
+use std::thread;
+
 use crate::monitor;
-// To log the program process
-use log::error;
+use crate::rotator;
+
+use log::{error, info};
 use std::{
     ffi::OsString,
     sync::mpsc,
@@ -98,6 +99,11 @@ pub fn run_service() -> Result<()> {
         process_id: None,
     })?;
 
+    match thread::Builder::new()
+        .name("FIM_Rotator".to_string()).spawn(rotator::rotator){
+        Ok(_v) => info!("FIM rotator thread started."),
+        Err(e) => error!("Could not start FIM rotator thread, error: {}", e)
+    };
     block_on(monitor::monitor(tx, rx));
 
     // Tell the system that service has stopped.

@@ -1,15 +1,8 @@
 // Copyright (C) 2023, Achiefs.
 
-// To log the program process
-//use log::{debug, error};
-
-// To get configuration constants
 use crate::config;
-// Single event data management
 use crate::event::Event;
-// Manage integration launch
 use crate::integration;
-// To log the program process
 use log::debug;
 
 // ----------------------------------------------------------------------------
@@ -59,38 +52,23 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    pub fn create_test_config(filter: &str, events_destination: &str) -> Config {
-        Config {
-            version: String::from(VERSION),
-            path: String::from("test"),
-            events_watcher: String::from("Recommended"),
-            events_destination: String::from(events_destination),
-            events_max_file_checksum: 64,
-            endpoint_type: String::from("Not_defined"),
-            endpoint_address: String::from("test"),
-            endpoint_user: String::from("test"),
-            endpoint_pass: String::from("test"),
-            endpoint_token: String::from("test"),
-            events_file: String::from("test"),
-            monitor: Array::new(),
-            audit: Array::new(),
-            node: String::from("test"),
-            log_file: String::from("./test.log"),
-            log_level: String::from(filter),
-            system: String::from("test"),
-            insecure: true
-        }
-    }
-
-    // ------------------------------------------------------------------------
-
+    #[cfg(target_os = "windows")]
     #[test]
     fn test_check_integrations() {
         let event = create_test_event();
-        let config = create_test_config("info", "file");
+        let config = Config::new("windows", Some("test/unit/config/windows/monitor_integration.yml"));
         check_integrations(event, config);
+        
     }
 
     // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_check_integrations_linux() {
+        let event = create_test_event();
+        let config = Config::new("linux", Some("test/unit/config/linux/monitor_integration.yml"));
+        check_integrations(event, config);
+    }
 
 }

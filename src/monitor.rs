@@ -86,7 +86,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
     if ! config.monitor.is_empty() {
         for element in config.monitor.clone() {
             let path = element["path"].as_str().unwrap();
-            info!("Checking path: {}", path);
+            info!("Monitoring path: {}", path);
 
             match element["ignore"].as_vec() {
                 Some(ig) => {
@@ -191,7 +191,6 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                     let current_date = OffsetDateTime::now_utc();
                     let index_name = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
                     let current_timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
-                    let current_hostname = utils::get_hostname();
                     let kind: notify::EventKind = event.kind;
                     let path = event.paths[0].clone();
 
@@ -204,12 +203,13 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                     if plain_path == logreader::AUDIT_LOG_PATH {
                         // Getting events from audit.log
                         let mut events = Vec::new();
-                        let (event, position) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone(), last_position, 0);
-                        if event.id != "0" { events.push(event); };
+                        let (log_event, position) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone(), last_position, 0);
+                        if log_event.id != "0" { events.push(log_event); };
                         let mut ctr = 0;
                         last_position = position;
                         while last_position < utils::get_file_end(logreader::AUDIT_LOG_PATH, 0) {
                             debug!("Reading events, iteration: {}", ctr);
+                            let original_position = last_position;
                             ctr += 1;
                             let (evt, pos) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone(), last_position, ctr);
                             if evt.id != "0" {
@@ -217,6 +217,9 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                                 ctr = 0;
                             };
                             last_position = pos;
+                            if original_position == pos {
+                                ctr = 0;
+                            }
                         }
                         debug!("Events read from audit log, position: {}", last_position);
 
@@ -255,7 +258,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                                 let event = event::Event {
                                     id: utils::get_uuid(),
                                     timestamp: current_timestamp,
-                                    hostname: current_hostname,
+                                    hostname: utils::get_hostname(),
                                     node: config.node.clone(),
                                     version: String::from(config::VERSION),
                                     kind,

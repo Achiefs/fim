@@ -176,13 +176,13 @@ impl Event {
     pub async fn process(&self, destination: &str, index_name: String, config: config::Config){
         match destination {
             config::BOTH_MODE => {
-                self.log(config.events_file);
+                self.log(config.get_events_file());
                 self.send(index_name).await;
             },
             config::NETWORK_MODE => {
                 self.send(index_name).await;
             },
-            _ => self.log(config.events_file)
+            _ => self.log(config.get_events_file())
         }
     }
 
@@ -299,8 +299,6 @@ mod tests {
     use std::path::PathBuf;
     use tokio_test::block_on;
     use std::fs;
-
-    //static mut GCONFIG: Option<config::Config> = None;
 
     // ------------------------------------------------------------------------
 

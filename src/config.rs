@@ -34,6 +34,7 @@ pub struct Config {
     pub events_watcher: String,
     pub events_destination: String,
     pub events_max_file_checksum: usize,
+    pub events_max_file_size: usize,
     pub endpoint_type: String,
     pub endpoint_address: String,
     pub endpoint_user: String,
@@ -45,9 +46,12 @@ pub struct Config {
     pub node: String,
     pub log_file: String,
     pub log_level: String,
+    pub log_max_file_size: usize,
     pub system: String,
     pub insecure: bool
 }
+
+pub static mut TMP_EVENTS: bool = false;
 
 impl Config {
 
@@ -58,6 +62,7 @@ impl Config {
             events_watcher: self.events_watcher.clone(),
             events_destination: self.events_destination.clone(),
             events_max_file_checksum: self.events_max_file_checksum,
+            events_max_file_size: self.events_max_file_size,
             endpoint_type: self.endpoint_type.clone(),
             endpoint_address: self.endpoint_address.clone(),
             endpoint_user: self.endpoint_user.clone(),
@@ -69,18 +74,19 @@ impl Config {
             node: self.node.clone(),
             log_file: self.log_file.clone(),
             log_level: self.log_level.clone(),
+            log_max_file_size: self.log_max_file_size,
             system: self.system.clone(),
             insecure: self.insecure
         }
     }
 
     pub fn new(system: &str, config_path: Option<&str>) -> Self {
-        println!("System detected '{}'", system);
+        println!("[INFO] System detected '{}'", system);
         let cfg = match config_path {
             Some(path) => String::from(path),
             None => get_config_path(system)
         };
-        println!("Loaded config from: '{}'", cfg);
+        println!("[INFO] Loaded config from: '{}'", cfg);
         let yaml = read_config(cfg.clone());
 
         // Manage null value on events->destination value
@@ -118,6 +124,12 @@ impl Config {
         let events_max_file_checksum = match yaml[0]["events"]["max_file_checksum"].as_i64() {
             Some(value) => usize::try_from(value).unwrap(),
             None => 64
+        };
+
+        // Manage null value on events->max_file_size value
+        let events_max_file_size = match yaml[0]["events"]["max_file_size"].as_i64() {
+            Some(value) => usize::try_from(value).unwrap(),
+            None => 128
         };
 
         // Manage null value on events->endpoint->insecure value
@@ -252,12 +264,19 @@ impl Config {
             }
         };
 
+        // Manage null value on log->max_file_size value
+        let log_max_file_size = match yaml[0]["log"]["max_file_size"].as_i64() {
+            Some(value) => usize::try_from(value).unwrap(),
+            None => 64
+        };
+
         Config {
             version: String::from(VERSION),
             path: cfg,
             events_watcher,
             events_destination,
             events_max_file_checksum,
+            events_max_file_size,
             endpoint_type,
             endpoint_address,
             endpoint_user,
@@ -269,6 +288,7 @@ impl Config {
             node,
             log_file,
             log_level,
+            log_max_file_size,
             system: String::from(system),
             insecure
         }
@@ -391,9 +411,19 @@ impl Config {
         integrations
     }
 
+    // ------------------------------------------------------------------------
+
+    pub fn get_events_file(&self) -> String {
+        unsafe {
+            if TMP_EVENTS {
+                format!("{}.tmp", self.events_file.clone())
+            }else{
+                self.events_file.clone()
+            }
+        }
+    }
+
 }
-
-
 
 // ----------------------------------------------------------------------------
 
@@ -457,6 +487,7 @@ mod tests {
             events_watcher: String::from("Recommended"),
             events_destination: String::from(events_destination),
             events_max_file_checksum: 64,
+            events_max_file_size: 128,
             endpoint_type: String::from("Elastic"),
             endpoint_address: String::from("test"),
             endpoint_user: String::from("test"),
@@ -468,6 +499,7 @@ mod tests {
             node: String::from("test"),
             log_file: String::from("./test.log"),
             log_level: String::from(filter),
+            log_max_file_size: 64,
             system: String::from("test"),
             insecure: true
         }
@@ -483,6 +515,7 @@ mod tests {
         assert_eq!(config.path, cloned.path);
         assert_eq!(config.events_destination, cloned.events_destination);
         assert_eq!(config.events_max_file_checksum, cloned.events_max_file_checksum);
+        assert_eq!(config.events_max_file_size, cloned.events_max_file_size);
         assert_eq!(config.endpoint_type, cloned.endpoint_type);
         assert_eq!(config.endpoint_address, cloned.endpoint_address);
         assert_eq!(config.endpoint_user, cloned.endpoint_user);
@@ -494,6 +527,7 @@ mod tests {
         assert_eq!(config.node, cloned.node);
         assert_eq!(config.log_file, cloned.log_file);
         assert_eq!(config.log_level, cloned.log_level);
+        assert_eq!(config.log_max_file_size, cloned.log_max_file_size);
         assert_eq!(config.system, cloned.system);
         assert_eq!(config.insecure, cloned.insecure);
     }
@@ -517,6 +551,7 @@ mod tests {
         assert_eq!(config.node, String::from("FIM"));
         assert_eq!(config.log_file, String::from("C:\\ProgramData\\fim\\fim.log"));
         assert_eq!(config.log_level, String::from("info"));
+        assert_eq!(config.log_max_file_size, 64);
         assert_eq!(config.system, String::from("windows"));
         assert_eq!(config.insecure, false);
     }
@@ -555,6 +590,15 @@ mod tests {
     fn test_new_config_windows_events_max_file_checksum() {
         let config = Config::new("windows", Some("test/unit/config/windows/events_max_file_checksum.yml"));
         assert_eq!(config.events_max_file_checksum, 128);
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_new_config_windows_events_max_file_size() {
+        let config = Config::new("windows", Some("test/unit/config/windows/events_max_file_size.yml"));
+        assert_eq!(config.events_max_file_size, 256);
     }
 
     // ------------------------------------------------------------------------
@@ -676,6 +720,15 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_new_config_windows_log_max_file_size_none() {
+        let config = Config::new("windows", Some("test/unit/config/windows/log_max_file_size_none.yml"));
+        assert_eq!(config.log_max_file_size, 64);
+    }
+
+    // ------------------------------------------------------------------------
+
     #[cfg(target_os = "linux")]
     #[test]
     fn test_new_config_linux_events_destination() {
@@ -708,6 +761,15 @@ mod tests {
     fn test_new_config_linux_events_max_file_checksum() {
         let config = Config::new("linux", Some("test/unit/config/linux/events_max_file_checksum.yml"));
         assert_eq!(config.events_max_file_checksum, 128);
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_new_config_linux_events_max_file_size() {
+        let config = Config::new("linux", Some("test/unit/config/linux/events_max_file_size.yml"));
+        assert_eq!(config.events_max_file_size, 256);
     }
 
     // ------------------------------------------------------------------------
@@ -851,6 +913,16 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_new_config_linux_log_max_file_size_none() {
+        let config = Config::new("linux", Some("test/unit/config/linux/log_max_file_size_none.yml"));
+        assert_eq!(config.log_max_file_size, 64);
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
     #[test]
     fn test_new_config_linux() {
         if utils::get_os() == "linux" {
@@ -868,6 +940,7 @@ mod tests {
             assert_eq!(config.node, String::from("FIM"));
             assert_eq!(config.log_file, String::from("/var/log/fim/fim.log"));
             assert_eq!(config.log_level, String::from("info"));
+            assert_eq!(config.log_max_file_size, 64);
             assert_eq!(config.system, String::from("linux"));
             assert_eq!(config.insecure, false);
         }
@@ -875,6 +948,7 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn test_new_config_macos() {
         let config = Config::new("macos", None);
@@ -891,6 +965,7 @@ mod tests {
         assert_eq!(config.node, String::from("FIM"));
         assert_eq!(config.log_file, String::from("/var/log/fim/fim.log"));
         assert_eq!(config.log_level, String::from("info"));
+        assert_eq!(config.log_max_file_size, 64);
         assert_eq!(config.system, String::from("macos"));
         assert_eq!(config.insecure, false);
     }
@@ -1042,6 +1117,7 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
+    #[cfg(not(target_os = "windows"))]
     #[test]
     fn test_get_config_path_unix() {
         let current_dir = utils::get_current_dir();

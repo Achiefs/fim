@@ -51,7 +51,7 @@ pub fn read_log(file: String, config: config::Config, position: u64, itx: u64) -
             }
         };
         current_position += bytes_read;
-        debug!("End read position: {}", current_position);
+        debug!("End read position: {}\n", current_position);
 
         let line_info = parse_audit_log(line.clone());
         if line_info.contains_key("type") && (line_info["type"] == "SYSCALL" ||
@@ -61,6 +61,7 @@ pub fn read_log(file: String, config: config::Config, position: u64, itx: u64) -
             data.push(line_info.clone());
             if line_info.contains_key("type") &&
                 line_info["type"] == "PROCTITLE" {
+                debug!("PROCTITLE line detected, breaking loop. Data: {:?}", data);
                 break;
             }
         }
@@ -91,6 +92,8 @@ pub fn read_log(file: String, config: config::Config, position: u64, itx: u64) -
             line["type"] == "PROCTITLE"
         }) && itx < 120 {
             current_position = position;
+        }else{
+            debug!("Audit log discarded, data: {:?}", data);
         }
     }
     (event, current_position)

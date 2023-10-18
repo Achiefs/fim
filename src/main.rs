@@ -3,9 +3,9 @@
 // To allow big structs like json on audit events
 #![recursion_limit = "256"]
 
-
-// To manage event channels
 use std::sync::mpsc;
+use std::thread;
+use log::{error, info};
 
 // Utils functions
 mod utils;
@@ -30,6 +30,8 @@ mod integration;
 mod launcher;
 mod multiwatcher;
 
+mod rotator;
+
 static mut GCONFIG: Option<config::Config> = None;
 
 // ----------------------------------------------------------------------------
@@ -40,7 +42,7 @@ fn init(){
     use simplelog::Config;
     use std::fs;
 
-    println!("Achiefs File Integrity Monitoring software starting!");
+    println!("[INFO] Achiefs File Integrity Monitoring software starting!");
     println!("[INFO] Reading config...");
     unsafe{
         GCONFIG = Some(config::Config::new(&utils::get_os(), None));    
@@ -79,6 +81,11 @@ async fn main() {
     init();
 
     let (tx, rx) = mpsc::channel();
+    match thread::Builder::new()
+        .name("FIM_Rotator".to_string()).spawn(rotator::rotator){
+        Ok(_v) => info!("FIM rotator thread started."),
+        Err(e) => error!("Could not start FIM rotator thread, error: {}", e)
+    };
     monitor::monitor(tx, rx).await;
 }
 
@@ -96,6 +103,11 @@ async fn main() -> windows_service::Result<()> {
         match args[1].as_str() {
             "--foreground"|"-f" => {
                 let (tx, rx) = mpsc::channel();
+                match thread::Builder::new()
+                    .name("FIM_Rotator".to_string()).spawn(rotator::rotator){
+                        Ok(_v) => info!("FIM rotator thread started."),
+                        Err(e) => error!("Could not start FIM rotator thread, error: {}", e)
+                    };
                 monitor::monitor(tx, rx).await;
                 Ok(())
             },

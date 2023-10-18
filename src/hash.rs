@@ -35,9 +35,16 @@ pub fn get_checksum(filename: String, read_limit: usize) -> String {
                     }
                     
                     length = {
-                        let buffer = reader.fill_buf().unwrap();
-                        hasher.update(buffer);
-                        buffer.len()
+                        match reader.fill_buf(){
+                            Ok(buffer) =>{
+                                hasher.update(buffer);
+                                buffer.len()
+                            },
+                            Err(e) => {
+                                debug!("Cannot read file. Checksum set to 'UNKNOWN', error: {}", e);
+                                0
+                            }
+                        }
                     };
                     reader.consume(length);
                     data_read += length / (1024 * 1024);
