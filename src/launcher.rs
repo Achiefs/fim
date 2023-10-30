@@ -28,7 +28,6 @@ mod tests {
     use crate::event::Event;
     use crate::config::*;
     use notify::event::*;
-    use yaml_rust::yaml::Array;
 
     // ------------------------------------------------------------------------
 
@@ -41,6 +40,7 @@ mod tests {
             version: "x.x.x".to_string(),
             kind: EventKind::Create(CreateKind::Any),
             path: PathBuf::new(),
+            size: 0,
             labels: Vec::new(),
             operation: "CREATE".to_string(),
             detailed_operation: "CREATE_FILE".to_string(),

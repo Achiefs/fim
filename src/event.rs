@@ -28,6 +28,7 @@ pub struct Event {
     pub node: String,
     pub version: String,
     pub path: PathBuf,
+    pub size: u64,
     pub kind: notify::EventKind,
     pub labels: Vec<String>,
     pub operation: String,
@@ -51,6 +52,7 @@ impl Event {
             "operation": self.operation.clone(),
             "detailed_operation": self.detailed_operation.clone(),
             "file": String::from(self.path.clone().to_str().unwrap()),
+            "file_size": self.size.clone(),
             "checksum": self.checksum.clone(),
             "system": self.system.clone()
         });
@@ -67,6 +69,7 @@ impl Event {
             node: self.node.clone(),
             version: self.version.clone(),
             path: self.path.clone(),
+            size: self.size.clone(),
             kind: self.kind,
             labels: self.labels.clone(),
             operation: self.operation.clone(),
@@ -115,6 +118,7 @@ impl Event {
                     "operation": self.operation.clone(),
                     "detailed_operation": self.detailed_operation.clone(),
                     "file": String::from(self.path.clone().to_str().unwrap()),
+                    "file_size": self.size.clone(),
                     "checksum": self.checksum.clone(),
                     "system": self.system.clone()
                 }),
@@ -148,6 +152,7 @@ impl Event {
                 "operation": self.operation.clone(),
                 "detailed_operation": self.detailed_operation.clone(),
                 "file": String::from(self.path.clone().to_str().unwrap()),
+                "file_size": self.size.clone(),
                 "checksum": self.checksum.clone(),
                 "system": self.system.clone()
             });
@@ -191,6 +196,7 @@ impl Event {
     pub fn get_string(&self, field: String) -> String {
         match field.as_str() {
             "path" => String::from(self.path.to_str().unwrap()),
+            "file_size" => self.size.clone().to_string(),
             "hostname" => self.hostname.clone(),
             "node" => self.node.clone(),
             "version" => self.version.clone(),
@@ -210,6 +216,7 @@ impl fmt::Debug for Event {
         f.debug_tuple("")
           .field(&self.id)
           .field(&self.path)
+          .field(&self.size)
           .field(&self.operation)
           .field(&self.detailed_operation)
           .finish()
@@ -315,6 +322,7 @@ mod tests {
             version: "x.x.x".to_string(),
             kind: EventKind::Create(CreateKind::Any),
             path: PathBuf::new(),
+            size: 0,
             labels: Vec::new(),
             operation: "CREATE".to_string(),
             detailed_operation: "CREATE_FILE".to_string(),
@@ -342,6 +350,7 @@ mod tests {
         assert_eq!(event.node, cloned.node);
         assert_eq!(event.version, cloned.version);
         assert_eq!(event.path, cloned.path);
+        assert_eq!(event.size, cloned.size);
         assert_eq!(event.kind, cloned.kind);
         assert_eq!(event.labels, cloned.labels);
         assert_eq!(event.operation, cloned.operation);
@@ -517,7 +526,7 @@ mod tests {
     #[test]
     fn test_event_fmt(){
         let out = format!("{:?}", create_test_event());
-        assert_eq!(out, "(\"Test_id\", \"\", \"CREATE\", \"CREATE_FILE\")");
+        assert_eq!(out, "(\"Test_id\", \"\", 0, \"CREATE\", \"CREATE_FILE\")");
     }
 
     // ------------------------------------------------------------------------
@@ -525,7 +534,7 @@ mod tests {
     #[test]
     fn test_format_json() {
         let expected = "{\"checksum\":\"UNKNOWN\",\"detailed_operation\":\"CREATE_FILE\",\
-            \"file\":\"\",\"fpid\":0,\
+            \"file\":\"\",\"file_size\":0,\"fpid\":0,\
             \"hostname\":\"Hostname\",\"id\":\"Test_id\",\"labels\":[],\
             \"node\":\"FIM\",\"operation\":\"CREATE\",\"system\":\"test\",\
             \"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}";
@@ -542,7 +551,7 @@ mod tests {
         evt.log(filename.clone());
         let contents = fs::read_to_string(filename.clone());
         let expected = "{\"checksum\":\"UNKNOWN\",\"detailed_operation\":\"CREATE_FILE\",\
-            \"file\":\"\",\"fpid\":0,\
+            \"file\":\"\",\"file_size\":0,\"fpid\":0,\
             \"hostname\":\"Hostname\",\"id\":\"Test_id\",\"labels\":[],\
             \"node\":\"FIM\",\"operation\":\"CREATE\",\
             \"system\":\"test\",\
