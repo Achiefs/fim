@@ -1,24 +1,15 @@
 // Copyright (C) 2021, Achiefs.
 
-// To implement Debug and fmt method
 use std::fmt;
-// To handle files
 use std::fs::OpenOptions;
 use std::io::Write;
-// Handle time intervals
 use std::time::Duration;
-// Event handling
 use notify::event::*;
-// To log the program procedure
 use log::*;
-// To handle JSON objects
 use serde_json::{json, to_string};
-// To manage paths
 use std::path::PathBuf;
-// To manage HTTP requests
 use reqwest::Client;
 
-// To get configuration constants
 use crate::config;
 
 pub struct Event {
