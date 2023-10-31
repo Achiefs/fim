@@ -204,7 +204,7 @@ impl Event {
             version: self.version.clone(),
             path: self.path.clone(),
             file: self.file.clone(),
-            size: self.size.clone(),
+            size: self.size,
             labels: self.labels.clone(),
             operation: self.operation.clone(),
             checksum: self.checksum.clone(),
