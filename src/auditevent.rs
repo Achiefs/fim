@@ -1,27 +1,17 @@
 // Copyright (C) 2022, Achiefs.
 
-// To implement Debug and fmt method
 use std::fmt;
-// To handle files
 use std::fs::OpenOptions;
 use std::io::Write;
-// Handle time intervals
 use std::time::Duration;
-// To log the program procedure
 use log::*;
-// To handle JSON objects
 use serde_json::{json, to_string};
-// To manage HTTP requests
 use reqwest::Client;
-// To use HashMap
 use std::collections::HashMap;
 
 
-// To get configuration constants
 use crate::config;
-// To manage common functions
 use crate::utils;
-// To manage checksums and conversions
 use crate::hash;
 
 // ----------------------------------------------------------------------------
@@ -34,6 +24,7 @@ pub struct Event {
     pub version: String,
     pub path: String,
     pub file: String,
+    pub size: u64,
     pub labels: Vec<String>,
     pub operation: String,
     pub checksum: String,
@@ -90,7 +81,7 @@ impl Event {
         Event{
             id: empty.clone(), timestamp: empty.clone(), hostname: empty.clone(),
             node: empty.clone(), version: empty.clone(), path: empty.clone(),
-            file: empty.clone(), labels: Vec::new(), operation: empty.clone(),
+            file: empty.clone(), size: 0, labels: Vec::new(), operation: empty.clone(),
             checksum: empty.clone(), fpid: 0, system: empty.clone(),
             command: empty.clone(), ogid: empty.clone(), rdev: empty.clone(),
             proctitle: empty.clone(), cap_fver: empty.clone(),
@@ -149,6 +140,7 @@ impl Event {
             operation: utils::get_field(path.clone(), "nametype"),
             path: utils::clean_path(&event_path),
             file: utils::get_filename_path(path["name"].clone().as_str()),
+            size: utils::get_file_size(path["name"].clone().as_str()),
             checksum: hash::get_checksum(format!("{}/{}",
                 parent["name"].clone(), path["name"].clone()),
                 config.events_max_file_checksum),
@@ -212,6 +204,7 @@ impl Event {
             version: self.version.clone(),
             path: self.path.clone(),
             file: self.file.clone(),
+            size: self.size,
             labels: self.labels.clone(),
             operation: self.operation.clone(),
             checksum: self.checksum.clone(),
@@ -277,6 +270,7 @@ impl Event {
             "version": self.version.clone(),
             "path": self.path.clone(),
             "file": self.file.clone(),
+            "file_size": self.size.clone(),
             "labels": self.labels.clone(),
             "operation": self.operation.clone(),
             "checksum": self.checksum.clone(),
@@ -461,6 +455,7 @@ impl fmt::Debug for Event {
             .field("path", &self.path)
             .field("operation", &self.operation)
             .field("file", &self.file)
+            .field("file_size", &self.size)
             .field("timestamp", &self.timestamp)
             .field("proctitle", &self.proctitle)
             .field("cap_fver", &self.cap_fver)
@@ -532,7 +527,7 @@ mod tests {
             id: String::from(""), timestamp: String::from(""),
             hostname: String::from(""), node: String::from(""),
             version: String::from(""), path: String::from(""),
-            file: String::from(""), labels: Vec::new(),
+            file: String::from(""), size: 0, labels: Vec::new(),
             operation: String::from(""), checksum: String::from(""), fpid: 0,
             system: String::from(""), command: String::from(""),
             ogid: String::from(""), rdev: String::from(""),
@@ -564,7 +559,7 @@ mod tests {
             id: String::from("ID"), timestamp: String::from("TIMESTAMP"),
             hostname: String::from("HOSTNAME"), node: String::from("NODE"),
             version: String::from("VERSION"), path: String::from("PATH"),
-            file: String::from("FILE"), labels: Vec::new(),
+            file: String::from("FILE"), size: 0, labels: Vec::new(),
             operation: String::from("OPERATION"), checksum: String::from("CHECKSUM"),
             fpid: 0,
             system: String::from("SYSTEM"), command: String::from("COMMAND"),
@@ -686,6 +681,7 @@ mod tests {
             assert_eq!(String::from(config::VERSION), event.version);
             assert_eq!(String::from("/tmp"), event.path);
             assert_eq!(String::from("tmp"), event.file);
+            assert_eq!(4096, event.size);
             //assert_eq!(..., event.labels);
             //assert_eq!(..., event.parent);
             assert_eq!(String::from("nametype"), event.operation);
@@ -756,6 +752,7 @@ mod tests {
         assert_eq!(event.version, cloned.version);
         assert_eq!(event.path, cloned.path);
         assert_eq!(event.file, cloned.file);
+        assert_eq!(event.size, cloned.size);
         assert_eq!(event.labels, cloned.labels);
         assert_eq!(event.operation, cloned.operation);
         assert_eq!(event.checksum, cloned.checksum);
@@ -828,6 +825,7 @@ mod tests {
         assert_eq!(event["version"], "VERSION");
         assert_eq!(event["path"], "PATH");
         assert_eq!(event["file"], "FILE");
+        assert_eq!(event["file_size"], 0);
         //assert_eq!(event["labels"], Vec::<String>::new());
         assert_eq!(event["operation"], "OPERATION");
         assert_eq!(event["checksum"], "CHECKSUM");
@@ -888,7 +886,7 @@ mod tests {
             \"cap_fver\":\"CAP_FVER\",\"checksum\":\"CHECKSUM\",\"comm\":\"COMM\",\
             \"command\":\"COMMAND\",\"cwd\":\"CWD\",\"dev\":\"DEV\",\"egid\":\"EGID\",\
             \"euid\":\"EUID\",\"exe\":\"EXE\",\"exit\":\"EXIT\",\"file\":\"FILE\",\
-            \"fpid\":0,\"fsgid\":\"FSGID\",\"fsuid\":\"FSUID\",\"gid\":\"GID\",\
+            \"file_size\":0,\"fpid\":0,\"fsgid\":\"FSGID\",\"fsuid\":\"FSUID\",\"gid\":\"GID\",\
             \"hostname\":\"HOSTNAME\",\"id\":\"ID\",\"inode\":\"INODE\",\
             \"item\":\"ITEM\",\"items\":\"ITEMS\",\"key\":\"KEY\",\"labels\":[],\
             \"mode\":\"MODE\",\"node\":\"NODE\",\"ogid\":\"OGID\",\
@@ -915,7 +913,7 @@ mod tests {
             \"cap_frootid\":\"CAP_FROOTID\",\"cap_fver\":\"CAP_FVER\",\
             \"checksum\":\"CHECKSUM\",\"comm\":\"COMM\",\"command\":\"COMMAND\",\
             \"cwd\":\"CWD\",\"dev\":\"DEV\",\"egid\":\"EGID\",\"euid\":\"EUID\",\
-            \"exe\":\"EXE\",\"exit\":\"EXIT\",\"file\":\"FILE\",\"fpid\":0,\
+            \"exe\":\"EXE\",\"exit\":\"EXIT\",\"file\":\"FILE\",\"file_size\":0,\"fpid\":0,\
             \"fsgid\":\"FSGID\",\"fsuid\":\"FSUID\",\"gid\":\"GID\",\
             \"hostname\":\"HOSTNAME\",\"id\":\"ID\",\"inode\":\"INODE\",\
             \"item\":\"ITEM\",\"items\":\"ITEMS\",\"key\":\"KEY\",\"labels\":[],\
@@ -982,7 +980,7 @@ mod tests {
     fn test_event_fmt(){
         let out = format!("{:?}", create_test_event());
         let expected = " { id: \"ID\", path: \"PATH\", operation: \"OPERATION\", \
-            file: \"FILE\", timestamp: \"TIMESTAMP\", proctitle: \"PROCTITLE\", \
+            file: \"FILE\", file_size: 0, timestamp: \"TIMESTAMP\", proctitle: \"PROCTITLE\", \
             cap_fver: \"CAP_FVER\", inode: \"INODE\", cap_fp: \"CAP_FP\", \
             cap_fe: \"CAP_FE\", item: \"ITEM\", cap_fi: \"CAP_FI\", dev: \"DEV\", \
             mode: \"MODE\", cap_frootid: \"CAP_FROOTID\", ouid: \"OUID\", paths: [], \

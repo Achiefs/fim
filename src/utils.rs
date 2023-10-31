@@ -218,6 +218,18 @@ pub fn get_field(data: HashMap<String, String>, field_name: &str) -> String {
 
 // ----------------------------------------------------------------------------
 
+pub fn get_file_size(filename: &str) -> u64 {
+    match metadata(filename) {
+        Ok(data) => data.len(),
+        Err(e) => {
+            debug!("Cannot retrieve file size, error: {}", e);
+            0
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
+
 #[cfg(test)]
 mod tests {
     use super::*;
