@@ -635,7 +635,7 @@ mod tests {
                 ]),
                 HashMap::<String, String>::from([
                     (String::from("nametype"), String::from("nametype")),
-                    (String::from("name"), String::from("/tmp")),
+                    (String::from("name"), String::from("/tmp/test.txt")),
                     (String::from("ogid"), String::from("ogid")),
                     (String::from("rdev"), String::from("rdev")),
                     (String::from("cap_fver"), String::from("cap_fver")),
@@ -680,8 +680,8 @@ mod tests {
             assert_eq!(String::from("FIM"), event.node);
             assert_eq!(String::from(config::VERSION), event.version);
             assert_eq!(String::from("/tmp"), event.path);
-            assert_eq!(String::from("tmp"), event.file);
-            assert_eq!(4096, event.size);
+            assert_eq!(String::from("test.txt"), event.file);
+            assert_eq!(0, event.size);
             //assert_eq!(..., event.labels);
             //assert_eq!(..., event.parent);
             assert_eq!(String::from("nametype"), event.operation);
