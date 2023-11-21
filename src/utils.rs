@@ -323,9 +323,8 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    #[should_panic]
-    fn test_get_filename_path_panic() {
-        get_filename_path("/");
+    fn test_get_filename_path_empty() {
+        assert_eq!(get_filename_path("/"), "/");
     }
 
     // ------------------------------------------------------------------------
