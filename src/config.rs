@@ -1,7 +1,7 @@
 // Copyright (C) 2021, Achiefs.
 
 // Global constants definitions
-pub const VERSION: &str = "0.4.10";
+pub const VERSION: &str = "0.5.0";
 pub const NETWORK_MODE: &str = "NETWORK";
 pub const FILE_MODE: &str = "FILE";
 pub const BOTH_MODE: &str = "BOTH";
@@ -378,16 +378,13 @@ impl Config {
     // Returns if a given path and filename is in the configuration paths
     pub fn path_in(&self, raw_path: &str, cwd: &str, vector: Vec<Yaml>) -> bool {
         // Iterate over monitoring paths to match ignore string and ignore event or not
-        match vector.iter().any(|it| {
+        vector.iter().any(|it| {
             if raw_path.starts_with("./") || raw_path == "." || !raw_path.contains('/') {
                 utils::match_path(cwd, it["path"].as_str().unwrap())
             }else{
                 utils::match_path(raw_path, it["path"].as_str().unwrap())
             }
-        }){
-            true => true,
-            false => false
-        }
+        })
     }
 
     // ------------------------------------------------------------------------
