@@ -76,7 +76,15 @@ pub fn get_machine_id() -> String {
 
 // Function to get file name of a given path
 pub fn get_filename_path(path: &str) -> String {
-    String::from(Path::new(path).file_name().unwrap().to_str().unwrap())
+    String::from(
+        match Path::new(path).file_name() {
+            Some(value) => value,
+            None => {
+                debug!("Cannot retrieve event file, event path is empty.");
+                std::ffi::OsStr::new(path)
+            }
+        }.to_str().unwrap()
+    )
 }
 
 // ----------------------------------------------------------------------------
