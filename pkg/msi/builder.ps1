@@ -1,5 +1,7 @@
 $version = (gc ..\..\Cargo.toml | findstr "version" | select -First 1).split(" ")[2].trim("`"", " ")
 
+(Get-Content .\fim.wxs) -replace 'FIM_VERSION', $version | Set-Content -NoNewLine fim.wxs
+
 cd ..\..\
 cargo build --release
 cd pkg\msi

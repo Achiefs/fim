@@ -19,6 +19,7 @@ pkg_dir="${sources_dir}/pkg/deb"
 
 mkdir -p ${sources_dir}
 cp -R ${base_dir}/* ${sources_dir}/
+sed -i "s|FIM_VERSION|${version}|g" ${sources_dir}/pkg/fim.1
 
 # Generating directory structure to build the .deb package
 cd ${build_dir} && tar -czf ${pkg_name}.orig.tar.gz "${pkg_name}"

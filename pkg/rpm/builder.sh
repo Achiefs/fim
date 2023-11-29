@@ -22,6 +22,7 @@ mkdir -p ${rpm_build_dir}/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
 # Prepare the sources directory to build the source tar.gz
 mkdir -p ${sources_dir}
 cp -R ../../* ${sources_dir}
+sed -i "s|FIM_VERSION|${version}|g" ${sources_dir}/pkg/fim.1
 
 cp ${brand}.spec ${rpm_build_dir}/SPECS/${pkg_name}.spec
 
