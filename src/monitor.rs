@@ -115,9 +115,25 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
     let mut last_position = 0;
     if ! config.audit.is_empty() && utils::get_os() == "linux" && utils::check_auditd() {
         for element in config.audit.clone() {
+            let mut rule: String = String::new();
             let path = element["path"].as_str().unwrap();
+            match element["rule"].as_str(){
+                Some(value) => {
+                    for c in value.chars(){
+                        match c {
+                            'r'|'R' => rule.push('r'),
+                            'w'|'W' => rule.push('w'),
+                            'a'|'A' => rule.push('a'),
+                            'x'|'X' => rule.push('x'),
+                            _ => rule = String::from("wax")
+                        }
+                    }
+                    rule.clone()
+                },
+                None => String::from("wax")
+            };
             match Command::new("/usr/sbin/auditctl")
-                .args(["-w", path, "-k", "fim", "-p", "wax"])
+                .args(["-w", path, "-k", "fim", "-p", &rule])
                 .output() {
                 Ok(d) => debug!("Auditctl command info: {:?}", d),
                 Err(e) => error!("Auditctl command error: {}", e)
