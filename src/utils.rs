@@ -17,7 +17,7 @@ use std::path::{Path, PathBuf};
 // To run commands
 use std::process::Command;
 // To log the program process
-use log::{warn, debug};
+use log::{warn, debug, error};
 // To manage maps
 use std::collections::HashMap;
 
@@ -234,6 +234,39 @@ pub fn get_file_size(filename: &str) -> u64 {
             0
         }
     }
+}
+
+// ----------------------------------------------------------------------------
+
+pub fn get_audit_rule_permissions(value: Option<&str>) -> String {
+    let mut rule: String = String::new();
+    match value {
+        Some(value) => {
+            for c in value.chars(){
+                match c {
+                    'r'|'R' => rule.push('r'),
+                    'w'|'W' => rule.push('w'),
+                    'a'|'A' => rule.push('a'),
+                    'x'|'X' => rule.push('x'),
+                    _ => rule = String::from("wax")
+                }
+            }
+            rule.clone()
+        },
+        None => String::from("wax")
+    }
+}
+
+// ----------------------------------------------------------------------------
+
+pub fn run_auditctl(args: &[&str]) {
+    match Command::new("/usr/sbin/auditctl")
+    .args(args)
+    .output()
+    {
+        Ok(d) => debug!("Auditctl command info: {:?}", d),
+        Err(e) => error!("Auditctl command error: {}", e)
+    };
 }
 
 // ----------------------------------------------------------------------------

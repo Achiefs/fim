@@ -58,7 +58,6 @@ fn init(){
             GCONFIG.clone().unwrap().get_level_filter(),
             Config::default(),
             fs::OpenOptions::new()
-                .write(true)
                 .create(true)
                 .append(true)
                 .open(GCONFIG.clone().unwrap().log_file)
