@@ -67,6 +67,17 @@ async fn push_template(destination: &str){
 
 // ----------------------------------------------------------------------------
 
+fn clean_audit_rules(config: &config::Config){
+    for element in config.audit.clone() {
+        let path = element["path"].as_str().unwrap();
+        let rule = utils::get_audit_rule_permissions(element["rule"].as_str());
+        utils::run_auditctl(&["-W", path, "-k", "fim", "-p", &rule]);
+    }
+    std::process::exit(0);
+}
+
+// ----------------------------------------------------------------------------
+
 // Function that monitorize files in loop
 pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
     rx: mpsc::Receiver<Result<notify::Event, notify::Error>>){
@@ -142,15 +153,8 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
        
         // Remove auditd rules introduced by FIM
         // Setting ctrl + C handler
-        let copied_config = config.clone();
-        match ctrlc::set_handler(move || {
-            for element in &copied_config.audit {
-                let path = element["path"].as_str().unwrap();
-                let rule = utils::get_audit_rule_permissions(element["rule"].as_str());
-                utils::run_auditctl(&["-W", path, "-k", "fim", "-p", &rule]);
-            }
-            std::process::exit(0);
-        }) {
+        let cloned_config = config.clone();
+        match ctrlc::set_handler(move || clean_audit_rules(&cloned_config)) {
             Ok(_v) => debug!("Handler Ctrl-C set and listening"),
             Err(e) => error!("Error setting Ctrl-C handler, the process will continue without signal handling, Error: '{}'", e)
         }
