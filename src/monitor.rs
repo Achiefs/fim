@@ -113,7 +113,6 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
     let mut last_position = 0;
     if ! config.audit.is_empty() && utils::get_os() == "linux" && utils::check_auditd() {
         for element in config.audit.clone() {
-            //let mut rule: String = String::new();
             let path = element["path"].as_str().unwrap();
             let rule = utils::get_audit_rule_permissions(element["rule"].as_str());
             utils::run_auditctl(&["-w", path, "-k", "fim", "-p", &rule]);
