@@ -333,7 +333,6 @@ impl Event {
     pub fn log(&self, file: &str){
         let mut events_file = OpenOptions::new()
             .create(true)
-            .write(true)
             .append(true)
             .open(file)
             .expect("(auditevent::log) Unable to open events log file.");

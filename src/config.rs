@@ -300,7 +300,6 @@ impl Config {
     pub fn get_level_filter(&self) -> LevelFilter {
         let mut log = OpenOptions::new()
             .create(true)
-            .write(true)
             .append(true)
             .open(self.log_file.clone())
             .expect("(get_level_filter) Unable to open events log file.");
