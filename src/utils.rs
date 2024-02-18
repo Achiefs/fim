@@ -274,7 +274,6 @@ pub fn run_auditctl(args: &[&str]) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
 
     #[test]
     fn test_pop() {
@@ -431,6 +430,7 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_get_audit_rule_permissions() {
+        use crate::config::Config;
         let config = Config::new(&get_os(), Some("test/unit/config/linux/audit_rule.yml"));
         assert_eq!(get_audit_rule_permissions(config.audit[0]["rule"].as_str()), "rwax");
     }
@@ -440,6 +440,7 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_run_auditctl() {
+        use crate::config::Config;
         let config = Config::new(&get_os(), Some("test/unit/config/linux/audit_rule.yml"));
         let path = config.audit[0]["path"].as_str().unwrap();
         let rule = config.audit[0]["rule"].as_str().unwrap();
