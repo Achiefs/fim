@@ -333,7 +333,6 @@ impl Event {
     pub fn log(&self, file: &str){
         let mut events_file = OpenOptions::new()
             .create(true)
-            .write(true)
             .append(true)
             .open(file)
             .expect("(auditevent::log) Unable to open events log file.");
@@ -631,9 +630,6 @@ mod tests {
                 (String::from("name"), String::from("/tmp"))
             ]);*/
 
-            let mut test_file = fs::File::create("/etc/auditevent_test_from.txt").unwrap();
-            test_file.write_all(b"Hello, world!").unwrap();
-
             let paths = Vec::from([
                 HashMap::<String, String>::from([
                     (String::from("name"), String::from("/etc")),
@@ -641,7 +637,7 @@ mod tests {
                 ]),
                 HashMap::<String, String>::from([
                     (String::from("nametype"), String::from("nametype")),
-                    (String::from("name"), String::from("/etc/auditevent_test_from.txt")),
+                    (String::from("name"), String::from("/tmp/test.txt")),
                     (String::from("ogid"), String::from("ogid")),
                     (String::from("rdev"), String::from("rdev")),
                     (String::from("cap_fver"), String::from("cap_fver")),
@@ -685,9 +681,9 @@ mod tests {
             assert_eq!(utils::get_hostname(), event.hostname);
             assert_eq!(String::from("FIM"), event.node);
             assert_eq!(String::from(config::VERSION), event.version);
-            assert_eq!(String::from("/etc"), event.path);
-            assert_eq!(String::from("auditevent_test_from.txt"), event.file);
-            assert_eq!(13, event.size);
+            assert_eq!(String::from("/tmp"), event.path);
+            assert_eq!(String::from("test.txt"), event.file);
+            assert_eq!(0, event.size);
             //assert_eq!(..., event.labels);
             //assert_eq!(..., event.parent);
             assert_eq!(String::from("nametype"), event.operation);
@@ -741,8 +737,6 @@ mod tests {
             ]);
             let event = Event::from(syscall, cwd, proctitle, paths.clone(), config.clone());
             assert_eq!(String::from("bash"), event.proctitle);
-
-            remove_test_file("/tmp/auditevent_test_from.txt");
 
         }
     }

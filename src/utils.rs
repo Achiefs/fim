@@ -17,7 +17,7 @@ use std::path::{Path, PathBuf};
 // To run commands
 use std::process::Command;
 // To log the program process
-use log::{warn, debug};
+use log::{warn, debug, error};
 // To manage maps
 use std::collections::HashMap;
 
@@ -76,7 +76,15 @@ pub fn get_machine_id() -> String {
 
 // Function to get file name of a given path
 pub fn get_filename_path(path: &str) -> String {
-    String::from(Path::new(path).file_name().unwrap().to_str().unwrap())
+    String::from(
+        match Path::new(path).file_name() {
+            Some(value) => value,
+            None => {
+                debug!("Cannot retrieve event file, event path is empty.");
+                std::ffi::OsStr::new(path)
+            }
+        }.to_str().unwrap()
+    )
 }
 
 // ----------------------------------------------------------------------------
@@ -230,6 +238,39 @@ pub fn get_file_size(filename: &str) -> u64 {
 
 // ----------------------------------------------------------------------------
 
+pub fn get_audit_rule_permissions(value: Option<&str>) -> String {
+    let mut rule: String = String::new();
+    match value {
+        Some(value) => {
+            for c in value.chars(){
+                match c {
+                    'r'|'R' => rule.push('r'),
+                    'w'|'W' => rule.push('w'),
+                    'a'|'A' => rule.push('a'),
+                    'x'|'X' => rule.push('x'),
+                    _ => rule = String::from("wax")
+                }
+            }
+            rule.clone()
+        },
+        None => String::from("wax")
+    }
+}
+
+// ----------------------------------------------------------------------------
+
+pub fn run_auditctl(args: &[&str]) {
+    match Command::new("/usr/sbin/auditctl")
+    .args(args)
+    .output()
+    {
+        Ok(d) => debug!("Auditctl command info: {:?}", d),
+        Err(e) => error!("Auditctl command error: {}", e)
+    };
+}
+
+// ----------------------------------------------------------------------------
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -315,9 +356,8 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    #[should_panic]
-    fn test_get_filename_path_panic() {
-        get_filename_path("/");
+    fn test_get_filename_path_empty() {
+        assert_eq!(get_filename_path("/"), "/");
     }
 
     // ------------------------------------------------------------------------
@@ -383,6 +423,39 @@ mod tests {
             assert!(!match_path("/tmp/test", "/test"));
             assert!(!match_path("/tmp", "/test"));
         }
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_get_audit_rule_permissions() {
+        use crate::config::Config;
+        let config = Config::new(&get_os(), Some("test/unit/config/linux/audit_rule.yml"));
+        assert_eq!(get_audit_rule_permissions(config.audit[0]["rule"].as_str()), "rwax");
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_run_auditctl() {
+        use crate::config::Config;
+        let config = Config::new(&get_os(), Some("test/unit/config/linux/audit_rule.yml"));
+        let path = config.audit[0]["path"].as_str().unwrap();
+        let rule = config.audit[0]["rule"].as_str().unwrap();
+        run_auditctl(&["-w", path, "-k", "fim", "-p", rule]);
+
+        match Command::new("/usr/sbin/auditctl")
+        .args(["-l", "-k", "fim"])
+        .output()
+        {
+            Ok(data) => assert_eq!(String::from_utf8(data.stdout).unwrap(), "-w /tmp -p rwxa -k fim\n"),
+            Err(e) => {
+                println!("{:?}", e);
+                assert!(true)
+            }
+        };
     }
 
 }

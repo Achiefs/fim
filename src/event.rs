@@ -77,7 +77,6 @@ impl Event {
     pub fn log(&self, file: String){
         let mut events_file = OpenOptions::new()
             .create(true)
-            .write(true)
             .append(true)
             .open(file)
             .expect("(log) Unable to open events log file.");
