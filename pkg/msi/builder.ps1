@@ -9,7 +9,7 @@ cd pkg\msi
 cp ..\..\target\release\fim.exe .\
 cp ..\..\config\windows\config.yml .\
 
-Invoke-Expression "& `"C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe`" .\fim.wxs -o .\fim.wixobj"
+Invoke-Expression "& `"C:\Program Files (x86)\WiX Toolset v3.*\bin\candle.exe`" .\fim.wxs -o .\fim.wixobj"
 
-Invoke-Expression "& `"C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe`" -ext WixUIExtension .\fim.wixobj -o fim-$version-1-x64.msi"
+Invoke-Expression "& `"C:\Program Files (x86)\WiX Toolset v3.*\bin\light.exe`" -ext WixUIExtension .\fim.wixobj -o fim-$version-1-x64.msi"
 
