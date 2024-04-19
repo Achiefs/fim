@@ -40,7 +40,7 @@ jobs:
       - name: Create log file and folder
         run: sudo mkdir -p /var/log/fim/ && sudo touch /var/log/fim/fim.log && sudo chown -R runner:runner /var/log/fim
       - name: Launch cargo test
-        run: cargo test
+        run: sudo cargo test
       - run: echo "Job's status is ${{ job.status }}."
 
   Unit-tests-windows:
