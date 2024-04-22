@@ -3,9 +3,10 @@
 use std::fs::{metadata, File, copy, read_to_string, remove_file, create_dir};
 use std::io::Write;
 use std::path::Path;
-use std::time::{SystemTime, Duration, UNIX_EPOCH};
+use std::time::Duration;
 use std::thread;
 use log::{debug, error, info};
+use std::ptr::addr_of_mut;
 
 use crate::config;
 use crate::utils;
@@ -175,55 +176,50 @@ fn rotate_file(filepath: &str, iteration: u32, lock: &mut bool){
 #[cfg(not(tarpaulin_include))]
 pub fn rotator(){
     let config = unsafe { super::GCONFIG.clone().unwrap() };
-    let mut start_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
 
     loop{
-        if (start_time + Duration::new(10, 0)).as_millis() < 
-            SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis() {
+        let log_size = if Path::new(config.clone().log_file.as_str()).exists() {
+            metadata(config.clone().log_file).unwrap().len() as usize
+        }else{ 0 };
+            
+        let events_size = if Path::new(config.clone().events_file.as_str()).exists() {
+            metadata(config.clone().events_file).unwrap().len() as usize
+        }else{ 0 };
 
-            let log_size = if Path::new(config.clone().log_file.as_str()).exists() {
-                metadata(config.clone().log_file).unwrap().len() as usize
-            }else{ 0 };
-             
-            let events_size = if Path::new(config.clone().events_file.as_str()).exists() {
-                metadata(config.clone().events_file).unwrap().len() as usize
-            }else{ 0 };
+        if events_size >= config.events_max_file_size * 1000000 {
+            let events_path = Path::new(config.events_file.as_str());
+            let mut parent_path = events_path.parent().unwrap().to_path_buf();
+            parent_path.push("archive");
 
-            if events_size >= config.events_max_file_size * 1000000 {
-                let events_path = Path::new(config.events_file.as_str());
-                let mut parent_path = events_path.parent().unwrap().to_path_buf();
-                parent_path.push("archive");
-    
-                if ! parent_path.exists(){
-                    match create_dir(parent_path.clone()){
-                        Ok(_v) => debug!("Archive directory created successfully."),
-                        Err(e) => error!("Cannot create archive directory, error: {}", e)
-                    };
-                }
-
-                unsafe { rotate_file(config.clone().events_file.as_str(),
-                    get_iteration(parent_path.to_str().unwrap()), &mut config::TMP_EVENTS) };
+            if ! parent_path.exists(){
+                match create_dir(parent_path.clone()){
+                    Ok(_v) => debug!("Archive directory created successfully."),
+                    Err(e) => error!("Cannot create archive directory, error: {}", e)
+                };
             }
 
-            if log_size >= config.log_max_file_size * 1000000 {
-                let log_path = Path::new(config.log_file.as_str());
-                let mut parent_path = log_path.parent().unwrap().to_path_buf();
-                parent_path.push("archive");
-
-                if ! parent_path.exists(){
-                    match create_dir(parent_path.clone()){
-                        Ok(_v) => debug!("Archive directory created successfully."),
-                        Err(e) => error!("Cannot create archive directory, error: {}", e)
-                    };
-                }
-
-                rotate_file(config.clone().log_file.as_str(),
-                    get_iteration(parent_path.to_str().unwrap()), &mut true);
-            }
-
-            start_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-            thread::sleep(Duration::from_secs(1800));
+            unsafe { rotate_file(config.clone().events_file.as_str(),
+                get_iteration(parent_path.to_str().unwrap()), &mut *addr_of_mut!(config::TMP_EVENTS)) };
         }
+
+        if log_size >= config.log_max_file_size * 1000000 {
+            let log_path = Path::new(config.log_file.as_str());
+            let mut parent_path = log_path.parent().unwrap().to_path_buf();
+            parent_path.push("archive");
+
+            if ! parent_path.exists(){
+                match create_dir(parent_path.clone()){
+                    Ok(_v) => debug!("Archive directory created successfully."),
+                    Err(e) => error!("Cannot create archive directory, error: {}", e)
+                };
+            }
+
+            rotate_file(config.clone().log_file.as_str(),
+                get_iteration(parent_path.to_str().unwrap()), &mut true);
+        }
+
+        debug!("Sleeping rotator thread for 30 minutes");
+        thread::sleep(Duration::from_secs(1800));
     }
 }
 
