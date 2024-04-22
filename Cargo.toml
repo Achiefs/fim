@@ -27,7 +27,7 @@ log-panics = { version = "2.1.0", features = ["with-backtrace"]}
 
 [target.'cfg(windows)'.dependencies]
 windows-service = "0.6.0"
-zip = "0.6.6"
+zip = "1.1.1"
 
 [target.'cfg(unix)'.dependencies]
 flate2 = "1.0.27"
