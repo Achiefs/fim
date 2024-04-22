@@ -1,0 +1,6 @@
+monitor:
+  - path: C:\tmp\
+    id: 7
+    rule: '\.php$'
+    message: "This is a test"
+    labels: ["windows", "test"]

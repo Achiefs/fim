@@ -2,12 +2,13 @@
 
 use crate::config;
 use crate::event::Event;
+use crate::monitorevent::MonitorEvent;
 use crate::integration;
 use log::debug;
 
 // ----------------------------------------------------------------------------
 
-pub fn check_integrations(event: Event, config: config::Config) {
+pub fn check_integrations(event: MonitorEvent, config: config::Config) {
     let index = config.get_index(event.path.to_str().unwrap(), "", config.monitor.clone());
     if index != usize::MAX {
         let integrations = config.get_integrations(index, config.monitor.clone());
@@ -25,14 +26,14 @@ pub fn check_integrations(event: Event, config: config::Config) {
 mod tests {
     use super::*;
     use std::path::PathBuf;
-    use crate::event::Event;
+    use crate::event::MonitorEvent;
     use crate::config::*;
     use notify::event::*;
 
     // ------------------------------------------------------------------------
 
-    fn create_test_event() -> Event {
-        Event {
+    fn create_test_event() -> MonitorEvent {
+        MonitorEvent {
             id: "Test_id".to_string(),
             timestamp: "Timestamp".to_string(),
             hostname: "Hostname".to_string(),

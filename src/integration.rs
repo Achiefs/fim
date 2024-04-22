@@ -9,6 +9,7 @@ use std::process::Command;
 
 // Single event data management
 use crate::event::Event;
+use crate::monitorevent::MonitorEvent;
 use crate::utils;
 
 // ----------------------------------------------------------------------------
@@ -70,7 +71,7 @@ impl Integration {
 
 // ----------------------------------------------------------------------------
 
-pub fn get_event_integration(event: Event, integrations: Vec<Integration>) -> Option<Integration> {
+pub fn get_event_integration(event: MonitorEvent, integrations: Vec<Integration>) -> Option<Integration> {
     let option = integrations.iter().find(|integration|
         match integration.condition[1].as_str() {
             "==" => event.get_string(integration.condition[0].clone()) == integration.condition[2],

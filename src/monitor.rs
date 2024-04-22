@@ -28,6 +28,8 @@ use crate::config;
 use crate::index;
 // Single event data management
 use crate::event;
+use event::Event;
+use crate::monitorevent::MonitorEvent;
 // File reading continuously
 use crate::logreader;
 // integrations checker
@@ -248,7 +250,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                             if ! config.match_ignore(index,
                                 event_filename.to_str().unwrap(), config.monitor.clone()) &&
                                 config.match_allowed(index, event_filename.to_str().unwrap(), config.monitor.clone()) {
-                                let event = event::Event {
+                                let event = MonitorEvent {
                                     id: utils::get_uuid(),
                                     timestamp: current_timestamp,
                                     hostname: utils::get_hostname(),
@@ -266,7 +268,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                                 };
 
                                 debug!("Event processed: {:?}", event);
-                                event.process(destination.clone().as_str(), index_name.clone(), config.clone()).await;
+                                event.process().await;
                                 launcher::check_integrations(event.clone(), config.clone());
                             }else{
                                 debug!("Event ignored not stored in alerts");

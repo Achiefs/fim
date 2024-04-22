@@ -13,10 +13,14 @@ mod utils;
 mod hash;
 // Configuration load functions
 mod config;
+// Ruleset load functions
+mod ruleset;
 // Index management functions
 mod index;
 // Single event data management
 mod event;
+mod monitorevent;
+mod monitorruleevent;
 // File reading continuously
 mod logreader;
 mod auditevent;
@@ -33,6 +37,7 @@ mod multiwatcher;
 mod rotator;
 
 static mut GCONFIG: Option<config::Config> = None;
+static mut GRULESET: Option<ruleset::Ruleset> = None;
 
 // ----------------------------------------------------------------------------
 
@@ -45,7 +50,8 @@ fn init(){
     println!("[INFO] Achiefs File Integrity Monitoring software starting!");
     println!("[INFO] Reading config...");
     unsafe{
-        GCONFIG = Some(config::Config::new(&utils::get_os(), None));    
+        GCONFIG = Some(config::Config::new(&utils::get_os(), None));  
+        GRULESET = Some(ruleset::Ruleset::new(&utils::get_os(), None));
 
         // Create folders to store logs based on config.yml
         fs::create_dir_all(
@@ -64,9 +70,10 @@ fn init(){
                 .expect("Unable to open log file")
         ).unwrap();
 
-        println!("[INFO] Configuration successfully read, forwarding output to log file");
+        println!("[INFO] Configuration successfully read, forwarding output to log file.");
         println!("[INFO] Log file: '{}'", GCONFIG.clone().unwrap().log_file);
         println!("[INFO] Log level: '{}'", GCONFIG.clone().unwrap().log_level);
+        println!("[INFO] Ruleset successfully load.");
     };
     log_panics::init();
 }

@@ -222,6 +222,7 @@ pub fn rotator(){
             }
 
             start_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+            thread::sleep(Duration::from_secs(1800));
         }
     }
 }
