@@ -24,7 +24,7 @@ pub struct Ruleset {
 
 impl Ruleset {
 
-    pub fn clone(&self) -> Self {
+    /*pub fn clone(&self) -> Self {
         Ruleset {
             path: self.path.clone(),
             monitor: self.monitor.clone(),
@@ -32,7 +32,7 @@ impl Ruleset {
             node: self.node.clone(),
             system: self.system.clone()
         }
-    }
+    }*/
 
     pub fn new(system: &str, ruleset_path: Option<&str>) -> Self {
         println!("[INFO] System detected '{}'", system);
@@ -181,7 +181,7 @@ pub fn get_ruleset_path(system: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    //use super::*;
 
     // ------------------------------------------------------------------------
 

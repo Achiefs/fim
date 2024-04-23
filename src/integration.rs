@@ -52,7 +52,7 @@ impl Integration {
     // ------------------------------------------------------------------------
 
     pub fn launch(&self, event: String) {
-        let formatted_event = match utils::get_os().as_str() {
+        let formatted_event = match utils::get_os() {
             "windows" => format!("'{}'", event),
             _ => event
         };
@@ -105,7 +105,7 @@ mod tests {
     use notify::event::*;
     use crate::config::*;
     use std::path::PathBuf;
-    use crate::event::Event;
+    use crate::monitorevent::MonitorEvent;
 
     // ------------------------------------------------------------------------
 
@@ -122,8 +122,8 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[cfg(target_os = "windows")]
-    pub fn create_dummy_event_windows(path: &str, operation: &str) -> Event {
-        Event{
+    pub fn create_dummy_event_windows(path: &str, operation: &str) -> MonitorEvent {
+        MonitorEvent{
             id: "Test_id".to_string(),
             timestamp: "Timestamp".to_string(),
             hostname: "Hostname".to_string(),

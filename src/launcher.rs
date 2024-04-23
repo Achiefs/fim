@@ -26,7 +26,7 @@ pub fn check_integrations(event: MonitorEvent, config: config::Config) {
 mod tests {
     use super::*;
     use std::path::PathBuf;
-    use crate::event::MonitorEvent;
+    use crate::monitorevent::MonitorEvent;
     use crate::config::*;
     use notify::event::*;
 

@@ -94,14 +94,13 @@ impl Event for MonitorEvent {
   // ------------------------------------------------------------------------
 
   // Function to send events through network
-  async fn send(&self) {
+  async fn send(&self, cfg: config::Config) {
         use time::OffsetDateTime;
         let current_date = OffsetDateTime::now_utc();
-        let config = unsafe { super::GCONFIG.clone().unwrap() };
         let index = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
         
         // Splunk endpoint integration
-        if config.endpoint_type == "Splunk" {
+        if cfg.endpoint_type == "Splunk" {
             let data = json!({
                 "source": self.node.clone(),
                 "sourcetype": "_json",
@@ -122,14 +121,14 @@ impl Event for MonitorEvent {
                 "index": "fim_events"
             });
             debug!("Sending received event to Splunk integration, event: {}", data);
-            let request_url = format!("{}/services/collector/event", config.endpoint_address);
+            let request_url = format!("{}/services/collector/event", cfg.endpoint_address);
             let client = Client::builder()
-                .danger_accept_invalid_certs(config.insecure)
+                .danger_accept_invalid_certs(cfg.insecure)
                 .timeout(Duration::from_secs(30))
                 .build().unwrap();
             match client
                 .post(request_url)
-                .header("Authorization", format!("Splunk {}", config.endpoint_token))
+                .header("Authorization", format!("Splunk {}", cfg.endpoint_token))
                 .json(&data)
                 .send()
                 .await {
@@ -153,14 +152,14 @@ impl Event for MonitorEvent {
                 "checksum": self.checksum.clone(),
                 "system": self.system.clone()
             });
-            let request_url = format!("{}/{}/_doc/{}", config.endpoint_address, index, self.id);
+            let request_url = format!("{}/{}/_doc/{}", cfg.endpoint_address, index, self.id);
             let client = Client::builder()
-                .danger_accept_invalid_certs(config.insecure)
+                .danger_accept_invalid_certs(cfg.insecure)
                 .timeout(Duration::from_secs(30))
                 .build().unwrap();
             match client
                 .post(request_url)
-                .basic_auth(config.endpoint_user, Some(config.endpoint_pass))
+                .basic_auth(cfg.endpoint_user, Some(cfg.endpoint_pass))
                 .json(&data)
                 .send()
                 .await {
@@ -175,9 +174,10 @@ impl Event for MonitorEvent {
     // ------------------------------------------------------------------------
 
     // Function to manage event destination
-    async fn process(&self) {
+    async fn process(&self, cfg: config::Config) {
         use regex::Regex;
 
+        // Review a way to get ruleset and how to get required rule.
         let ruleset = unsafe { super::GRULESET.clone().unwrap() };
 
         let rule_index = ruleset.get_index(self.path.clone().to_str().unwrap(), "", ruleset.monitor.clone());
@@ -197,7 +197,7 @@ impl Event for MonitorEvent {
             println!("Filename: {}", filename);
         }
 
-        route(self).await;
+        route(self, cfg).await;
 
     }
 
@@ -235,17 +235,16 @@ impl fmt::Debug for MonitorEvent {
 
 // ----------------------------------------------------------------------------
 
-pub async fn route(event: &MonitorEvent) {
-  let config = unsafe { super::GCONFIG.clone().unwrap() };
-  match config.get_events_destination().as_str() {
+pub async fn route(event: &MonitorEvent, cfg: config::Config) {
+  match cfg.get_events_destination().as_str() {
       config::BOTH_MODE => {
-          event.log(config.get_events_file());
-          event.send().await;
+          event.log(cfg.get_events_file());
+          event.send(cfg).await;
       },
       config::NETWORK_MODE => {
-          event.send().await;
+          event.send(cfg).await;
       },
-      _ => event.log(config.get_events_file())
+      _ => event.log(cfg.get_events_file())
   }
 }
 
@@ -254,12 +253,16 @@ pub async fn route(event: &MonitorEvent) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::event::Event;
-    use crate::config::Config;
+    use crate::monitorevent::MonitorEvent;
+    use crate::event::*;
     use crate::utils;
+    use crate::ruleset;
     use std::path::PathBuf;
     use tokio_test::block_on;
     use std::fs;
+    use notify::EventKind;
+    use notify::event::{CreateKind, ModifyKind, RemoveKind, AccessKind, MetadataKind,
+        DataChange, RenameMode, AccessMode};
 
     // ------------------------------------------------------------------------
 
@@ -267,8 +270,8 @@ mod tests {
         fs::remove_file(filename).unwrap()
     }
 
-    fn create_test_event() -> Event {
-        Event {
+    fn create_test_event() -> MonitorEvent {
+        MonitorEvent {
             id: "Test_id".to_string(),
             timestamp: "Timestamp".to_string(),
             hostname: "Hostname".to_string(),
@@ -283,12 +286,6 @@ mod tests {
             checksum: "UNKNOWN".to_string(),
             fpid: 0,
             system: "test".to_string()
-        }
-    }
-
-    fn initialize() {
-        unsafe{
-            super::super::GCONFIG = Some(config::Config::new(&utils::get_os(), None)); 
         }
     }
 
@@ -337,21 +334,18 @@ mod tests {
 
     #[test]
     fn test_send() {
-        initialize();
         let evt = create_test_event();
-        block_on( evt.send(String::from("test")) );
+        let cfg = config::Config::new(&utils::get_os(), None);
+        block_on( evt.send(cfg) );
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
     fn test_send_splunk() {
-        initialize();
         let evt = create_test_event();
-        unsafe {
-            super::super::GCONFIG = Some(config::Config::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml")));
-        }
-        block_on( evt.send(String::from("test")) );
+        let cfg = config::Config::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml"));
+        block_on( evt.send(cfg) );
     }
 
     // ------------------------------------------------------------------------
@@ -466,13 +460,13 @@ mod tests {
 
     #[test]
     fn test_process() {
-        initialize();
-        let config = Config::new(&utils::get_os(), None);
         let event = create_test_event();
+        let cfg = config::Config::new(&utils::get_os(), None);
 
-        block_on(event.process(config::NETWORK_MODE, String::from("test"), config.clone()));
-        block_on(event.process(config::FILE_MODE, String::from("test2"), config.clone()));
-        block_on(event.process(config::BOTH_MODE, String::from("test3"), config.clone()));
+        block_on(event.process(cfg));
+        //block_on(event.process(config::NETWORK_MODE, String::from("test"), config.clone()));
+        //block_on(event.process(config::FILE_MODE, String::from("test2"), config.clone()));
+        //block_on(event.process(config::BOTH_MODE, String::from("test3"), config.clone()));
     }
 
     // ------------------------------------------------------------------------

@@ -10,24 +10,21 @@ const CONFIG_MACOS_PATH: &str = "/Applications/FileMonitor.app/config.yml";
 const CONFIG_LINUX_PATH: &str = "/etc/fim/config.yml";
 const CONFIG_WINDOWS_PATH: &str = "C:\\Program Files\\File Integrity Monitor\\config.yml";
 
-// To parse files in yaml format
+// Required dependencies
 use yaml_rust::yaml::{Yaml, YamlLoader, Array};
-// To use files IO operations.
 use std::fs::{File, OpenOptions};
 use std::io::Read;
 use std::io::Write;
-// To manage paths
 use std::path::Path;
-// To set log filter level
 use simplelog::LevelFilter;
-// To manage common functions
 use crate::utils;
-// Integrate FIM with external code
 use crate::integration::Integration;
+use std::sync::{Arc, Mutex};
+use log::error;
 
 // ----------------------------------------------------------------------------
 
-#[derive(Clone)]
+//#[derive(Clone)]
 pub struct Config {
     pub version: String,
     pub path: String,
@@ -48,10 +45,10 @@ pub struct Config {
     pub log_level: String,
     pub log_max_file_size: usize,
     pub system: String,
-    pub insecure: bool
+    pub insecure: bool,
+    pub events_lock: Arc<Mutex<bool>>,
+    pub log_lock: Arc<Mutex<bool>>
 }
-
-pub static mut TMP_EVENTS: bool = false;
 
 impl Config {
 
@@ -76,7 +73,9 @@ impl Config {
             log_level: self.log_level.clone(),
             log_max_file_size: self.log_max_file_size,
             system: self.system.clone(),
-            insecure: self.insecure
+            insecure: self.insecure,
+            events_lock: self.events_lock.clone(),
+            log_lock: self.log_lock.clone()
         }
     }
 
@@ -290,7 +289,9 @@ impl Config {
             log_level,
             log_max_file_size,
             system: String::from(system),
-            insecure
+            insecure,
+            events_lock: Arc::new(Mutex::new(false)),
+            log_lock: Arc::new(Mutex::new(false)),
         }
     }
 
@@ -409,13 +410,40 @@ impl Config {
 
     // ------------------------------------------------------------------------
 
-    pub fn get_events_file(&self) -> String {
-        unsafe {
-            if TMP_EVENTS {
-                format!("{}.tmp", self.events_file.clone())
-            }else{
-                self.events_file.clone()
+    pub fn get_lock_value(&self, lock: Arc<Mutex<bool>>) -> bool {
+        match Arc::into_inner(lock) {
+            None => {
+                error!("Could not retrieve events lock Arc value.");
+                false
+            },
+            Some(mutex) => match mutex.into_inner() {
+                Ok(guard) => guard,
+                Err(e) => {
+                    error!("Could not retrieve events lock Mutex value, err: {}.", e);
+                    false
+                }
             }
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
+    pub fn get_events_file(&self) -> String {
+        match self.get_lock_value(self.events_lock.clone()) {
+            false => self.events_file.clone(),
+            true => format!("{}.tmp", self.events_file.clone())
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
+    pub fn get_mutex(&self, lock: Arc<Mutex<bool>>) -> Mutex<bool> {
+        match Arc::into_inner(lock.clone()) {
+            None => {
+                error!("Could not retrieve Mutex '{:?}'.", lock.clone());
+                Mutex::new(false)
+            },
+            Some(mutex) => mutex
         }
     }
 
@@ -497,7 +525,9 @@ mod tests {
             log_level: String::from(filter),
             log_max_file_size: 64,
             system: String::from("test"),
-            insecure: true
+            insecure: true,
+            events_lock: Arc::new(Mutex::new(false)),
+            log_lock: Arc::new(Mutex::new(false)),
         }
     }
 
@@ -1234,10 +1264,10 @@ mod tests {
             Some(format!("test/unit/config/{}/monitor_integration.yml", os)
                 .as_str())
         );
-        if os.clone() == "windows" {
+        if os == "windows" {
             let integrations = config.get_integrations(2, config.monitor.clone());
             assert_eq!(integrations.len(), 1);
-        }else if os.clone() == "macos"{
+        }else if os == "macos"{
             let integrations = config.get_integrations(2, config.monitor.clone());
             assert_eq!(integrations.len(), 1);
         }else{

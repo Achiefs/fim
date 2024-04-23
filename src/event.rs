@@ -8,9 +8,9 @@ pub trait Event {
     fn format_json(&self) -> String;
     fn clone(&self) -> Self;
     fn log(&self, file: String);
-    async fn send(&self);
+    async fn send(&self, cfg: config::Config);
     //async fn route(&self);
-    async fn process(&self);
+    async fn process(&self, cfg: config::Config);
     fn get_string(&self, field: String) -> String;
 }
 
