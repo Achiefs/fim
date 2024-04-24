@@ -10,8 +10,7 @@ use std::env;
 use std::fs::{File, metadata};
 use std::io::{Read, SeekFrom};
 use std::io::prelude::*;
-// To get config constants
-use crate::config;
+use crate::appconfig;
 // To manage paths
 use std::path::{Path, PathBuf};
 // To run commands
@@ -69,7 +68,7 @@ pub fn read_file(path: &str) -> String {
 
 // (Only supported in Linux) Function to get machine id of the host
 pub fn get_machine_id() -> String {
-    read_file(config::MACHINE_ID_PATH)
+    read_file(appconfig::MACHINE_ID_PATH)
 }
 
 // ----------------------------------------------------------------------------
@@ -168,7 +167,7 @@ pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
         }
         ,
         Err(e) => { 
-            debug!("Could not fetch metadata information of '{}', assuming not a file. Error: {}", raw_path_clean, e);
+            debug!("Cannot fetch metadata information of '{}', assuming not a file. Error: {}", raw_path_clean, e);
             raw_tokens = raw_path_clean.split(pattern).collect();
         }
     };
@@ -180,7 +179,7 @@ pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
             compare_tokens = compare_path_clean.split(pattern).collect();
         },
         Err(e) => {
-            debug!("Could not fetch metadata information of '{}', assuming not a file. Error: {}", compare_path_clean, e);
+            debug!("Cannot fetch metadata information of '{}', assuming not a file. Error: {}", compare_path_clean, e);
             compare_tokens = compare_path_clean.split(pattern).collect();
         }
     };
@@ -212,11 +211,11 @@ pub fn get_field(data: HashMap<String, String>, field_name: &str) -> String {
     match data.get(field_name) {
         Some(value) => String::from(value),
         None => {
-            debug!("Could not fetch field name trying alternative");
+            debug!("Cannot not fetch field name trying alternative");
             match data.get(alternative) {
                 Some(alt) => String::from(alt),
                 None => {
-                    debug!("Could not fetch alternative. Using default");
+                    debug!("Cannot not fetch alternative. Using default");
                     String::from("UNKNOWN")
                 }
             }
@@ -430,9 +429,9 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_get_audit_rule_permissions() {
-        use crate::config::Config;
-        let config = Config::new(&get_os(), Some("test/unit/config/linux/audit_rule.yml"));
-        assert_eq!(get_audit_rule_permissions(config.audit[0]["rule"].as_str()), "rwax");
+        use crate::appconfig::*;
+        let cfg = AppConfig::new(&get_os(), Some("test/unit/config/linux/audit_rule.yml"));
+        assert_eq!(get_audit_rule_permissions(cfg.audit[0]["rule"].as_str()), "rwax");
     }
 
     // ------------------------------------------------------------------------
@@ -440,10 +439,10 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_run_auditctl() {
-        use crate::config::Config;
-        let config = Config::new(&get_os(), Some("test/unit/config/linux/audit_rule.yml"));
-        let path = config.audit[0]["path"].as_str().unwrap();
-        let rule = config.audit[0]["rule"].as_str().unwrap();
+        use crate::appconfig::*;
+        let cfg = AppConfig::new(&get_os(), Some("test/unit/config/linux/audit_rule.yml"));
+        let path = cfg.audit[0]["path"].as_str().unwrap();
+        let rule = cfg.audit[0]["rule"].as_str().unwrap();
         run_auditctl(&["-w", path, "-k", "fim", "-p", rule]);
 
         match Command::new("/usr/sbin/auditctl")

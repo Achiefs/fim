@@ -5,129 +5,147 @@ const RULESET_MACOS_PATH: &str = "/Applications/FileMonitor.app/rules.yml";
 const RULESET_LINUX_PATH: &str = "/etc/fim/rules.yml";
 const RULESET_WINDOWS_PATH: &str = "C:\\Program Files\\File Integrity Monitor\\rules.yml";
 
-use yaml_rust::yaml::{Yaml, YamlLoader, Array};
+use yaml_rust::yaml::{Yaml, YamlLoader};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+use std::collections::HashMap;
+use log::{debug, error};
+use std::path::PathBuf;
+use regex::Regex;
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use crate::utils;
+use crate::appconfig;
+use crate::appconfig::*;
+use crate::event;
+use event::Event;
+use crate::ruleevent::RuleEvent;
 
 // ----------------------------------------------------------------------------
 
 #[derive(Clone)]
 pub struct Ruleset {
-    pub path: String,
-    pub monitor: Array,
-    pub audit: Array,
-    pub node: String,
-    pub system: String
+    pub rules: HashMap<usize, HashMap<String, String>>,
 }
 
 impl Ruleset {
 
-    /*pub fn clone(&self) -> Self {
+    pub fn clone(&self) -> Self {
         Ruleset {
-            path: self.path.clone(),
-            monitor: self.monitor.clone(),
-            audit: self.audit.clone(),
-            node: self.node.clone(),
-            system: self.system.clone()
+            rules: self.rules.clone()
         }
-    }*/
+    }
 
-    pub fn new(system: &str, ruleset_path: Option<&str>) -> Self {
-        println!("[INFO] System detected '{}'", system);
-        let cfg = match ruleset_path {
-            Some(path) => String::from(path),
+    pub fn new(system: &str, path: Option<&str>) -> Self {
+        println!("[INFO] Reading ruleset...");
+        let rules_file = match path {
+            Some(p) => String::from(p),
             None => get_ruleset_path(system)
         };
-        println!("[INFO] Loading rules from: '{}'", cfg);
-        let yaml = read_ruleset(cfg.clone());
-        println!("{:?}", yaml.clone());
+        println!("[INFO] Loading rules from: '{}'", rules_file);
+        
+        let yaml = read_ruleset(rules_file.clone());
 
-        // Manage null value on monitor value
-        let monitor = match yaml[0]["monitor"].as_vec() {
-            Some(value) => value.to_vec(),
-            None => Vec::new()
-        };
-
-        // Manage null value on audit value
-        let audit = match yaml[0]["audit"].as_vec() {
-            Some(value) => {
-                if utils::get_os() != "linux"{
-                    panic!("Audit only supported in Linux systems.");
+        // Manage null value on rules
+        let mut rules = HashMap::new();
+        if yaml.len() > 0 {
+            let vec_of_rules = match yaml[0]["rules"].as_vec() {
+                Some(value) => value.to_vec(),
+                None => {
+                    println!("[INFO] No rules to load.");
+                    Vec::new()
                 }
-                value.to_vec()
-            },
-            None => {
-                if monitor.is_empty() {
-                    panic!("Neither monitor or audit section found in rules.yml.");
+            };
+        
+            let itr = vec_of_rules.iter();
+            itr.for_each(|yml| {
+                let mut map = HashMap::new();
+                match yml["path"].as_str() {
+                    Some(p) => map.insert(String::from("path"), String::from(p)),
+                    None => panic!("[ERROR] Ruleset syntax error, attribute 'path' in rule not defined. \
+                                        Required fields in rule are 'path', 'rule', 'message' and 'id'.")
                 };
-                Vec::new()
-            }
-        };
+                match yml["rule"].as_str() {
+                    Some(r) => map.insert(String::from("rule"), sanitize(r)),
+                    None => panic!("[ERROR] Ruleset syntax error, attribute 'rule' in rule not defined. \
+                                        Required fields in rule are 'path', 'rule', 'message' and 'id'.")
+                };
+                match yml["message"].as_str() {
+                    Some(m) => map.insert(String::from("message"), String::from(m)),
+                    None => panic!("[ERROR] Ruleset syntax error, attribute 'message' in rule not defined. \
+                                        Required fields in rule are 'path', 'rule', 'message' and 'id'.")
+                };
 
-        // Manage null value on node value
-        let node = match yaml[0]["node"].as_str() {
-            Some(value) => String::from(value),
+                let id = match yml["id"].as_i64() {
+                    Some(value) => usize::try_from(value).unwrap(),
+                    None => panic!("[ERROR] Ruleset syntax error, attribute 'id' in rule not defined. \
+                    Required fields in rule are 'path', 'rule', 'message' and 'id'.")
+                };
+                rules.insert(id, map);
+            });
+            println!("[INFO] Ruleset successfully load.");
+        }else{
+            println!("[INFO] Ruleset empty, nothing to do.");
+        }
+
+        Ruleset { rules }
+    }
+
+    // ------------------------------------------------------------------------
+
+    pub async fn match_rule(&self, cfg: AppConfig, filepath: PathBuf) -> (bool, usize) {
+        let path = filepath.parent().unwrap().to_str().unwrap();
+        let find = self.rules.iter().find(|map| {
+            map.1.contains_key("path") && utils::match_path(map.1.get("path").unwrap(), path)
+        });
+
+        let (id, rule) = match find {
+            Some(element) => (element.0.clone(), element.1.get("rule").unwrap().clone()),
             None => {
-                match system {
-                    "linux" => match utils::get_machine_id().is_empty() {
-                        true => utils::get_hostname(),
-                        false => utils::get_machine_id()
-                    },
-                    "macos" => match utils::get_machine_id().is_empty(){
-                        true => utils::get_hostname(),
-                        false => utils::get_machine_id()
-                    }
-                    _ => {
-                        println!("[WARN] node not found in rules.yml, using hostname.");
-                        utils::get_hostname()
-                    }
-                }
+                debug!("No rule matched");
+                (usize::MAX, String::from(""))
             }
         };
+        
+        let expression = match Regex::new(&rule){
+            Ok(exp) => exp,
+            Err(e) => {
+                error!("Cannot create regex rule: {}, Error: {}", rule, e);
+                return (false, usize::MAX);
+            },
+        };
 
-        Ruleset {
-            path: cfg,
-            monitor,
-            audit,
-            node,
-            system: String::from(system)
-        }
+        let filename = filepath.file_name().unwrap().to_str().unwrap();
+        if id != usize::MAX {
+            if expression.is_match(filename){
+                debug!("Rule with ID: '{}', match event path: '{}'.", id, path);
+                // Send rule event
+                let event = RuleEvent {
+                    id,
+                    rule,
+                    timestamp: format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis()),
+                    hostname: utils::get_hostname(),
+                    node: cfg.clone().node,
+                    version: String::from(appconfig::VERSION),
+                    path: filepath,
+                    fpid: utils::get_pid(),
+                    system: cfg.clone().system,
+                    message: self.rules.get(&id).unwrap().get("message").unwrap().clone()
+                };
+                event.process(cfg, self.clone()).await;
+                (true, id)
+            } else { (false, usize::MAX) }
+        } else { (false, usize::MAX) }
     }
+}
 
-    // ------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
-    pub fn get_index(&self, raw_path: &str, cwd: &str, array: Array) -> usize {
-        // Iterate over monitoring paths to match the given path
-        match array.iter().position(|it| {
-            if !cwd.is_empty() && (raw_path.starts_with("./") || raw_path == "." || !raw_path.contains('/')) {
-                utils::match_path(cwd, it["path"].as_str().unwrap())
-            }else{
-                utils::match_path(raw_path, it["path"].as_str().unwrap())
-            }
-        }){
-            Some(pos) => pos,
-            None => usize::MAX
-        }
-    }
-
-    // ------------------------------------------------------------------------
-
-    pub fn clean_rule(raw_rule: String) -> String {
-        let mut rule = raw_rule.clone();
-        rule.retain(|x| {!['\"', ':', '\'', '/', '|', '>', '<', '?'].contains(&x)});
-        rule
-    }
-
-    // ------------------------------------------------------------------------
-
-    pub fn get_rule(&self, index: usize, array: Array) -> String {
-        match array[index]["rule"].as_str() {
-            Some(rule) => String::from(Ruleset::clean_rule(String::from(rule))),
-            None => String::from("")
-        }
-    }
+pub fn sanitize(raw_rule: &str) -> String {
+    let mut rule = String::from(raw_rule);
+    rule.retain(|x| {!['\"', ':', '\'', '/', '|', '>', '<', '?'].contains(&x)});
+    rule
 }
 
 // ----------------------------------------------------------------------------
@@ -185,8 +203,8 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    /*pub fn create_test_config(filter: &str, events_destination: &str) -> Config {
-        Config {
+    /*pub fn create_test_config(filter: &str, events_destination: &str) -> AppConfig {
+        AppConfig {
             version: String::from(VERSION),
             path: String::from("test"),
             events_watcher: String::from("Recommended"),
@@ -201,7 +219,6 @@ mod tests {
             events_file: String::from("test"),
             monitor: Array::new(),
             audit: Array::new(),
-            node: String::from("test"),
             log_file: String::from("./test.log"),
             log_level: String::from(filter),
             log_max_file_size: 64,
@@ -214,27 +231,26 @@ mod tests {
 
     #[test]
     fn test_clone() {
-        let config = create_test_config("info", "");
-        let cloned = config.clone();
-        assert_eq!(config.version, cloned.version);
-        assert_eq!(config.path, cloned.path);
-        assert_eq!(config.events_destination, cloned.events_destination);
-        assert_eq!(config.events_max_file_checksum, cloned.events_max_file_checksum);
-        assert_eq!(config.events_max_file_size, cloned.events_max_file_size);
-        assert_eq!(config.endpoint_type, cloned.endpoint_type);
-        assert_eq!(config.endpoint_address, cloned.endpoint_address);
-        assert_eq!(config.endpoint_user, cloned.endpoint_user);
-        assert_eq!(config.endpoint_pass, cloned.endpoint_pass);
-        assert_eq!(config.endpoint_token, cloned.endpoint_token);
-        assert_eq!(config.events_file, cloned.events_file);
-        assert_eq!(config.monitor, cloned.monitor);
-        assert_eq!(config.audit, cloned.audit);
-        assert_eq!(config.node, cloned.node);
-        assert_eq!(config.log_file, cloned.log_file);
-        assert_eq!(config.log_level, cloned.log_level);
-        assert_eq!(config.log_max_file_size, cloned.log_max_file_size);
-        assert_eq!(config.system, cloned.system);
-        assert_eq!(config.insecure, cloned.insecure);
+        let cfg = create_test_config("info", "");
+        let cloned = cfg.clone();
+        assert_eq!(cfg.version, cloned.version);
+        assert_eq!(cfg.path, cloned.path);
+        assert_eq!(cfg.events_destination, cloned.events_destination);
+        assert_eq!(cfg.events_max_file_checksum, cloned.events_max_file_checksum);
+        assert_eq!(cfg.events_max_file_size, cloned.events_max_file_size);
+        assert_eq!(cfg.endpoint_type, cloned.endpoint_type);
+        assert_eq!(cfg.endpoint_address, cloned.endpoint_address);
+        assert_eq!(cfg.endpoint_user, cloned.endpoint_user);
+        assert_eq!(cfg.endpoint_pass, cloned.endpoint_pass);
+        assert_eq!(cfg.endpoint_token, cloned.endpoint_token);
+        assert_eq!(cfg.events_file, cloned.events_file);
+        assert_eq!(cfg.monitor, cloned.monitor);
+        assert_eq!(cfg.audit, cloned.audit);
+        assert_eq!(cfg.log_file, cloned.log_file);
+        assert_eq!(cfg.log_level, cloned.log_level);
+        assert_eq!(cfg.log_max_file_size, cloned.log_max_file_size);
+        assert_eq!(cfg.system, cloned.system);
+        assert_eq!(cfg.insecure, cloned.insecure);
     }*/
 
 }

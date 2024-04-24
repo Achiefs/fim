@@ -1,7 +1,9 @@
 // Copyright (C) 2024, Achiefs.
 
 use crate::event;
-use crate::config;
+use crate::appconfig;
+use crate::appconfig::*;
+use crate::ruleset::*;
 
 use event::Event;
 use log::*;
@@ -94,7 +96,7 @@ impl Event for MonitorEvent {
   // ------------------------------------------------------------------------
 
   // Function to send events through network
-  async fn send(&self, cfg: config::Config) {
+  async fn send(&self, cfg: AppConfig) {
         use time::OffsetDateTime;
         let current_date = OffsetDateTime::now_utc();
         let index = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
@@ -174,31 +176,9 @@ impl Event for MonitorEvent {
     // ------------------------------------------------------------------------
 
     // Function to manage event destination
-    async fn process(&self, cfg: config::Config) {
-        use regex::Regex;
-
-        // Review a way to get ruleset and how to get required rule.
-        let ruleset = unsafe { super::GRULESET.clone().unwrap() };
-
-        let rule_index = ruleset.get_index(self.path.clone().to_str().unwrap(), "", ruleset.monitor.clone());
-        let rule = ruleset.get_rule(rule_index, ruleset.monitor.clone());
-        let expression = match Regex::new(&rule){
-            Err(e) => {
-                error!("Cannot create regex rule: {}, Error: {}", rule, e);
-                return;
-            },
-            Ok(exp) => exp,
-        };
-        println!("Rule: {}", rule.clone());
-        let filename = self.path.file_name().unwrap().to_str().unwrap();
-        if expression.is_match(filename){
-            //event_match...
-            println!("Rule {} Match!", rule.clone());
-            println!("Filename: {}", filename);
-        }
-
+    async fn process(&self, cfg: AppConfig, _ruleset: Ruleset) {
+        _ruleset.match_rule(cfg.clone(), self.path.clone()).await;
         route(self, cfg).await;
-
     }
 
     // ------------------------------------------------------------------------
@@ -235,13 +215,13 @@ impl fmt::Debug for MonitorEvent {
 
 // ----------------------------------------------------------------------------
 
-pub async fn route(event: &MonitorEvent, cfg: config::Config) {
+pub async fn route(event: &MonitorEvent, cfg: AppConfig) {
   match cfg.get_events_destination().as_str() {
-      config::BOTH_MODE => {
+      appconfig::BOTH_MODE => {
           event.log(cfg.get_events_file());
           event.send(cfg).await;
       },
-      config::NETWORK_MODE => {
+      appconfig::NETWORK_MODE => {
           event.send(cfg).await;
       },
       _ => event.log(cfg.get_events_file())
@@ -335,7 +315,7 @@ mod tests {
     #[test]
     fn test_send() {
         let evt = create_test_event();
-        let cfg = config::Config::new(&utils::get_os(), None);
+        let cfg = AppConfig::new(&utils::get_os(), None);
         block_on( evt.send(cfg) );
     }
 
@@ -344,7 +324,7 @@ mod tests {
     #[test]
     fn test_send_splunk() {
         let evt = create_test_event();
-        let cfg = config::Config::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml"));
+        let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml"));
         block_on( evt.send(cfg) );
     }
 
@@ -461,12 +441,12 @@ mod tests {
     #[test]
     fn test_process() {
         let event = create_test_event();
-        let cfg = config::Config::new(&utils::get_os(), None);
+        let cfg = AppConfig::new(&utils::get_os(), None);
 
         block_on(event.process(cfg));
-        //block_on(event.process(config::NETWORK_MODE, String::from("test"), config.clone()));
-        //block_on(event.process(config::FILE_MODE, String::from("test2"), config.clone()));
-        //block_on(event.process(config::BOTH_MODE, String::from("test3"), config.clone()));
+        //block_on(event.process(appconfig::NETWORK_MODE, String::from("test"), cfg.clone()));
+        //block_on(event.process(appconfig::FILE_MODE, String::from("test2"), cfg.clone()));
+        //block_on(event.process(appconfig::BOTH_MODE, String::from("test3"), cfg.clone()));
     }
 
     // ------------------------------------------------------------------------

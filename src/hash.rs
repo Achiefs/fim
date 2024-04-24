@@ -51,7 +51,7 @@ pub fn get_checksum(filename: String, read_limit: usize) -> String {
                     iteration += 1;
                 };
                 if data_read > read_limit {
-                    info!("File '{}' checksum skipped. File size is above limit", filename);
+                    info!("File '{}' checksum skipped. File size is above limit.", filename);
                     String::from("UNKNOWN")
                 }else{
                     encode(hasher.finalize())
@@ -63,7 +63,7 @@ pub fn get_checksum(filename: String, read_limit: usize) -> String {
             }
         }
     }else{
-        debug!("Cannot produce checksum of a directory");
+        debug!("Cannot produce checksum of a removed file or directory.");
         String::from("UNKNOWN")
     }
 }

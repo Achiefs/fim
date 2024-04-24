@@ -8,8 +8,7 @@ use std::thread;
 
 use crate::monitor;
 use crate::rotator;
-use crate::config;
-use crate::utils;
+use crate::init::init;
 
 use log::{error, info};
 use std::{
@@ -101,14 +100,15 @@ pub fn run_service() -> Result<()> {
         process_id: None,
     })?;
 
-    let cfg = config::Config::new(&utils::get_os(), None);
+    let (cfg, ruleset) = init();
     let rotator_cfg = cfg.clone();
+
     match thread::Builder::new()
         .name("FIM_Rotator".to_string()).spawn(|| rotator::rotator(rotator_cfg)){
         Ok(_v) => info!("FIM rotator thread started."),
         Err(e) => error!("Could not start FIM rotator thread, error: {}", e)
     };
-    block_on(monitor::monitor(tx, rx, cfg));
+    block_on(monitor::monitor(tx, rx, cfg, ruleset));
 
     // Tell the system that service has stopped.
     status_handle.set_service_status(ServiceStatus {

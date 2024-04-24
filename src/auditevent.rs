@@ -9,8 +9,8 @@ use serde_json::{json, to_string};
 use reqwest::Client;
 use std::collections::HashMap;
 
-
-use crate::config;
+use crate::appconfig;
+use crate::appconfig::*;
 use crate::utils;
 use crate::hash;
 
@@ -106,10 +106,10 @@ impl Event {
     pub fn from(syscall: HashMap<String, String>,
         cwd: HashMap<String, String>, proctitle: HashMap<String, String>,
         paths: Vec<HashMap<String, String>>,
-        config: config::Config) -> Self {
+        cfg: AppConfig) -> Self {
 
-        let parent = get_parent(paths.clone(),  cwd["cwd"].as_str(), config.clone());
-        let path = get_item_path(paths.clone(), cwd["cwd"].as_str(), config.clone());
+        let parent = get_parent(paths.clone(),  cwd["cwd"].as_str(), cfg.clone());
+        let path = get_item_path(paths.clone(), cwd["cwd"].as_str(), cfg.clone());
 
         let command = if proctitle["proctitle"].contains('/') ||
             proctitle["proctitle"].contains("bash") {
@@ -124,9 +124,9 @@ impl Event {
             .split(':').collect::<Vec<&str>>()[0]); // Getting the 13 digits timestamp
 
         let event_path = parent["name"].clone();
-        let index = config.get_index(event_path.as_str(),
-            cwd["cwd"].as_str(), config.audit.clone().to_vec());
-        let labels = config.get_labels(index, config.audit.clone());
+        let index = cfg.get_index(event_path.as_str(),
+            cwd["cwd"].as_str(), cfg.audit.clone().to_vec());
+        let labels = cfg.get_labels(index, cfg.audit.clone());
 
         Event{
             id: utils::get_uuid(),
@@ -134,8 +134,8 @@ impl Event {
             command,
             timestamp: clean_timestamp,
             hostname: utils::get_hostname(),
-            node: config.node,
-            version: String::from(config::VERSION),
+            node: cfg.node,
+            version: String::from(appconfig::VERSION),
             labels,
             operation: utils::get_field(path.clone(), "nametype"),
             path: utils::clean_path(&event_path),
@@ -143,7 +143,7 @@ impl Event {
             size: utils::get_file_size(path["name"].clone().as_str()),
             checksum: hash::get_checksum(format!("{}/{}",
                 parent["name"].clone(), path["name"].clone()),
-                config.events_max_file_checksum),
+                cfg.events_max_file_checksum),
             fpid: utils::get_pid(),
             system: String::from(utils::get_os()),
 
@@ -346,7 +346,7 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to send events through network
-    pub async fn send(&self, index: String, cfg: config::Config) {
+    pub async fn send(&self, index: String, cfg: AppConfig) {
         let event = self.get_json();
         
         // Splunk endpoint integration
@@ -396,13 +396,13 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to manage event destination
-    pub async fn process(&self, destination: &str, index_name: String, cfg: config::Config){
+    pub async fn process(&self, destination: &str, index_name: String, cfg: AppConfig){
         match destination {
-            config::BOTH_MODE => {
+            appconfig::BOTH_MODE => {
                 self.log(&cfg.get_events_file());
                 self.send(index_name, cfg).await;
             },
-            config::NETWORK_MODE => {
+            appconfig::NETWORK_MODE => {
                 self.send(index_name, cfg).await;
             },
             _ => self.log(&cfg.get_events_file())
@@ -421,7 +421,7 @@ fn get_field(map: HashMap<String, String>,field: &str) -> String {
 
 // ----------------------------------------------------------------------------
 
-pub fn get_parent(paths: Vec<HashMap<String, String>>, cwd: &str, cfg: config::Config) -> HashMap<String, String> {
+pub fn get_parent(paths: Vec<HashMap<String, String>>, cwd: &str, cfg: AppConfig) -> HashMap<String, String> {
     match paths.iter().find(|p|{
         utils::get_field((*p).clone(), "nametype") == "PARENT" &&
         cfg.path_in(p["name"].as_str(), cwd, cfg.audit.clone())
@@ -433,7 +433,7 @@ pub fn get_parent(paths: Vec<HashMap<String, String>>, cwd: &str, cfg: config::C
 
 // ----------------------------------------------------------------------------
 
-pub fn get_item_path(paths: Vec<HashMap<String, String>>, cwd: &str, cfg: config::Config) -> HashMap<String, String> {
+pub fn get_item_path(paths: Vec<HashMap<String, String>>, cwd: &str, cfg: AppConfig) -> HashMap<String, String> {
     match paths.iter().rfind(|p|{
         utils::get_field((*p).clone(), "nametype") != "PARENT" &&
         utils::get_field((*p).clone(), "nametype") != "UNKNOWN" &&
@@ -504,7 +504,7 @@ impl fmt::Debug for Event {
 mod tests {
     use super::*;
     use crate::auditevent::Event;
-    use crate::config::Config;
+    use crate::appconfig::*;
     use tokio_test::block_on;
     use std::fs;
 
@@ -585,7 +585,7 @@ mod tests {
     #[test]
     fn test_from() {
         if utils::get_os() == "linux" {
-            let cfg = Config::new(&utils::get_os(),
+            let cfg = AppConfig::new(&utils::get_os(),
                 Some("test/unit/config/linux/audit_from_test.yml"));
             let syscall = HashMap::<String, String>::from([
                 (String::from("syscall"), String::from("syscall")),
@@ -673,7 +673,7 @@ mod tests {
             assert_eq!(String::from("1659026449689"), event.timestamp);
             assert_eq!(utils::get_hostname(), event.hostname);
             assert_eq!(String::from("FIM"), event.node);
-            assert_eq!(String::from(config::VERSION), event.version);
+            assert_eq!(String::from(appconfig::VERSION), event.version);
             assert_eq!(String::from("/tmp"), event.path);
             assert_eq!(String::from("test.txt"), event.file);
             assert_eq!(0, event.size);
@@ -940,7 +940,7 @@ mod tests {
     #[test]
     fn test_send() {
         let event = create_test_event();
-        let cfg = config::Config::new(&utils::get_os(), None);
+        let cfg = AppConfig::new(&utils::get_os(), None);
         block_on( event.send(String::from("test"), cfg) );
     }
 
@@ -949,7 +949,7 @@ mod tests {
     #[test]
     fn test_send_splunk() {
         let event = create_test_event();
-        let cfg = Config::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml"));
+        let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml"));
         block_on( event.send(String::from("test"), cfg) );
     }
 
@@ -957,12 +957,12 @@ mod tests {
 
     #[test]
     fn test_process() {
-        let cfg = Config::new(&utils::get_os(), None);
+        let cfg = AppConfig::new(&utils::get_os(), None);
         let event = create_test_event();
 
-        block_on(event.process(config::NETWORK_MODE, String::from("test"), cfg.clone()));
-        block_on(event.process(config::FILE_MODE, String::from("test2"), cfg.clone()));
-        block_on(event.process(config::BOTH_MODE, String::from("test3"), cfg.clone()));
+        block_on(event.process(appconfig::NETWORK_MODE, String::from("test"), cfg.clone()));
+        block_on(event.process(appconfig::FILE_MODE, String::from("test2"), cfg.clone()));
+        block_on(event.process(appconfig::BOTH_MODE, String::from("test3"), cfg.clone()));
     }
 
     // ------------------------------------------------------------------------

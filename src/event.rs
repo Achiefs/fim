@@ -1,6 +1,7 @@
 // Copyright (C) 2021, Achiefs.
 
-use crate::config;
+use crate::appconfig::*;
+use crate::ruleset::*;
 
 use notify::event::*;
 
@@ -8,25 +9,24 @@ pub trait Event {
     fn format_json(&self) -> String;
     fn clone(&self) -> Self;
     fn log(&self, file: String);
-    async fn send(&self, cfg: config::Config);
-    //async fn route(&self);
-    async fn process(&self, cfg: config::Config);
+    async fn send(&self, cfg: AppConfig);
+    async fn process(&self, cfg: AppConfig, _ruleset: Ruleset);
     fn get_string(&self, field: String) -> String;
 }
 
 // ----------------------------------------------------------------------------
 
 /*pub async fn route(event: &dyn Event) {
-    let config = unsafe { super::GCONFIG.clone().unwrap() };
-    match config.get_events_destination().as_str() {
-        config::BOTH_MODE => {
-            event.log(config.get_events_file());
+    let cfg = unsafe { super::GCONFIG.clone().unwrap() };
+    match cfg.get_events_destination().as_str() {
+        appconfig::BOTH_MODE => {
+            event.log(cfg.get_events_file());
             event.send().await;
         },
-        config::NETWORK_MODE => {
+        appconfig::NETWORK_MODE => {
             event.send().await;
         },
-        _ => event.log(config.get_events_file())
+        _ => event.log(cfg.get_events_file())
     }
 }*/
 

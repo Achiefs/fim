@@ -13,7 +13,7 @@ use std::path::Path;
 // Handle time intervals
 use std::time::Duration;
 
-use crate::config;
+use crate::appconfig::*;
 
 fn get_template_path() -> String {
     let relative_path = "./../../config/index_template.json";
@@ -32,7 +32,7 @@ fn get_template_path() -> String {
 
 // ----------------------------------------------------------------------------
 
-pub async fn push_template(cfg: config::Config){
+pub async fn push_template(cfg: AppConfig){
     let template_path = get_template_path();
     info!("Loaded index template from: {}", template_path);
     let file = File::open(template_path).await.unwrap();
@@ -64,13 +64,13 @@ pub async fn push_template(cfg: config::Config){
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config;
+    use crate::appconfig;
     use crate::utils;
 
     #[test]
     fn test_push_template() {
         tokio_test::block_on( push_template(
-            config::Config::new(&utils::get_os(), Some("test/unit/config/common/test_push_template.yml"))));
+            AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_push_template.yml"))));
     }
 
     #[test]

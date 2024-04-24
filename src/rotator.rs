@@ -8,7 +8,7 @@ use std::thread;
 use log::{debug, error, info};
 use std::sync::Mutex;
 
-use crate::config;
+use crate::appconfig::*;
 use crate::utils;
 
 // ----------------------------------------------------------------------------
@@ -56,7 +56,7 @@ fn compress_zip_file(filepath: &str) -> Result<String, String> {
             Ok(format!("File {} compressed successfully.", filename))
         },
         Err(e) => {
-            error!("Could not create file inside zip file, error: {}", e);
+            error!("Cannot create file inside zip file, error: {}", e);
             Err(format!("{}", e))
         }
     }
@@ -81,7 +81,7 @@ fn compress_tgz_file(filepath: &str) -> Result<String, String> {
     match tar.append_file(filename, &mut file){
         Ok(()) => Ok(format!("File {} compressed successfully.", filename)),
         Err(e) => {
-            error!("Could not create tar.gz archive, error: {}", e);
+            error!("Cannot not create tar.gz archive, error: {}", e);
             Err(format!("{}", e))
         }
     }
@@ -176,7 +176,7 @@ fn rotate_file(filepath: &str, iteration: u32, lock: Mutex<bool>){
 // ----------------------------------------------------------------------------
 
 #[cfg(not(tarpaulin_include))]
-pub fn rotator(cfg: config::Config){
+pub fn rotator(cfg: AppConfig){
     loop{
         let log_size = if Path::new(cfg.clone().log_file.as_str()).exists() {
             metadata(cfg.clone().log_file).unwrap().len() as usize

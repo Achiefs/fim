@@ -17,7 +17,7 @@ use crate::auditevent::Event;
 // To manage common functions
 use crate::utils;
 // To get configuration constants
-use crate::config;
+use crate::appconfig::*;
 
 // Defined type to simplify syntax
 type SHashMap = HashMap<String, String>;
@@ -25,7 +25,7 @@ type SHashMap = HashMap<String, String>;
 // ----------------------------------------------------------------------------
 
 // Read file to extract last data until the Audit ID changes
-pub fn read_log(file: String, config: config::Config, position: u64, itx: u64) -> (Event, u64) {
+pub fn read_log(file: String, cfg: AppConfig, position: u64, itx: u64) -> (Event, u64) {
     let mut event: Event = Event::new();
     let mut current_position = position;
     let log = utils::open_file(&file, 0);
@@ -75,15 +75,15 @@ pub fn read_log(file: String, config: config::Config, position: u64, itx: u64) -
             last["type"] == "PROCTITLE" &&
             first["type"] == "SYSCALL" {
             let (syscall, cwd, proctitle, paths) = extract_fields(data.clone());
-            let audit_vec = config.audit.to_vec();
+            let audit_vec = cfg.audit.to_vec();
 
             // Skip the event generation of paths not monitored by FIM
             if paths.iter().any(|p| {
                 let cwd_path = cwd["cwd"].as_str();
-                config.path_in(p["name"].as_str(), cwd_path, audit_vec.clone()) ||
-                config.path_in(cwd_path, "", audit_vec.clone())
+                cfg.path_in(p["name"].as_str(), cwd_path, audit_vec.clone()) ||
+                cfg.path_in(cwd_path, "", audit_vec.clone())
             }) {
-                event = Event::from(syscall, cwd, proctitle, paths, config.clone());
+                event = Event::from(syscall, cwd, proctitle, paths, cfg.clone());
             }
         }else if data.iter().any(|line| {
             line["type"] == "SYSCALL" ||
@@ -140,14 +140,14 @@ pub fn parse_audit_log(log: String) -> HashMap<String, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
+    use crate::appconfig::*;
 
     #[test]
     fn test_read_log() {
         if utils::get_os() == "linux" {
-            let config = Config::new("linux", None);
+            let cfg = AppConfig::new("linux", None);
             let (event, position) = read_log(String::from("test/unit/audit.log"),
-                config, 0, 0);
+                cfg, 0, 0);
 
             assert_eq!(event.id.len(), 36);
             assert_eq!(event.path, ".");

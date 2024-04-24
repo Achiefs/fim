@@ -22,14 +22,15 @@ use notify::event::{EventKind, AccessKind};
 use crate::utils;
 // Hashing functions
 use crate::hash;
-// To get config constants
-use crate::config;
+use crate::appconfig;
+use crate::appconfig::*;
 // Index management functions
 use crate::index;
-// Single event data management
+// Event data management
 use crate::event;
 use event::Event;
 use crate::monitorevent::MonitorEvent;
+use crate::ruleset::*;
 // File reading continuously
 use crate::logreader;
 // integrations checker
@@ -38,26 +39,26 @@ use crate::multiwatcher::MultiWatcher;
 
 // ----------------------------------------------------------------------------
 
-fn setup_events(destination: &str, config: config::Config){
+fn setup_events(destination: &str, cfg: AppConfig){
     // Perform actions depending on destination
     info!("Events destination selected: {}", destination);
     match destination {
-        config::NETWORK_MODE => {
+        appconfig::NETWORK_MODE => {
             debug!("Events folder not created in network mode");
         },
         _ => {
-            info!("Events file: {}", config.events_file);
-            fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap()
+            info!("Events file: {}", cfg.events_file);
+            fs::create_dir_all(Path::new(&cfg.events_file).parent().unwrap().to_str().unwrap()).unwrap()
         }
     }
 }
 
 // ----------------------------------------------------------------------------
 
-async fn push_template(destination: &str, cfg: config::Config){
+async fn push_template(destination: &str, cfg: AppConfig){
     // Perform actions depending on destination
     match destination {
-        config::NETWORK_MODE|config::BOTH_MODE => {
+        appconfig::NETWORK_MODE|appconfig::BOTH_MODE => {
             // On start push template (Include check if events won't be ingested by http)
             index::push_template(cfg).await;
         },
@@ -69,8 +70,8 @@ async fn push_template(destination: &str, cfg: config::Config){
 
 // ----------------------------------------------------------------------------
 
-fn clean_audit_rules(config: &config::Config){
-    for element in config.audit.clone() {
+fn clean_audit_rules(cfg: &AppConfig){
+    for element in cfg.audit.clone() {
         let path = element["path"].as_str().unwrap();
         let rule = utils::get_audit_rule_permissions(element["rule"].as_str());
         utils::run_auditctl(&["-W", path, "-k", "fim", "-p", &rule]);
@@ -81,8 +82,11 @@ fn clean_audit_rules(config: &config::Config){
 // ----------------------------------------------------------------------------
 
 // Function that monitorize files in loop
-pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
-    rx: mpsc::Receiver<Result<notify::Event, notify::Error>>, cfg: config::Config){
+pub async fn monitor(
+    tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
+    rx: mpsc::Receiver<Result<notify::Event, notify::Error>>, 
+    cfg: AppConfig,
+    ruleset: Ruleset){
 
     let destination = cfg.clone().get_events_destination();
     setup_events(destination.as_str(), cfg.clone());
@@ -254,7 +258,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                                     timestamp: current_timestamp,
                                     hostname: utils::get_hostname(),
                                     node: cfg.clone().node,
-                                    version: String::from(config::VERSION),
+                                    version: String::from(appconfig::VERSION),
                                     kind,
                                     path: path.clone(),
                                     size: utils::get_file_size(path.clone().to_str().unwrap()),
@@ -267,7 +271,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                                 };
 
                                 debug!("Event processed: {:?}", event);
-                                event.process(cfg.clone()).await;
+                                event.process(cfg.clone(), ruleset.clone()).await;
                                 launcher::check_integrations(event.clone(), cfg.clone());
                             }else{
                                 debug!("Event ignored not stored in alerts");
@@ -296,7 +300,7 @@ mod tests {
 
     #[test]
     fn test_push_template() {
-        let cfg = config::Config::new(&utils::get_os(), None);
+        let cfg = AppConfig::new(&utils::get_os(), None);
         fs::create_dir_all(Path::new(&cfg.log_file).parent().unwrap().to_str().unwrap()).unwrap();
         block_on(push_template("file", cfg.clone()));
         block_on(push_template("network", cfg.clone()));
@@ -306,7 +310,7 @@ mod tests {
 
     #[test]
     fn test_setup_events() {
-        let cfg = config::Config::new(&utils::get_os(), None);
+        let cfg = AppConfig::new(&utils::get_os(), None);
         fs::create_dir_all(Path::new(&cfg.log_file).parent().unwrap().to_str().unwrap()).unwrap();
         setup_events("file", cfg.clone());
         setup_events("network", cfg.clone());
