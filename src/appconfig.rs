@@ -1249,7 +1249,7 @@ mod tests {
             assert!(!cfg.match_allowed(2, "file.swp", cfg.monitor.clone()));
             assert!(cfg.match_allowed(2, "file.txt", cfg.monitor.clone()));
 
-            let config_audit = AppConfig::new(&utils::get_os(), Some("test/unit/config/linux/audit_allowed.yml"));
+            let cfg_audit = AppConfig::new(&utils::get_os(), Some("test/unit/config/linux/audit_allowed.yml"));
             assert!(!cfg_audit.match_allowed(0, "file.swp", cfg_audit.audit.clone()));
             assert!(cfg_audit.match_allowed(0, "file.txt", cfg_audit.audit.clone()));
         }

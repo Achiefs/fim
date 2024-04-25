@@ -13,7 +13,7 @@ pub fn init() -> (AppConfig, Ruleset) {
 
   println!("[INFO] Achiefs File Integrity Monitoring software starting!");
   println!("[INFO] Reading config...");
-  let cfg = AppConfig::new(&utils::get_os(), None);
+  let cfg = AppConfig::new(utils::get_os(), None);
 
   // Create folders to store logs based on config.yml
   fs::create_dir_all(
@@ -36,7 +36,7 @@ pub fn init() -> (AppConfig, Ruleset) {
   println!("[INFO] Log file: '{}'", cfg.clone().log_file);
   println!("[INFO] Log level: '{}'", cfg.clone().log_level);
 
-  let ruleset = Ruleset::new(&utils::get_os(), None);  
+  let ruleset = Ruleset::new(utils::get_os(), None);  
 
   log_panics::init();
   (cfg, ruleset)

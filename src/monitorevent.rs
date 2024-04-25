@@ -236,7 +236,6 @@ mod tests {
     use crate::monitorevent::MonitorEvent;
     use crate::event::*;
     use crate::utils;
-    use crate::ruleset;
     use std::path::PathBuf;
     use tokio_test::block_on;
     use std::fs;
@@ -442,8 +441,9 @@ mod tests {
     fn test_process() {
         let event = create_test_event();
         let cfg = AppConfig::new(&utils::get_os(), None);
+        let ruleset = Ruleset::new(&utils::get_os(), None);  
 
-        block_on(event.process(cfg));
+        block_on(event.process(cfg, ruleset));
         //block_on(event.process(appconfig::NETWORK_MODE, String::from("test"), cfg.clone()));
         //block_on(event.process(appconfig::FILE_MODE, String::from("test2"), cfg.clone()));
         //block_on(event.process(appconfig::BOTH_MODE, String::from("test3"), cfg.clone()));

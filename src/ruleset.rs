@@ -49,7 +49,7 @@ impl Ruleset {
 
         // Manage null value on rules
         let mut rules = HashMap::new();
-        if yaml.len() > 0 {
+        if !yaml.is_empty() {
             let vec_of_rules = match yaml[0]["rules"].as_vec() {
                 Some(value) => value.to_vec(),
                 None => {
@@ -95,13 +95,19 @@ impl Ruleset {
     // ------------------------------------------------------------------------
 
     pub async fn match_rule(&self, cfg: AppConfig, filepath: PathBuf) -> (bool, usize) {
-        let path = filepath.parent().unwrap().to_str().unwrap();
+        let path = match filepath.parent() {
+            Some(p) => p.to_str().unwrap(),
+            None => {
+                error!("(match_rule): Cannot retrieve event parent path.");
+                ""
+            }
+        };
         let find = self.rules.iter().find(|map| {
             map.1.contains_key("path") && utils::match_path(map.1.get("path").unwrap(), path)
         });
 
         let (id, rule) = match find {
-            Some(element) => (element.0.clone(), element.1.get("rule").unwrap().clone()),
+            Some(element) => (*element.0, element.1.get("rule").unwrap().clone()),
             None => {
                 debug!("No rule matched");
                 (usize::MAX, String::from(""))
@@ -116,7 +122,13 @@ impl Ruleset {
             },
         };
 
-        let filename = filepath.file_name().unwrap().to_str().unwrap();
+        let filename = match filepath.file_name() {
+            Some(f) => f.to_str().unwrap(),
+            None => {
+                error!("(match_rule): Cannot retrieve event filename.");
+                ""
+            }
+        };
         if id != usize::MAX {
             if expression.is_match(filename){
                 debug!("Rule with ID: '{}', match event path: '{}'.", id, path);
@@ -156,7 +168,7 @@ pub fn read_ruleset(path: String) -> Vec<Yaml> {
     let mut contents: String = String::new();
 
     file.read_to_string(&mut contents)
-        .expect(&format!("(read_ruleset): Unable to read contents of file '{}'", path));
+        .unwrap_or_else(|_| panic!("(read_ruleset): Unable to read contents of file '{}'", path));
     YamlLoader::load_from_str(&contents).unwrap()
 }
 

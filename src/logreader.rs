@@ -140,7 +140,6 @@ pub fn parse_audit_log(log: String) -> HashMap<String, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::appconfig::*;
 
     #[test]
     fn test_read_log() {

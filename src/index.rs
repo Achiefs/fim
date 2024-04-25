@@ -64,7 +64,6 @@ pub async fn push_template(cfg: AppConfig){
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::appconfig;
     use crate::utils;
 
     #[test]

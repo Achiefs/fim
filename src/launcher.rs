@@ -27,7 +27,6 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
     use crate::monitorevent::MonitorEvent;
-    use crate::appconfig::*;
     use notify::event::*;
 
     // ------------------------------------------------------------------------

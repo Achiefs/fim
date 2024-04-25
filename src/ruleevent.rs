@@ -51,7 +51,7 @@ impl Event for RuleEvent {
 
     fn clone(&self) -> Self {
         RuleEvent {
-            id: self.id.clone(),
+            id: self.id,
             rule: self.rule.clone(),
             timestamp: self.timestamp.clone(),
             hostname: self.hostname.clone(),
