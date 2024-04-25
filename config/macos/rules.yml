@@ -1,0 +1,5 @@
+rules:
+  - id: 1
+    path: /etc
+    rule: '\.sh$'
+    message: "Shell script present in /etc folder."

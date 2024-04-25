@@ -144,8 +144,8 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[cfg(any(target_os = "linux", target_os = "darwin"))]
-    pub fn create_dummy_event_unix(path: &str, operation: &str) -> Event {
-        Event{
+    pub fn create_dummy_event_unix(path: &str, operation: &str) -> MonitorEvent {
+        MonitorEvent{
             id: "Test_id".to_string(),
             timestamp: "Timestamp".to_string(),
             hostname: "Hostname".to_string(),

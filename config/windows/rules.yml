@@ -1,6 +1,5 @@
-monitor:
-  - path: C:\tmp\
-    id: 7
-    rule: '\.php$'
-    message: "This is a test"
-    labels: ["windows", "test"]
+rules:
+  - id: 1
+    path: C:\
+    rule: '\.ps1$'
+    message: "Powershell script present in root directory."

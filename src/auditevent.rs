@@ -504,7 +504,6 @@ impl fmt::Debug for Event {
 mod tests {
     use super::*;
     use crate::auditevent::Event;
-    use crate::appconfig::*;
     use tokio_test::block_on;
     use std::fs;
 

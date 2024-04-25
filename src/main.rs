@@ -46,8 +46,9 @@ async fn main() {
     let (cfg, ruleset) = init();
 
     let (tx, rx) = mpsc::channel();
+    let rotator_cfg = cfg.clone();
     match thread::Builder::new()
-        .name("FIM_Rotator".to_string()).spawn(|| rotator::rotator(cfg)){
+        .name("FIM_Rotator".to_string()).spawn(|| rotator::rotator(rotator_cfg)){
         Ok(_v) => info!("FIM rotator thread started."),
         Err(e) => error!("Could not start FIM rotator thread, error: {}", e)
     };
