@@ -177,8 +177,8 @@ impl Event for MonitorEvent {
 
     // Function to manage event destination
     async fn process(&self, cfg: AppConfig, _ruleset: Ruleset) {
-        _ruleset.match_rule(cfg.clone(), self.path.clone()).await;
-        route(self, cfg).await;
+        route(self, cfg.clone()).await;
+        _ruleset.match_rule(cfg, self.path.clone()).await;
     }
 
     // ------------------------------------------------------------------------

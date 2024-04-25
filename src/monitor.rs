@@ -236,7 +236,7 @@ pub async fn monitor(
                                         cfg.match_allowed(index,
                                             audit_event.clone().file.as_str(),
                                             cfg.clone().audit) {
-                                        audit_event.process(destination.clone().as_str(), index_name.clone(), cfg.clone()).await;
+                                        audit_event.process(destination.clone().as_str(), index_name.clone(), cfg.clone(), ruleset.clone()).await;
                                     }else{
                                         debug!("Event ignored not stored in alerts");
                                     }

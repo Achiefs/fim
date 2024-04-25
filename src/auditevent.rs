@@ -8,9 +8,11 @@ use log::*;
 use serde_json::{json, to_string};
 use reqwest::Client;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use crate::appconfig;
 use crate::appconfig::*;
+use crate::ruleset::*;
 use crate::utils;
 use crate::hash;
 
@@ -396,17 +398,19 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to manage event destination
-    pub async fn process(&self, destination: &str, index_name: String, cfg: AppConfig){
+    pub async fn process(&self, destination: &str, index_name: String, cfg: AppConfig, ruleset: Ruleset){
         match destination {
             appconfig::BOTH_MODE => {
                 self.log(&cfg.get_events_file());
-                self.send(index_name, cfg).await;
+                self.send(index_name, cfg.clone()).await;
             },
             appconfig::NETWORK_MODE => {
-                self.send(index_name, cfg).await;
+                self.send(index_name, cfg.clone()).await;
             },
             _ => self.log(&cfg.get_events_file())
         }
+        let filepath = PathBuf::from(self.path.clone());
+        ruleset.match_rule(cfg, filepath.join(self.file.clone())).await;
     }
 }
 

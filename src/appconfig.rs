@@ -563,7 +563,10 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_new_config_windows() {
+        let dir = utils::get_current_dir();
+        let disk = dir.get(0..1).unwrap();
         let cfg = AppConfig::new("windows", None);
+
         assert_eq!(cfg.version, String::from(VERSION));
         assert_eq!(cfg.events_destination, String::from("file"));
         assert_eq!(cfg.endpoint_address, String::from("Not_defined"));
@@ -571,11 +574,11 @@ mod tests {
         assert_eq!(cfg.endpoint_user, String::from("Not_defined"));
         assert_eq!(cfg.endpoint_pass, String::from("Not_defined"));
         assert_eq!(cfg.endpoint_token, String::from("Not_defined"));
-        assert_eq!(cfg.events_file, String::from("C:\\ProgramData\\fim\\events.json"));
+        assert_eq!(cfg.events_file, format!("{}:\\ProgramData\\fim\\events.json", disk) );
         // monitor
         // audit
         assert_eq!(cfg.node, String::from("FIM"));
-        assert_eq!(cfg.log_file, String::from("C:\\ProgramData\\fim\\fim.log"));
+        assert_eq!(cfg.log_file, format!("{}:\\ProgramData\\fim\\fim.log", disk) );
         assert_eq!(cfg.log_level, String::from("info"));
         assert_eq!(cfg.log_max_file_size, 64);
         assert_eq!(cfg.system, String::from("windows"));
@@ -1108,20 +1111,22 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_read_config_windows() {
+        let dir = utils::get_current_dir();
+        let disk = dir.get(0..1).unwrap();
         let yaml = read_config(String::from("config/windows/config.yml"));
 
         assert_eq!(yaml[0]["node"].as_str().unwrap(), "FIM");
         assert_eq!(yaml[0]["events"]["destination"].as_str().unwrap(), "file");
-        assert_eq!(yaml[0]["events"]["file"].as_str().unwrap(), "C:\\ProgramData\\fim\\events.json");
+        assert_eq!(yaml[0]["events"]["file"].as_str().unwrap(), format!("{}:\\ProgramData\\fim\\events.json", disk) );
 
-        assert_eq!(yaml[0]["monitor"][0]["path"].as_str().unwrap(), "C:\\Program Files\\");
+        assert_eq!(yaml[0]["monitor"][0]["path"].as_str().unwrap(), format!("{}:\\Program Files\\", disk) );
         assert_eq!(yaml[0]["monitor"][0]["labels"][0].as_str().unwrap(), "Program Files");
         assert_eq!(yaml[0]["monitor"][0]["labels"][1].as_str().unwrap(), "windows");
-        assert_eq!(yaml[0]["monitor"][1]["path"].as_str().unwrap(), "C:\\Users\\");
+        assert_eq!(yaml[0]["monitor"][1]["path"].as_str().unwrap(), format!("{}:\\Users\\", disk) );
         assert_eq!(yaml[0]["monitor"][1]["labels"][0].as_str().unwrap(), "Users");
         assert_eq!(yaml[0]["monitor"][1]["labels"][1].as_str().unwrap(), "windows");
 
-        assert_eq!(yaml[0]["log"]["file"].as_str().unwrap(), "C:\\ProgramData\\fim\\fim.log");
+        assert_eq!(yaml[0]["log"]["file"].as_str().unwrap(), format!("{}:\\ProgramData\\fim\\fim.log", disk) );
         assert_eq!(yaml[0]["log"]["level"].as_str().unwrap(), "info");
     }
 

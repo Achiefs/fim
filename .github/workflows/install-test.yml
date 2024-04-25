@@ -47,6 +47,7 @@ jobs:
         run: sudo systemctl status fim
 
       - name: Remove package installation
+        if: always()
         run: sudo dpkg --purge fim
 
 
@@ -71,6 +72,7 @@ jobs:
         run: sudo systemctl status fim
 
       - name: Remove package installation
+        if: always()
         run: sudo yum remove -y fim
 
 
