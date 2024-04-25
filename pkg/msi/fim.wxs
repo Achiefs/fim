@@ -44,6 +44,7 @@ https://github.com/Achiefs/fim/wiki" />
             <Feature Id='MainProgram' Title='Program' Description='The main executable.' Level='1'>
                 <ComponentRef Id='MainExecutable' />
                 <ComponentRef Id='ConfigFile' />
+                <ComponentRef Id='RulesFile' />
             </Feature>
         </Feature>
 

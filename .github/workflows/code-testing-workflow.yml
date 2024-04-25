@@ -55,9 +55,9 @@ jobs:
       - name: Move edited config
         run: mv -Force ./config/windows/config_edited.yml ./config/windows/config.yml
       - name: Change config.rs code
-        run: (Get-Content -path ./src/config.rs -Raw) -replace 'C:\\\\ProgramData','D:\\ProgramData' > ./src/config_edited.rs
+        run: (Get-Content -path ./src/appconfig.rs -Raw) -replace 'C:\\\\ProgramData','D:\\ProgramData' > ./src/appconfig_edited.rs
       - name: Move edited code
-        run: mv -Force ./src/config_edited.rs ./src/config.rs
+        run: mv -Force ./src/appconfig_edited.rs ./src/appconfig.rs
       - name: Launch cargo test
         run: cargo test
       - run: echo "Job's status is ${{ job.status }}."
