@@ -1119,7 +1119,7 @@ mod tests {
         assert_eq!(yaml[0]["events"]["destination"].as_str().unwrap(), "file");
         assert_eq!(yaml[0]["events"]["file"].as_str().unwrap(), format!("{}:\\ProgramData\\fim\\events.json", disk) );
 
-        assert_eq!(yaml[0]["monitor"][0]["path"].as_str().unwrap(), format!("{}:\\Program Files\\", disk) );
+        assert_eq!(yaml[0]["monitor"][0]["path"].as_str().unwrap(), "C:\\Program Files\\");
         assert_eq!(yaml[0]["monitor"][0]["labels"][0].as_str().unwrap(), "Program Files");
         assert_eq!(yaml[0]["monitor"][0]["labels"][1].as_str().unwrap(), "windows");
         assert_eq!(yaml[0]["monitor"][1]["path"].as_str().unwrap(), format!("{}:\\Users\\", disk) );

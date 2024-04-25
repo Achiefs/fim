@@ -964,9 +964,9 @@ mod tests {
         let ruleset = Ruleset::new(&utils::get_os(), None);  
         let event = create_test_event();
 
-        block_on(event.process(appconfig::NETWORK_MODE, String::from("test"), cfg.clone(), ruleset));
-        block_on(event.process(appconfig::FILE_MODE, String::from("test2"), cfg.clone(), ruleset));
-        block_on(event.process(appconfig::BOTH_MODE, String::from("test3"), cfg.clone(), ruleset));
+        block_on(event.process(appconfig::NETWORK_MODE, String::from("test"), cfg.clone(), ruleset.clone()));
+        block_on(event.process(appconfig::FILE_MODE, String::from("test2"), cfg.clone(), ruleset.clone()));
+        block_on(event.process(appconfig::BOTH_MODE, String::from("test3"), cfg.clone(), ruleset.clone()));
     }
 
     // ------------------------------------------------------------------------
