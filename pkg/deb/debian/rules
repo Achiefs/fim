@@ -35,6 +35,7 @@ override_dh_install:
 
 	install -m 0750 ${BUILD_DIR}/target/release/fim ${BIN_DIR}/
 	install -m 0640 ${BUILD_DIR}/config/linux/config.yml ${CONFIG_DIR}/
+	install -m 0640 ${BUILD_DIR}/config/linux/rules.yml ${CONFIG_DIR}/
 	install -m 0640 ${BUILD_DIR}/config/index_template.json ${CONFIG_DIR}/
 	install -m 0640 ${BUILD_DIR}/pkg/deb/debian/copyright ${DOC_DIR}/
 	install -m 0644 ${BUILD_DIR}/pkg/fim.service ${SYS_DIR}/

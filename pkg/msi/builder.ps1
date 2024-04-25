@@ -8,6 +8,7 @@ cd pkg\msi
 
 cp ..\..\target\release\fim.exe .\
 cp ..\..\config\windows\config.yml .\
+cp ..\..\config\windows\rules.yml .\
 
 Invoke-Expression "& `"C:\Program Files (x86)\WiX Toolset v3.*\bin\candle.exe`" .\fim.wxs -o .\fim.wixobj"
 

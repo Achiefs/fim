@@ -32,6 +32,9 @@ https://github.com/Achiefs/fim/wiki" />
                     <Component Id='ConfigFile' Guid='*' Win64="yes">
                         <File Id='CONFIG' Name='config.yml' DiskId='1' Source='config.yml' KeyPath='yes'></File>
                     </Component>
+                    <Component Id='RulesFile' Guid='*' Win64="yes">
+                        <File Id='CONFIG' Name='rules.yml' DiskId='1' Source='rules.yml' KeyPath='yes'></File>
+                    </Component>
                 </Directory>
             </Directory>
         </Directory>

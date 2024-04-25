@@ -39,6 +39,7 @@ mkdir -p -m 640 ${RPM_BUILD_ROOT}/usr/share/man/man1
 
 install -m 0750 target/release/fim ${RPM_BUILD_ROOT}%{_bindir}/
 install -m 0640 config/linux/config.yml ${RPM_BUILD_ROOT}%{_configdir}/
+install -m 0640 config/linux/rules.yml ${RPM_BUILD_ROOT}%{_configdir}/
 install -m 0640 config/index_template.json ${RPM_BUILD_ROOT}%{_configdir}/
 install -m 0644 pkg/fim.service ${RPM_BUILD_ROOT}/lib/systemd/system/
 install -m 0644 pkg/fim.1 ${RPM_BUILD_ROOT}/usr/share/man/man1/
@@ -92,6 +93,7 @@ rm -fr %{buildroot}
 %attr(750, root, root) %{_bindir}/fim
 %dir %attr(750, root, root) %{_configdir}
 %attr(640, root, root) %config(noreplace) %{_configdir}/config.yml
+%attr(640, root, root) %config(noreplace) %{_configdir}/rules.yml
 %attr(640, root, root) %{_configdir}/index_template.json
 %attr(644, root, root) /lib/systemd/system/fim.service
 %attr(644, root, root) /usr/share/man/man1/fim.1.gz
@@ -99,7 +101,7 @@ rm -fr %{buildroot}
 # -----------------------------------------------------------------------------
 
 %changelog
-* Fri Apr 19 2024 support <support@achiefs.com> - 0.5.0
+* Thu Apr 25 2024 support <support@achiefs.com> - 0.5.0
 - More info: https://github.com/Achiefs/fim/releases/tag/v0.5.0
 
 * Fri Apr 19 2024 support <support@achiefs.com> - 0.4.11
