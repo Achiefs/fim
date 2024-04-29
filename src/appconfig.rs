@@ -410,14 +410,14 @@ impl AppConfig {
 
     // ------------------------------------------------------------------------
 
-    pub fn get_lock_value(&self, lock: Arc<Mutex<bool>>) -> bool {
-        match Arc::into_inner(lock) {
+    pub fn get_lock_value(&self, lock: &Arc<Mutex<bool>>) -> bool {
+        match Arc::into_inner(lock.into()) {
             None => {
                 error!("Cannot retrieve events lock Arc value.");
                 false
             },
-            Some(mutex) => match mutex.into_inner() {
-                Ok(guard) => guard,
+            Some(mutex) => match mutex.lock() {
+                Ok(guard) => *guard,
                 Err(e) => {
                     error!("Cannot retrieve events lock Mutex value, err: {}.", e);
                     false
@@ -429,7 +429,7 @@ impl AppConfig {
     // ------------------------------------------------------------------------
 
     pub fn get_events_file(&self) -> String {
-        match self.get_lock_value(self.events_lock.clone()) {
+        match self.get_lock_value(&self.events_lock) {
             false => self.events_file.clone(),
             true => format!("{}.tmp", self.events_file.clone())
         }
