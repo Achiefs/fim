@@ -140,7 +140,6 @@ fn rotate_file(filepath: &str, iteration: u32, lock: Mutex<bool>){
     };
 
     *lock.lock().unwrap() = false;
-    lock.clear_poison();
     info!("File {} rotated.", filepath);
     info!("Compressing rotated file {}", file_rotated);
     #[cfg(windows)]

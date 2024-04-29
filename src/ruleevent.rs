@@ -23,7 +23,8 @@ pub struct RuleEvent {
     pub path: PathBuf,
     pub fpid: u32,
     pub system: String,
-    pub message: String
+    pub message: String,
+    pub parent_id: String
 }
 
 // ----------------------------------------------------------------------------
@@ -39,7 +40,8 @@ impl Event for RuleEvent {
             "fpid": self.fpid.clone(),
             "version": self.version.clone(),
             "system": self.system.clone(),
-            "message": self.message.clone()
+            "message": self.message.clone(),
+            "parent_id": self.parent_id.clone()
         });
         to_string(&obj).unwrap()
     }
@@ -56,7 +58,8 @@ impl Event for RuleEvent {
             path: self.path.clone(),
             fpid: self.fpid,
             system: self.system.clone(),
-            message: self.message.clone()
+            message: self.message.clone(),
+            parent_id: self.parent_id.clone()
         }
     }
 
@@ -96,7 +99,8 @@ impl Event for RuleEvent {
                     "fpid": self.fpid.clone(),
                     "version": self.version.clone(),
                     "system": self.system.clone(),
-                    "message": self.message.clone()
+                    "message": self.message.clone(),
+                    "parent_id": self.parent_id.clone()
                 }),
                 "index": "fim_events"
             });
@@ -125,7 +129,8 @@ impl Event for RuleEvent {
                 "fpid": self.fpid.clone(),
                 "version": self.version.clone(),
                 "system": self.system.clone(),
-                "message": self.message.clone()
+                "message": self.message.clone(),
+                "parent_id": self.parent_id.clone()
             });
             let request_url = format!("{}/{}/_doc/{}", cfg.endpoint_address, index, self.id);
             let client = Client::builder()
@@ -172,6 +177,7 @@ impl Event for RuleEvent {
             "version" => self.version.clone(),
             "system" => self.system.clone(),
             "message" => self.message.clone(),
+            "parent_id" => self.parent_id.clone(),
             _ => "".to_string()
         }
     }
@@ -204,6 +210,7 @@ mod tests {
             fpid: 0,
             system: "test".to_string(),
             message: "This is a message".to_string(),
+            parent_id: "0000".to_string()
         }
     }
 
@@ -221,6 +228,7 @@ mod tests {
         assert_eq!(event.fpid, cloned.fpid);
         assert_eq!(event.system, cloned.system);
         assert_eq!(event.message, cloned.message);
+        assert_eq!(event.parent_id, cloned.parent_id);
     }
 
     // ------------------------------------------------------------------------
@@ -236,6 +244,7 @@ mod tests {
         assert_eq!(evt.fpid, 0);
         assert_eq!(evt.system, String::from("test"));
         assert_eq!(evt.message, String::from("This is a message"));
+        assert_eq!(evt.parent_id, String::from("0000"));
     }
 
     // ------------------------------------------------------------------------
@@ -272,7 +281,7 @@ mod tests {
     #[test]
     fn test_format_json() {
         let expected = "{\"fpid\":0,\"hostname\":\"Hostname\",\"id\":0,\"message\":\"This is a message\",\
-        \"rule\":\"\\\\.php$\",\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}";
+        \"parent_id\":\"0000\",\"rule\":\"\\\\.php$\",\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}";
         assert_eq!(create_test_event().format_json(), expected);
     }
 
@@ -286,7 +295,7 @@ mod tests {
         evt.log(filename.clone());
         let contents = fs::read_to_string(filename.clone());
         let expected = "{\"fpid\":0,\"hostname\":\"Hostname\",\"id\":0,\"message\":\"This is a message\",\
-        \"rule\":\"\\\\.php$\",\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}\n";
+        \"parent_id\":\"0000\",\"rule\":\"\\\\.php$\",\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}\n";
         assert_eq!(contents.unwrap(), expected);
         remove_test_file(filename.clone());
     }

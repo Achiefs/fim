@@ -94,7 +94,7 @@ impl Ruleset {
 
     // ------------------------------------------------------------------------
 
-    pub async fn match_rule(&self, cfg: AppConfig, filepath: PathBuf) -> (bool, usize) {
+    pub async fn match_rule(&self, cfg: AppConfig, filepath: PathBuf, ruleid: String) -> (bool, usize) {
         let path = match filepath.parent() {
             Some(p) => p.to_str().unwrap(),
             None => {
@@ -142,7 +142,8 @@ impl Ruleset {
                     path: filepath,
                     fpid: utils::get_pid(),
                     system: cfg.clone().system,
-                    message: self.rules.get(&id).unwrap().get("message").unwrap().clone()
+                    message: self.rules.get(&id).unwrap().get("message").unwrap().clone(),
+                    parent_id: ruleid
                 };
                 event.process(cfg, self.clone()).await;
                 (true, id)
@@ -299,11 +300,11 @@ mod tests {
         let cfg = AppConfig::new(&utils::get_os(), None);
         let ruleset = Ruleset::new(&utils::get_os(), None); 
 
-        let (result, id) = block_on(ruleset.match_rule(cfg.clone(), PathBuf::from("/etc/file.sh")));
+        let (result, id) = block_on(ruleset.match_rule(cfg.clone(), PathBuf::from("/etc/file.sh"), String::from("0000")));
         assert_eq!(id, 1);
         assert_eq!(result, true);
 
-        let (result, id) = block_on(ruleset.match_rule(cfg, PathBuf::from("/etc/file.php")));
+        let (result, id) = block_on(ruleset.match_rule(cfg, PathBuf::from("/etc/file.php"), String::from("0000")));
         assert_eq!(id, usize::MAX);
         assert_eq!(result, false);
     }
@@ -316,11 +317,11 @@ mod tests {
         let cfg = AppConfig::new(&utils::get_os(), None);
         let ruleset = Ruleset::new(&utils::get_os(), None); 
 
-        let (result, id) = block_on(ruleset.match_rule(cfg.clone(), PathBuf::from("C:\\file.ps1")));
+        let (result, id) = block_on(ruleset.match_rule(cfg.clone(), PathBuf::from("C:\\file.ps1"), String::from("0000")));
         assert_eq!(id, 1);
         assert_eq!(result, true);
 
-        let (result, id) = block_on(ruleset.match_rule(cfg, PathBuf::from("C:\\file.php")));
+        let (result, id) = block_on(ruleset.match_rule(cfg, PathBuf::from("C:\\file.php"), String::from("0000")));
         assert_eq!(id, usize::MAX);
         assert_eq!(result, false);
     }

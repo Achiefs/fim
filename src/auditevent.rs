@@ -410,7 +410,7 @@ impl Event {
             _ => self.log(&cfg.get_events_file())
         }
         let filepath = PathBuf::from(self.path.clone());
-        ruleset.match_rule(cfg, filepath.join(self.file.clone())).await;
+        ruleset.match_rule(cfg, filepath.join(self.file.clone()), self.id.clone()).await;
     }
 }
 
