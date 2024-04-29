@@ -303,7 +303,7 @@ mod tests {
         assert_eq!(id, 1);
         assert_eq!(result, true);
 
-        let (result, id) = block_on(ruleset.match_rule(cfg, PathBuf::from("/etc/file.sh")));
+        let (result, id) = block_on(ruleset.match_rule(cfg, PathBuf::from("/etc/file.php")));
         assert_eq!(id, usize::MAX);
         assert_eq!(result, false);
     }
