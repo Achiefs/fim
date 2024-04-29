@@ -12,7 +12,6 @@ use std::path::PathBuf;
 use reqwest::Client;
 use std::fs::OpenOptions;
 use std::time::Duration;
-//use std::fmt;
 use std::io::Write;
 
 pub struct RuleEvent {
@@ -20,7 +19,6 @@ pub struct RuleEvent {
     pub rule: String,
     pub timestamp: String,
     pub hostname: String,
-    pub node: String,
     pub version: String,
     pub path: PathBuf,
     pub fpid: u32,
@@ -28,7 +26,7 @@ pub struct RuleEvent {
     pub message: String
 }
 
-// ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 impl Event for RuleEvent {
     // Get formatted string with all required data
@@ -38,7 +36,6 @@ impl Event for RuleEvent {
             "rule": self.rule.clone(),
             "timestamp": self.timestamp.clone(),
             "hostname": self.hostname.clone(),
-            "node": self.node.clone(),
             "fpid": self.fpid.clone(),
             "version": self.version.clone(),
             "system": self.system.clone(),
@@ -55,7 +52,6 @@ impl Event for RuleEvent {
             rule: self.rule.clone(),
             timestamp: self.timestamp.clone(),
             hostname: self.hostname.clone(),
-            node: self.node.clone(),
             version: self.version.clone(),
             path: self.path.clone(),
             fpid: self.fpid,
@@ -91,13 +87,12 @@ impl Event for RuleEvent {
         // Splunk endpoint integration
         if cfg.endpoint_type == "Splunk" {
             let data = json!({
-                "source": self.node.clone(),
+                "source": "FIM_RULESET",
                 "sourcetype": "_json",
                 "event": json!({
                     "rule": self.rule.clone(),
                     "timestamp": self.timestamp.clone(),
                     "hostname": self.hostname.clone(),
-                    "node": self.node.clone(),
                     "fpid": self.fpid.clone(),
                     "version": self.version.clone(),
                     "system": self.system.clone(),
@@ -127,7 +122,6 @@ impl Event for RuleEvent {
                 "rule": self.rule.clone(),
                 "timestamp": self.timestamp.clone(),
                 "hostname": self.hostname.clone(),
-                "node": self.node.clone(),
                 "fpid": self.fpid.clone(),
                 "version": self.version.clone(),
                 "system": self.system.clone(),
@@ -175,11 +169,125 @@ impl Event for RuleEvent {
             "rule" => self.rule.clone(),
             "path" => String::from(self.path.to_str().unwrap()),
             "hostname" => self.hostname.clone(),
-            "node" => self.node.clone(),
             "version" => self.version.clone(),
             "system" => self.system.clone(),
             "message" => self.message.clone(),
             _ => "".to_string()
         }
+    }
+}
+
+// ----------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::utils;
+    use std::path::PathBuf;
+    use tokio_test::block_on;
+    use std::fs;
+
+    // ------------------------------------------------------------------------
+
+    fn remove_test_file(filename: String) {
+        fs::remove_file(filename).unwrap()
+    }
+
+    fn create_test_event() -> RuleEvent {
+        RuleEvent {
+            id: 0,
+            rule: "\\.php$".to_string(),
+            timestamp: "Timestamp".to_string(),
+            hostname: "Hostname".to_string(),
+            version: "x.x.x".to_string(),
+            path: PathBuf::new(),
+            fpid: 0,
+            system: "test".to_string(),
+            message: "This is a message".to_string(),
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_clone() {
+        let event = create_test_event();
+        let cloned = event.clone();
+        assert_eq!(event.id, cloned.id);
+        assert_eq!(event.timestamp, cloned.timestamp);
+        assert_eq!(event.hostname, cloned.hostname);
+        assert_eq!(event.version, cloned.version);
+        assert_eq!(event.path, cloned.path);
+        assert_eq!(event.fpid, cloned.fpid);
+        assert_eq!(event.system, cloned.system);
+        assert_eq!(event.message, cloned.message);
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_new() {
+        let evt = create_test_event();
+        assert_eq!(evt.id, 0);
+        assert_eq!(evt.timestamp, "Timestamp".to_string());
+        assert_eq!(evt.hostname, "Hostname".to_string());
+        assert_eq!(evt.version, "x.x.x".to_string());
+        assert_eq!(evt.path, PathBuf::new());
+        assert_eq!(evt.fpid, 0);
+        assert_eq!(evt.system, String::from("test"));
+        assert_eq!(evt.message, String::from("This is a message"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_send() {
+        let evt = create_test_event();
+        let cfg = AppConfig::new(&utils::get_os(), None);
+        block_on( evt.send(cfg) );
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_send_splunk() {
+        let evt = create_test_event();
+        let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml"));
+        block_on( evt.send(cfg) );
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_process() {
+        let event = create_test_event();
+        let cfg = AppConfig::new(&utils::get_os(), None);
+        let ruleset = Ruleset::new(&utils::get_os(), None);  
+
+        block_on(event.process(cfg, ruleset));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_format_json() {
+        let expected = "{\"fpid\":0,\"hostname\":\"Hostname\",\"id\":0,\"message\":\"This is a message\",\
+        \"rule\":\"\\\\.php$\",\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}";
+        assert_eq!(create_test_event().format_json(), expected);
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_log() {
+        let filename = String::from("test_ruleevent.json");
+        let evt = create_test_event();
+
+        evt.log(filename.clone());
+        let contents = fs::read_to_string(filename.clone());
+        let expected = "{\"fpid\":0,\"hostname\":\"Hostname\",\"id\":0,\"message\":\"This is a message\",\
+        \"rule\":\"\\\\.php$\",\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}\n";
+        assert_eq!(contents.unwrap(), expected);
+        remove_test_file(filename.clone());
     }
 }

@@ -2,7 +2,6 @@
 
 use crate::appconfig::*;
 use crate::ruleset::*;
-
 use notify::event::*;
 
 pub trait Event {
@@ -13,22 +12,6 @@ pub trait Event {
     async fn process(&self, cfg: AppConfig, _ruleset: Ruleset);
     fn get_string(&self, field: String) -> String;
 }
-
-// ----------------------------------------------------------------------------
-
-/*pub async fn route(event: &dyn Event) {
-    let cfg = unsafe { super::GCONFIG.clone().unwrap() };
-    match cfg.get_events_destination().as_str() {
-        appconfig::BOTH_MODE => {
-            event.log(cfg.get_events_file());
-            event.send().await;
-        },
-        appconfig::NETWORK_MODE => {
-            event.send().await;
-        },
-        _ => event.log(cfg.get_events_file())
-    }
-}*/
 
 // ----------------------------------------------------------------------------
 
