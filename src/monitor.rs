@@ -106,22 +106,31 @@ pub async fn monitor(
                 Some(ig) => {
                     let ignore_vec  = ig.iter().map(|e| e.as_str().unwrap() );
                     let ignore_list : String = Itertools::intersperse(ignore_vec, ", ").collect();
-                    info!("Ignoring files with: {} inside {}", ignore_list, path);
+                    info!("Ignoring files with: '{}' inside '{}' path.", ignore_list, path);
                 },
-                None => debug!("Ignore for '{}' not set", path)
+                None => debug!("Ignore for '{}' path not set.", path)
+            };
+
+            match element["exclude"].as_vec() {
+                Some(ig) => {
+                    let exclude_vec  = ig.iter().map(|e| e.as_str().unwrap() );
+                    let exclude_list : String = Itertools::intersperse(exclude_vec, ", ").collect();
+                    info!("Excluding folders: '{}' inside '{}' path.", exclude_list, path);
+                },
+                None => debug!("Exclude folders for '{}' path not set.", path)
             };
 
             match element["allowed"].as_vec(){
                 Some(allowed) => {
                     let allowed_vec = allowed.iter().map(|e| e.as_str().unwrap());
                     let allowed_list : String = Itertools::intersperse(allowed_vec, ", ").collect();
-                    info!("Only files with '{}' will trigger event inside '{}'", allowed_list, path)
+                    info!("Only files with '{}' will trigger event inside '{}'.", allowed_list, path)
                 },
-                None => debug!("Monitoring all files under this path '{}'", path)
+                None => debug!("Monitoring files under '{}' path.", path)
             }
 
             match watcher.watch(Path::new(path), RecursiveMode::Recursive) {
-                Ok(_d) => debug!("Monitoring path: {}", path),
+                Ok(_d) => debug!("Monitoring '{}' path.", path),
                 Err(e) => warn!("Could not monitor given path '{}', description: {}", path, e)
             };
         }
@@ -230,15 +239,12 @@ pub async fn monitor(
 
                                 if index != usize::MAX {
                                     // If event contains ignored string ignore event
-                                    if ! cfg.match_ignore(index,
-                                            audit_event.clone().file.as_str(),
-                                            cfg.clone().audit)  &&
-                                        cfg.match_allowed(index,
-                                            audit_event.clone().file.as_str(),
-                                            cfg.clone().audit) {
+                                    if ! cfg.match_ignore(index, audit_event.clone().file.as_str(), cfg.clone().audit)  &&
+                                        ! cfg.match_exclude(index, audit_event.clone().path.as_str(), cfg.clone().audit) &&
+                                        cfg.match_allowed(index, audit_event.clone().file.as_str(), cfg.clone().audit) {
                                         audit_event.process(destination.clone().as_str(), index_name.clone(), cfg.clone(), ruleset.clone()).await;
                                     }else{
-                                        debug!("Event ignored not stored in alerts");
+                                        debug!("Event ignored/excluded not stored in alerts");
                                     }
                                 }else{
                                     debug!("Event not monitored by FIM");
@@ -248,10 +254,14 @@ pub async fn monitor(
                         }
                     }else {
                         let index = cfg.get_index(event_path.to_str().unwrap(), "", cfg.clone().monitor.to_vec());
+                        let parent = match event_path.is_dir() {
+                            true => event_path.to_str().unwrap(),
+                            false => event_path.parent().unwrap().to_str().unwrap()
+                        };
                         if index != usize::MAX {
                             let labels = cfg.get_labels(index, cfg.clone().monitor);
-                            if ! cfg.match_ignore(index,
-                                event_filename.to_str().unwrap(), cfg.clone().monitor) &&
+                            if ! cfg.match_ignore(index, event_filename.to_str().unwrap(), cfg.clone().monitor) &&
+                                ! cfg.match_exclude(index, parent, cfg.clone().monitor) &&
                                 cfg.match_allowed(index, event_filename.to_str().unwrap(), cfg.clone().monitor) {
                                 let event = MonitorEvent {
                                     id: utils::get_uuid(),
@@ -274,7 +284,7 @@ pub async fn monitor(
                                 event.process(cfg.clone(), ruleset.clone()).await;
                                 launcher::check_integrations(event.clone(), cfg.clone());
                             }else{
-                                debug!("Event ignored not stored in alerts");
+                                debug!("Event ignored/excluded not stored in alerts");
                             }
                         }else{
                             debug!("Event not matched monitor");

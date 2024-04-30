@@ -366,6 +366,15 @@ impl AppConfig {
 
     // ------------------------------------------------------------------------
 
+    pub fn match_exclude(&self, index: usize, path: &str, array: Array) -> bool {
+        match array[index]["exclude"].as_vec() {
+            Some(igv) => igv.to_vec().iter().any(|exclude| path.contains(exclude.as_str().unwrap()) ),
+            None => false
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
     pub fn match_allowed(&self, index: usize, filename: &str, array: Array) -> bool {
         match array[index]["allowed"].as_vec() {
             Some(allowed) => allowed.to_vec().iter().any(|allw| filename.contains(allw.as_str().unwrap())),
@@ -1239,6 +1248,16 @@ mod tests {
             assert!(cfg.match_ignore(0, "file.swp", cfg.audit.clone()));
             assert!(!cfg.match_ignore(0, "file.txt", cfg.audit.clone()));
         }
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn test_match_exclude() {
+        let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/linux/audit_exclude.yml"));
+        assert!(cfg.match_exclude(0, "/tmp/test", cfg.audit.clone()));
+        assert!(!cfg.match_exclude(0, "/tmp/another", cfg.audit.clone()));
     }
 
     // ------------------------------------------------------------------------
