@@ -22,12 +22,15 @@ use notify::event::{EventKind, AccessKind};
 use crate::utils;
 // Hashing functions
 use crate::hash;
-// To get config constants
-use crate::config;
+use crate::appconfig;
+use crate::appconfig::*;
 // Index management functions
 use crate::index;
-// Single event data management
+// Event data management
 use crate::event;
+use event::Event;
+use crate::monitorevent::MonitorEvent;
+use crate::ruleset::*;
 // File reading continuously
 use crate::logreader;
 // integrations checker
@@ -36,28 +39,28 @@ use crate::multiwatcher::MultiWatcher;
 
 // ----------------------------------------------------------------------------
 
-fn setup_events(destination: &str, config: config::Config){
+fn setup_events(destination: &str, cfg: AppConfig){
     // Perform actions depending on destination
     info!("Events destination selected: {}", destination);
     match destination {
-        config::NETWORK_MODE => {
+        appconfig::NETWORK_MODE => {
             debug!("Events folder not created in network mode");
         },
         _ => {
-            info!("Events file: {}", config.events_file);
-            fs::create_dir_all(Path::new(&config.events_file).parent().unwrap().to_str().unwrap()).unwrap()
+            info!("Events file: {}", cfg.events_file);
+            fs::create_dir_all(Path::new(&cfg.events_file).parent().unwrap().to_str().unwrap()).unwrap()
         }
     }
 }
 
 // ----------------------------------------------------------------------------
 
-async fn push_template(destination: &str){
+async fn push_template(destination: &str, cfg: AppConfig){
     // Perform actions depending on destination
     match destination {
-        config::NETWORK_MODE|config::BOTH_MODE => {
+        appconfig::NETWORK_MODE|appconfig::BOTH_MODE => {
             // On start push template (Include check if events won't be ingested by http)
-            index::push_template().await;
+            index::push_template(cfg).await;
         },
         _ => {
             debug!("Template not pushed in file mode");
@@ -67,8 +70,8 @@ async fn push_template(destination: &str){
 
 // ----------------------------------------------------------------------------
 
-fn clean_audit_rules(config: &config::Config){
-    for element in config.audit.clone() {
+fn clean_audit_rules(cfg: &AppConfig){
+    for element in cfg.audit.clone() {
         let path = element["path"].as_str().unwrap();
         let rule = utils::get_audit_rule_permissions(element["rule"].as_str());
         utils::run_auditctl(&["-W", path, "-k", "fim", "-p", &rule]);
@@ -79,21 +82,23 @@ fn clean_audit_rules(config: &config::Config){
 // ----------------------------------------------------------------------------
 
 // Function that monitorize files in loop
-pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
-    rx: mpsc::Receiver<Result<notify::Event, notify::Error>>){
+pub async fn monitor(
+    tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
+    rx: mpsc::Receiver<Result<notify::Event, notify::Error>>, 
+    cfg: AppConfig,
+    ruleset: Ruleset){
 
-    let config = unsafe { super::GCONFIG.clone().unwrap() };
-    let destination = config.get_events_destination();
-    setup_events(destination.as_str(), config.clone());
+    let destination = cfg.clone().get_events_destination();
+    setup_events(destination.as_str(), cfg.clone());
 
     // Check if we have to push index template
-    push_template(destination.as_str()).await;
+    push_template(destination.as_str(), cfg.clone()).await;
 
-    let mut watcher = MultiWatcher::new(config.events_watcher.as_str(), tx);
+    let mut watcher = MultiWatcher::new(cfg.clone().events_watcher.as_str(), tx);
     
     // Iterating over monitor paths and set watcher on each folder to watch.
-    if ! config.monitor.is_empty() {
-        for element in config.monitor.clone() {
+    if ! cfg.clone().monitor.is_empty() {
+        for element in cfg.clone().monitor {
             let path = element["path"].as_str().unwrap();
             info!("Monitoring path: {}", path);
 
@@ -122,8 +127,8 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
         }
     }
     let mut last_position = 0;
-    if ! config.audit.is_empty() && utils::get_os() == "linux" && utils::check_auditd() {
-        for element in config.audit.clone() {
+    if ! cfg.clone().audit.is_empty() && utils::get_os() == "linux" && utils::check_auditd() {
+        for element in cfg.clone().audit {
             let path = element["path"].as_str().unwrap();
             let rule = utils::get_audit_rule_permissions(element["rule"].as_str());
             utils::run_auditctl(&["-w", path, "-k", "fim", "-p", &rule]);
@@ -153,8 +158,8 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
        
         // Remove auditd rules introduced by FIM
         // Setting ctrl + C handler
-        let cloned_config = config.clone();
-        match ctrlc::set_handler(move || clean_audit_rules(&cloned_config)) {
+        let cloned_cfg = cfg.clone();
+        match ctrlc::set_handler(move || clean_audit_rules(&cloned_cfg)) {
             Ok(_v) => debug!("Handler Ctrl-C set and listening"),
             Err(e) => error!("Error setting Ctrl-C handler, the process will continue without signal handling, Error: '{}'", e)
         }
@@ -196,7 +201,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                     if plain_path == logreader::AUDIT_LOG_PATH {
                         // Getting events from audit.log
                         let mut events = Vec::new();
-                        let (log_event, position) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone(), last_position, 0);
+                        let (log_event, position) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), cfg.clone(), last_position, 0);
                         if log_event.id != "0" { events.push(log_event); };
                         let mut ctr = 0;
                         last_position = position;
@@ -204,7 +209,7 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                             debug!("Reading events, iteration: {}", ctr);
                             let original_position = last_position;
                             ctr += 1;
-                            let (evt, pos) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), config.clone(), last_position, ctr);
+                            let (evt, pos) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), cfg.clone(), last_position, ctr);
                             if evt.id != "0" {
                                 events.push(evt);
                                 ctr = 0;
@@ -219,19 +224,19 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                         for audit_event in events {
                             if ! audit_event.is_empty() {
                                 // Getting the position of event in config (match ignore and labels)
-                                let index = config.get_index(audit_event.clone().path.as_str(),
+                                let index = cfg.get_index(audit_event.clone().path.as_str(),
                                     audit_event.clone().cwd.as_str(),
-                                    config.audit.clone().to_vec());
+                                    cfg.clone().audit.to_vec());
 
                                 if index != usize::MAX {
                                     // If event contains ignored string ignore event
-                                    if ! config.match_ignore(index,
+                                    if ! cfg.match_ignore(index,
                                             audit_event.clone().file.as_str(),
-                                            config.audit.clone())  &&
-                                        config.match_allowed(index,
+                                            cfg.clone().audit)  &&
+                                        cfg.match_allowed(index,
                                             audit_event.clone().file.as_str(),
-                                            config.audit.clone()) {
-                                        audit_event.process(destination.clone().as_str(), index_name.clone(), config.clone()).await;
+                                            cfg.clone().audit) {
+                                        audit_event.process(destination.clone().as_str(), index_name.clone(), cfg.clone(), ruleset.clone()).await;
                                     }else{
                                         debug!("Event ignored not stored in alerts");
                                     }
@@ -242,32 +247,32 @@ pub async fn monitor(tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
                             debug!("Event processed: {:?}", audit_event.clone());
                         }
                     }else {
-                        let index = config.get_index(event_path.to_str().unwrap(), "", config.monitor.clone().to_vec());
+                        let index = cfg.get_index(event_path.to_str().unwrap(), "", cfg.clone().monitor.to_vec());
                         if index != usize::MAX {
-                            let labels = config.get_labels(index, config.monitor.clone());
-                            if ! config.match_ignore(index,
-                                event_filename.to_str().unwrap(), config.monitor.clone()) &&
-                                config.match_allowed(index, event_filename.to_str().unwrap(), config.monitor.clone()) {
-                                let event = event::Event {
+                            let labels = cfg.get_labels(index, cfg.clone().monitor);
+                            if ! cfg.match_ignore(index,
+                                event_filename.to_str().unwrap(), cfg.clone().monitor) &&
+                                cfg.match_allowed(index, event_filename.to_str().unwrap(), cfg.clone().monitor) {
+                                let event = MonitorEvent {
                                     id: utils::get_uuid(),
                                     timestamp: current_timestamp,
                                     hostname: utils::get_hostname(),
-                                    node: config.node.clone(),
-                                    version: String::from(config::VERSION),
+                                    node: cfg.clone().node,
+                                    version: String::from(appconfig::VERSION),
                                     kind,
                                     path: path.clone(),
                                     size: utils::get_file_size(path.clone().to_str().unwrap()),
                                     labels,
                                     operation: event::get_operation(kind),
                                     detailed_operation: event::get_detailed_operation(kind),
-                                    checksum: hash::get_checksum( String::from(path.to_str().unwrap()), config.events_max_file_checksum ),
+                                    checksum: hash::get_checksum( String::from(path.to_str().unwrap()), cfg.clone().events_max_file_checksum ),
                                     fpid: utils::get_pid(),
-                                    system: config.system.clone()
+                                    system: cfg.clone().system
                                 };
 
                                 debug!("Event processed: {:?}", event);
-                                event.process(destination.clone().as_str(), index_name.clone(), config.clone()).await;
-                                launcher::check_integrations(event.clone(), config.clone());
+                                event.process(cfg.clone(), ruleset.clone()).await;
+                                launcher::check_integrations(event.clone(), cfg.clone());
                             }else{
                                 debug!("Event ignored not stored in alerts");
                             }
@@ -295,19 +300,19 @@ mod tests {
 
     #[test]
     fn test_push_template() {
-        let config = config::Config::new(&utils::get_os(), None);
-        fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
-        block_on(push_template("file"));
-        block_on(push_template("network"));
+        let cfg = AppConfig::new(&utils::get_os(), None);
+        fs::create_dir_all(Path::new(&cfg.log_file).parent().unwrap().to_str().unwrap()).unwrap();
+        block_on(push_template("file", cfg.clone()));
+        block_on(push_template("network", cfg.clone()));
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
     fn test_setup_events() {
-        let config = config::Config::new(&utils::get_os(), None);
-        fs::create_dir_all(Path::new(&config.log_file).parent().unwrap().to_str().unwrap()).unwrap();
-        setup_events("file", config.clone());
-        setup_events("network", config.clone());
+        let cfg = AppConfig::new(&utils::get_os(), None);
+        fs::create_dir_all(Path::new(&cfg.log_file).parent().unwrap().to_str().unwrap()).unwrap();
+        setup_events("file", cfg.clone());
+        setup_events("network", cfg.clone());
     }
 }

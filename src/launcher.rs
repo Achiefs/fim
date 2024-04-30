@@ -1,16 +1,17 @@
 // Copyright (C) 2023, Achiefs.
 
-use crate::config;
+use crate::appconfig::*;
 use crate::event::Event;
+use crate::monitorevent::MonitorEvent;
 use crate::integration;
 use log::debug;
 
 // ----------------------------------------------------------------------------
 
-pub fn check_integrations(event: Event, config: config::Config) {
-    let index = config.get_index(event.path.to_str().unwrap(), "", config.monitor.clone());
+pub fn check_integrations(event: MonitorEvent, cfg: AppConfig) {
+    let index = cfg.get_index(event.path.to_str().unwrap(), "", cfg.monitor.clone());
     if index != usize::MAX {
-        let integrations = config.get_integrations(index, config.monitor.clone());
+        let integrations = cfg.get_integrations(index, cfg.monitor.clone());
         let integration = integration::get_event_integration(event.clone(), integrations);
         match integration {
             Some(int) => int.launch(event.clone().format_json()),
@@ -25,14 +26,13 @@ pub fn check_integrations(event: Event, config: config::Config) {
 mod tests {
     use super::*;
     use std::path::PathBuf;
-    use crate::event::Event;
-    use crate::config::*;
+    use crate::monitorevent::MonitorEvent;
     use notify::event::*;
 
     // ------------------------------------------------------------------------
 
-    fn create_test_event() -> Event {
-        Event {
+    fn create_test_event() -> MonitorEvent {
+        MonitorEvent {
             id: "Test_id".to_string(),
             timestamp: "Timestamp".to_string(),
             hostname: "Hostname".to_string(),
@@ -56,8 +56,8 @@ mod tests {
     #[test]
     fn test_check_integrations() {
         let event = create_test_event();
-        let config = Config::new("windows", Some("test/unit/config/windows/monitor_integration.yml"));
-        check_integrations(event, config);
+        let cfg = AppConfig::new("windows", Some("test/unit/config/windows/monitor_integration.yml"));
+        check_integrations(event, cfg);
         
     }
 
@@ -67,8 +67,8 @@ mod tests {
     #[test]
     fn test_check_integrations_linux() {
         let event = create_test_event();
-        let config = Config::new("linux", Some("test/unit/config/linux/monitor_integration.yml"));
-        check_integrations(event, config);
+        let cfg = AppConfig::new("linux", Some("test/unit/config/linux/monitor_integration.yml"));
+        check_integrations(event, cfg);
     }
 
 }

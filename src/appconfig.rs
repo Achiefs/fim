@@ -10,25 +10,22 @@ const CONFIG_MACOS_PATH: &str = "/Applications/FileMonitor.app/config.yml";
 const CONFIG_LINUX_PATH: &str = "/etc/fim/config.yml";
 const CONFIG_WINDOWS_PATH: &str = "C:\\Program Files\\File Integrity Monitor\\config.yml";
 
-// To parse files in yaml format
+// Required dependencies
 use yaml_rust::yaml::{Yaml, YamlLoader, Array};
-// To use files IO operations.
 use std::fs::{File, OpenOptions};
-use std::io::Read;
-use std::io::Write;
-// To manage paths
+use std::io::{Read, Write};
 use std::path::Path;
-// To set log filter level
 use simplelog::LevelFilter;
-// To manage common functions
+use std::sync::{Arc, Mutex};
+use log::error;
+
 use crate::utils;
-// Integrate FIM with external code
 use crate::integration::Integration;
 
 // ----------------------------------------------------------------------------
 
 #[derive(Clone)]
-pub struct Config {
+pub struct AppConfig {
     pub version: String,
     pub path: String,
     pub events_watcher: String,
@@ -48,15 +45,15 @@ pub struct Config {
     pub log_level: String,
     pub log_max_file_size: usize,
     pub system: String,
-    pub insecure: bool
+    pub insecure: bool,
+    pub events_lock: Arc<Mutex<bool>>,
+    pub log_lock: Arc<Mutex<bool>>
 }
 
-pub static mut TMP_EVENTS: bool = false;
-
-impl Config {
+impl AppConfig {
 
     pub fn clone(&self) -> Self {
-        Config {
+        AppConfig {
             version: self.version.clone(),
             path: self.path.clone(),
             events_watcher: self.events_watcher.clone(),
@@ -76,7 +73,9 @@ impl Config {
             log_level: self.log_level.clone(),
             log_max_file_size: self.log_max_file_size,
             system: self.system.clone(),
-            insecure: self.insecure
+            insecure: self.insecure,
+            events_lock: self.events_lock.clone(),
+            log_lock: self.log_lock.clone()
         }
     }
 
@@ -270,7 +269,7 @@ impl Config {
             None => 64
         };
 
-        Config {
+        AppConfig {
             version: String::from(VERSION),
             path: cfg,
             events_watcher,
@@ -290,7 +289,9 @@ impl Config {
             log_level,
             log_max_file_size,
             system: String::from(system),
-            insecure
+            insecure,
+            events_lock: Arc::new(Mutex::new(false)),
+            log_lock: Arc::new(Mutex::new(false)),
         }
     }
 
@@ -409,13 +410,40 @@ impl Config {
 
     // ------------------------------------------------------------------------
 
-    pub fn get_events_file(&self) -> String {
-        unsafe {
-            if TMP_EVENTS {
-                format!("{}.tmp", self.events_file.clone())
-            }else{
-                self.events_file.clone()
+    pub fn get_lock_value(&self, lock: &Arc<Mutex<bool>>) -> bool {
+        match Arc::into_inner(lock.into()) {
+            None => {
+                error!("Cannot retrieve events lock Arc value.");
+                false
+            },
+            Some(mutex) => match mutex.lock() {
+                Ok(guard) => *guard,
+                Err(e) => {
+                    error!("Cannot retrieve events lock Mutex value, err: {}.", e);
+                    false
+                }
             }
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
+    pub fn get_events_file(&self) -> String {
+        match self.get_lock_value(&self.events_lock) {
+            false => self.events_file.clone(),
+            true => format!("{}.tmp", self.events_file.clone())
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
+    pub fn get_mutex(&self, lock: Arc<Mutex<bool>>) -> Mutex<bool> {
+        match Arc::into_inner(lock.clone()) {
+            None => {
+                error!("Could not retrieve Mutex '{:?}'.", lock.clone());
+                Mutex::new(false)
+            },
+            Some(mutex) => mutex
         }
     }
 
@@ -476,8 +504,8 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    pub fn create_test_config(filter: &str, events_destination: &str) -> Config {
-        Config {
+    pub fn create_test_config(filter: &str, events_destination: &str) -> AppConfig {
+        AppConfig {
             version: String::from(VERSION),
             path: String::from("test"),
             events_watcher: String::from("Recommended"),
@@ -497,7 +525,9 @@ mod tests {
             log_level: String::from(filter),
             log_max_file_size: 64,
             system: String::from("test"),
-            insecure: true
+            insecure: true,
+            events_lock: Arc::new(Mutex::new(false)),
+            log_lock: Arc::new(Mutex::new(false)),
         }
     }
 
@@ -505,27 +535,27 @@ mod tests {
 
     #[test]
     fn test_clone() {
-        let config = create_test_config("info", "");
-        let cloned = config.clone();
-        assert_eq!(config.version, cloned.version);
-        assert_eq!(config.path, cloned.path);
-        assert_eq!(config.events_destination, cloned.events_destination);
-        assert_eq!(config.events_max_file_checksum, cloned.events_max_file_checksum);
-        assert_eq!(config.events_max_file_size, cloned.events_max_file_size);
-        assert_eq!(config.endpoint_type, cloned.endpoint_type);
-        assert_eq!(config.endpoint_address, cloned.endpoint_address);
-        assert_eq!(config.endpoint_user, cloned.endpoint_user);
-        assert_eq!(config.endpoint_pass, cloned.endpoint_pass);
-        assert_eq!(config.endpoint_token, cloned.endpoint_token);
-        assert_eq!(config.events_file, cloned.events_file);
-        assert_eq!(config.monitor, cloned.monitor);
-        assert_eq!(config.audit, cloned.audit);
-        assert_eq!(config.node, cloned.node);
-        assert_eq!(config.log_file, cloned.log_file);
-        assert_eq!(config.log_level, cloned.log_level);
-        assert_eq!(config.log_max_file_size, cloned.log_max_file_size);
-        assert_eq!(config.system, cloned.system);
-        assert_eq!(config.insecure, cloned.insecure);
+        let cfg = create_test_config("info", "");
+        let cloned = cfg.clone();
+        assert_eq!(cfg.version, cloned.version);
+        assert_eq!(cfg.path, cloned.path);
+        assert_eq!(cfg.events_destination, cloned.events_destination);
+        assert_eq!(cfg.events_max_file_checksum, cloned.events_max_file_checksum);
+        assert_eq!(cfg.events_max_file_size, cloned.events_max_file_size);
+        assert_eq!(cfg.endpoint_type, cloned.endpoint_type);
+        assert_eq!(cfg.endpoint_address, cloned.endpoint_address);
+        assert_eq!(cfg.endpoint_user, cloned.endpoint_user);
+        assert_eq!(cfg.endpoint_pass, cloned.endpoint_pass);
+        assert_eq!(cfg.endpoint_token, cloned.endpoint_token);
+        assert_eq!(cfg.events_file, cloned.events_file);
+        assert_eq!(cfg.monitor, cloned.monitor);
+        assert_eq!(cfg.audit, cloned.audit);
+        assert_eq!(cfg.node, cloned.node);
+        assert_eq!(cfg.log_file, cloned.log_file);
+        assert_eq!(cfg.log_level, cloned.log_level);
+        assert_eq!(cfg.log_max_file_size, cloned.log_max_file_size);
+        assert_eq!(cfg.system, cloned.system);
+        assert_eq!(cfg.insecure, cloned.insecure);
     }
 
     // ------------------------------------------------------------------------
@@ -533,23 +563,26 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_new_config_windows() {
-        let config = Config::new("windows", None);
-        assert_eq!(config.version, String::from(VERSION));
-        assert_eq!(config.events_destination, String::from("file"));
-        assert_eq!(config.endpoint_address, String::from("Not_defined"));
-        assert_eq!(config.endpoint_type, String::from("Not_defined"));
-        assert_eq!(config.endpoint_user, String::from("Not_defined"));
-        assert_eq!(config.endpoint_pass, String::from("Not_defined"));
-        assert_eq!(config.endpoint_token, String::from("Not_defined"));
-        assert_eq!(config.events_file, String::from("C:\\ProgramData\\fim\\events.json"));
+        let dir = utils::get_current_dir();
+        let disk = dir.get(0..1).unwrap();
+        let cfg = AppConfig::new("windows", None);
+
+        assert_eq!(cfg.version, String::from(VERSION));
+        assert_eq!(cfg.events_destination, String::from("file"));
+        assert_eq!(cfg.endpoint_address, String::from("Not_defined"));
+        assert_eq!(cfg.endpoint_type, String::from("Not_defined"));
+        assert_eq!(cfg.endpoint_user, String::from("Not_defined"));
+        assert_eq!(cfg.endpoint_pass, String::from("Not_defined"));
+        assert_eq!(cfg.endpoint_token, String::from("Not_defined"));
+        assert_eq!(cfg.events_file, format!("{}:\\ProgramData\\fim\\events.json", disk) );
         // monitor
         // audit
-        assert_eq!(config.node, String::from("FIM"));
-        assert_eq!(config.log_file, String::from("C:\\ProgramData\\fim\\fim.log"));
-        assert_eq!(config.log_level, String::from("info"));
-        assert_eq!(config.log_max_file_size, 64);
-        assert_eq!(config.system, String::from("windows"));
-        assert_eq!(config.insecure, false);
+        assert_eq!(cfg.node, String::from("FIM"));
+        assert_eq!(cfg.log_file, format!("{}:\\ProgramData\\fim\\fim.log", disk) );
+        assert_eq!(cfg.log_level, String::from("info"));
+        assert_eq!(cfg.log_max_file_size, 64);
+        assert_eq!(cfg.system, String::from("windows"));
+        assert_eq!(cfg.insecure, false);
     }
 
     // ------------------------------------------------------------------------
@@ -557,8 +590,8 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_new_config_windows_events_destination() {
-        let config = Config::new("windows", Some("test/unit/config/windows/events_destination_none.yml"));
-        assert_eq!(config.events_destination, String::from("file"));
+        let cfg = AppConfig::new("windows", Some("test/unit/config/windows/events_destination_none.yml"));
+        assert_eq!(cfg.events_destination, String::from("file"));
     }
 
     // ------------------------------------------------------------------------
@@ -567,7 +600,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_new_config_windows_events_file() {
-        Config::new("windows", Some("test/unit/config/windows/events_file_none.yml"));
+        AppConfig::new("windows", Some("test/unit/config/windows/events_file_none.yml"));
     }
 
     // ------------------------------------------------------------------------
@@ -575,8 +608,8 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_new_config_windows_events_destination_network() {
-        let config = Config::new("windows", Some("test/unit/config/windows/events_destination_network.yml"));
-        assert_eq!(config.events_file, String::from("Not_defined"));
+        let cfg = AppConfig::new("windows", Some("test/unit/config/windows/events_destination_network.yml"));
+        assert_eq!(cfg.events_file, String::from("Not_defined"));
     }
 
     // ------------------------------------------------------------------------
@@ -584,8 +617,8 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_new_config_windows_events_max_file_checksum() {
-        let config = Config::new("windows", Some("test/unit/config/windows/events_max_file_checksum.yml"));
-        assert_eq!(config.events_max_file_checksum, 128);
+        let cfg = AppConfig::new("windows", Some("test/unit/config/windows/events_max_file_checksum.yml"));
+        assert_eq!(cfg.events_max_file_checksum, 128);
     }
 
     // ------------------------------------------------------------------------
@@ -593,8 +626,8 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_new_config_windows_events_max_file_size() {
-        let config = Config::new("windows", Some("test/unit/config/windows/events_max_file_size.yml"));
-        assert_eq!(config.events_max_file_size, 256);
+        let cfg = AppConfig::new("windows", Some("test/unit/config/windows/events_max_file_size.yml"));
+        assert_eq!(cfg.events_max_file_size, 256);
     }
 
     // ------------------------------------------------------------------------
@@ -602,8 +635,8 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_new_config_windows_events_endpoint_insecure() {
-        let config = Config::new("windows", Some("test/unit/config/windows/events_endpoint_insecure.yml"));
-        assert_eq!(config.insecure, true);
+        let cfg = AppConfig::new("windows", Some("test/unit/config/windows/events_endpoint_insecure.yml"));
+        assert_eq!(cfg.insecure, true);
     }
 
     // ------------------------------------------------------------------------
@@ -611,8 +644,8 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_new_config_windows_events_endpoint_insecure_none() {
-        let config = Config::new("windows", Some("test/unit/config/windows/events_endpoint_insecure_none.yml"));
-        assert_eq!(config.insecure, false);
+        let cfg = AppConfig::new("windows", Some("test/unit/config/windows/events_endpoint_insecure_none.yml"));
+        assert_eq!(cfg.insecure, false);
     }
 
     // ------------------------------------------------------------------------
@@ -620,8 +653,8 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_new_config_windows_events_destination_network_address() {
-        let config = Config::new("windows", Some("test/unit/config/windows/events_destination_network_address.yml"));
-        assert_eq!(config.endpoint_address, "0.0.0.0");
+        let cfg = AppConfig::new("windows", Some("test/unit/config/windows/events_destination_network_address.yml"));
+        assert_eq!(cfg.endpoint_address, "0.0.0.0");
     }
 
     // ------------------------------------------------------------------------
@@ -630,7 +663,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_new_config_windows_events_destination_network_address_none() {
-        Config::new("windows", Some("test/unit/config/windows/events_destination_network_address_none.yml"));
+        AppConfig::new("windows", Some("test/unit/config/windows/events_destination_network_address_none.yml"));
     }
 
     // ------------------------------------------------------------------------
@@ -638,8 +671,8 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_new_config_windows_events_credentials_user() {
-        let config = Config::new("windows", Some("test/unit/config/windows/events_credentials_user.yml"));
-        assert_eq!(config.endpoint_user, "test_user");
+        let cfg = AppConfig::new("windows", Some("test/unit/config/windows/events_credentials_user.yml"));
+        assert_eq!(cfg.endpoint_user, "test_user");
     }
 
     // ------------------------------------------------------------------------
@@ -648,7 +681,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_new_config_windows_events_credentials_user_none() {
-        Config::new("windows", Some("test/unit/config/windows/events_credentials_user_none.yml"));
+        AppConfig::new("windows", Some("test/unit/config/windows/events_credentials_user_none.yml"));
     }
 
     // ------------------------------------------------------------------------
@@ -656,8 +689,8 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_new_config_windows_events_credentials_password() {
-        let config = Config::new("windows", Some("test/unit/config/windows/events_credentials_password.yml"));
-        assert_eq!(config.endpoint_pass, "test_password");
+        let cfg = AppConfig::new("windows", Some("test/unit/config/windows/events_credentials_password.yml"));
+        assert_eq!(cfg.endpoint_pass, "test_password");
     }
 
     // ------------------------------------------------------------------------
@@ -665,8 +698,8 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_new_config_windows_events_credentials_token() {
-        let config = Config::new("windows", Some("test/unit/config/windows/events_credentials_token.yml"));
-        assert_eq!(config.endpoint_token, "test_token");
+        let cfg = AppConfig::new("windows", Some("test/unit/config/windows/events_credentials_token.yml"));
+        assert_eq!(cfg.endpoint_token, "test_token");
     }
 
     // ------------------------------------------------------------------------
@@ -675,7 +708,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_new_config_windows_events_credentials_password_none() {
-        Config::new("windows", Some("test/unit/config/windows/events_credentials_password_none.yml"));
+        AppConfig::new("windows", Some("test/unit/config/windows/events_credentials_password_none.yml"));
     }
 
     // ------------------------------------------------------------------------
@@ -684,7 +717,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_new_config_windows_monitor_none() {
-        Config::new("windows", Some("test/unit/config/windows/monitor_none.yml"));
+        AppConfig::new("windows", Some("test/unit/config/windows/monitor_none.yml"));
     }
 
     // ------------------------------------------------------------------------
@@ -692,8 +725,8 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_new_config_windows_node_none() {
-        let config = Config::new("windows", Some("test/unit/config/windows/node_none.yml"));
-        assert_eq!(config.node, utils::get_hostname());
+        let cfg = AppConfig::new("windows", Some("test/unit/config/windows/node_none.yml"));
+        assert_eq!(cfg.node, utils::get_hostname());
     }
 
     // ------------------------------------------------------------------------
@@ -702,7 +735,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_new_config_windows_log_file_none() {
-        Config::new("windows", Some("test/unit/config/windows/log_file_none.yml"));
+        AppConfig::new("windows", Some("test/unit/config/windows/log_file_none.yml"));
     }
 
     // ------------------------------------------------------------------------
@@ -710,8 +743,8 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_new_config_windows_log_level_none() {
-        let config = Config::new("windows", Some("test/unit/config/windows/log_level_none.yml"));
-        assert_eq!(config.log_level, "info");
+        let cfg = AppConfig::new("windows", Some("test/unit/config/windows/log_level_none.yml"));
+        assert_eq!(cfg.log_level, "info");
     }
 
     // ------------------------------------------------------------------------
@@ -719,8 +752,8 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_new_config_windows_log_max_file_size_none() {
-        let config = Config::new("windows", Some("test/unit/config/windows/log_max_file_size_none.yml"));
-        assert_eq!(config.log_max_file_size, 64);
+        let cfg = AppConfig::new("windows", Some("test/unit/config/windows/log_max_file_size_none.yml"));
+        assert_eq!(cfg.log_max_file_size, 64);
     }
 
     // ------------------------------------------------------------------------
@@ -728,8 +761,8 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_new_config_linux_events_destination() {
-        let config = Config::new("linux", Some("test/unit/config/linux/events_destination_none.yml"));
-        assert_eq!(config.events_destination, String::from("file"));
+        let cfg = AppConfig::new("linux", Some("test/unit/config/linux/events_destination_none.yml"));
+        assert_eq!(cfg.events_destination, String::from("file"));
     }
 
     // ------------------------------------------------------------------------
@@ -738,7 +771,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_new_config_linux_events_file() {
-        Config::new("linux", Some("test/unit/config/linux/events_file_none.yml"));
+        AppConfig::new("linux", Some("test/unit/config/linux/events_file_none.yml"));
     }
 
     // ------------------------------------------------------------------------
@@ -746,8 +779,8 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_new_config_linux_events_destination_network() {
-        let config = Config::new("linux", Some("test/unit/config/linux/events_destination_network.yml"));
-        assert_eq!(config.events_file, String::from("Not_defined"));
+        let cfg = AppConfig::new("linux", Some("test/unit/config/linux/events_destination_network.yml"));
+        assert_eq!(cfg.events_file, String::from("Not_defined"));
     }
 
     // ------------------------------------------------------------------------
@@ -755,8 +788,8 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_new_config_linux_events_max_file_checksum() {
-        let config = Config::new("linux", Some("test/unit/config/linux/events_max_file_checksum.yml"));
-        assert_eq!(config.events_max_file_checksum, 128);
+        let cfg = AppConfig::new("linux", Some("test/unit/config/linux/events_max_file_checksum.yml"));
+        assert_eq!(cfg.events_max_file_checksum, 128);
     }
 
     // ------------------------------------------------------------------------
@@ -764,8 +797,8 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_new_config_linux_events_max_file_size() {
-        let config = Config::new("linux", Some("test/unit/config/linux/events_max_file_size.yml"));
-        assert_eq!(config.events_max_file_size, 256);
+        let cfg = AppConfig::new("linux", Some("test/unit/config/linux/events_max_file_size.yml"));
+        assert_eq!(cfg.events_max_file_size, 256);
     }
 
     // ------------------------------------------------------------------------
@@ -773,8 +806,8 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_new_config_linux_events_endpoint_insecure() {
-        let config = Config::new("linux", Some("test/unit/config/linux/events_endpoint_insecure.yml"));
-        assert_eq!(config.insecure, true);
+        let cfg = AppConfig::new("linux", Some("test/unit/config/linux/events_endpoint_insecure.yml"));
+        assert_eq!(cfg.insecure, true);
     }
 
     // ------------------------------------------------------------------------
@@ -782,8 +815,8 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_new_config_linux_events_endpoint_insecure_none() {
-        let config = Config::new("linux", Some("test/unit/config/linux/events_endpoint_insecure_none.yml"));
-        assert_eq!(config.insecure, false);
+        let cfg = AppConfig::new("linux", Some("test/unit/config/linux/events_endpoint_insecure_none.yml"));
+        assert_eq!(cfg.insecure, false);
     }
 
     // ------------------------------------------------------------------------
@@ -791,8 +824,8 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_new_config_linux_events_destination_network_address() {
-        let config = Config::new("linux", Some("test/unit/config/linux/events_destination_network_address.yml"));
-        assert_eq!(config.endpoint_address, "0.0.0.0");
+        let cfg = AppConfig::new("linux", Some("test/unit/config/linux/events_destination_network_address.yml"));
+        assert_eq!(cfg.endpoint_address, "0.0.0.0");
     }
 
     // ------------------------------------------------------------------------
@@ -801,7 +834,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_new_config_linux_events_destination_network_address_none() {
-        Config::new("linux", Some("test/unit/config/linux/events_destination_network_address_none.yml"));
+        AppConfig::new("linux", Some("test/unit/config/linux/events_destination_network_address_none.yml"));
     }
 
     // ------------------------------------------------------------------------
@@ -809,8 +842,8 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_new_config_linux_events_credentials_user() {
-        let config = Config::new("linux", Some("test/unit/config/linux/events_credentials_user.yml"));
-        assert_eq!(config.endpoint_user, "test_user");
+        let cfg = AppConfig::new("linux", Some("test/unit/config/linux/events_credentials_user.yml"));
+        assert_eq!(cfg.endpoint_user, "test_user");
     }
 
     // ------------------------------------------------------------------------
@@ -819,7 +852,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_new_config_linux_events_credentials_user_none() {
-        Config::new("linux", Some("test/unit/config/linux/events_credentials_user_none.yml"));
+        AppConfig::new("linux", Some("test/unit/config/linux/events_credentials_user_none.yml"));
     }
 
     // ------------------------------------------------------------------------
@@ -827,8 +860,8 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_new_config_linux_events_credentials_password() {
-        let config = Config::new("linux", Some("test/unit/config/linux/events_credentials_password.yml"));
-        assert_eq!(config.endpoint_pass, "test_password");
+        let cfg = AppConfig::new("linux", Some("test/unit/config/linux/events_credentials_password.yml"));
+        assert_eq!(cfg.endpoint_pass, "test_password");
     }
 
     // ------------------------------------------------------------------------
@@ -836,8 +869,8 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_new_config_linux_events_credentials_token() {
-        let config = Config::new("linux", Some("test/unit/config/linux/events_credentials_token.yml"));
-        assert_eq!(config.endpoint_token, "test_token");
+        let cfg = AppConfig::new("linux", Some("test/unit/config/linux/events_credentials_token.yml"));
+        assert_eq!(cfg.endpoint_token, "test_token");
     }
 
     // ------------------------------------------------------------------------
@@ -846,7 +879,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_new_config_linux_events_credentials_password_none() {
-        Config::new("linux", Some("test/unit/config/linux/events_credentials_password_none.yml"));
+        AppConfig::new("linux", Some("test/unit/config/linux/events_credentials_password_none.yml"));
     }
 
     // ------------------------------------------------------------------------
@@ -854,8 +887,8 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_new_config_linux_monitor_none() {
-        let config = Config::new("linux", Some("test/unit/config/linux/monitor_none.yml"));
-        assert_eq!(config.monitor, Vec::new());
+        let cfg = AppConfig::new("linux", Some("test/unit/config/linux/monitor_none.yml"));
+        assert_eq!(cfg.monitor, Vec::new());
     }
 
     // ------------------------------------------------------------------------
@@ -863,8 +896,8 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_new_config_linux_audit_none() {
-        let config = Config::new("linux", Some("test/unit/config/linux/audit_none.yml"));
-        assert_eq!(config.audit, Vec::new());
+        let cfg = AppConfig::new("linux", Some("test/unit/config/linux/audit_none.yml"));
+        assert_eq!(cfg.audit, Vec::new());
     }
 
     // ------------------------------------------------------------------------
@@ -873,7 +906,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_new_config_linux_audit_and_monitor_none() {
-        Config::new("linux", Some("test/unit/config/linux/audit_and_monitor_none.yml"));
+        AppConfig::new("linux", Some("test/unit/config/linux/audit_and_monitor_none.yml"));
     }
 
     // ------------------------------------------------------------------------
@@ -881,11 +914,11 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_new_config_linux_node_none() {
-        let config = Config::new("linux", Some("test/unit/config/linux/node_none.yml"));
+        let cfg = AppConfig::new("linux", Some("test/unit/config/linux/node_none.yml"));
         let machine_id = utils::get_machine_id();
         match machine_id.is_empty(){
-            true => assert_eq!(config.node, utils::get_hostname()),
-            false => assert_eq!(config.node, machine_id)
+            true => assert_eq!(cfg.node, utils::get_hostname()),
+            false => assert_eq!(cfg.node, machine_id)
         }
     }
 
@@ -895,7 +928,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_new_config_linux_log_file_none() {
-        Config::new("linux", Some("test/unit/config/linux/log_file_none.yml"));
+        AppConfig::new("linux", Some("test/unit/config/linux/log_file_none.yml"));
     }
 
     // ------------------------------------------------------------------------
@@ -903,8 +936,8 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_new_config_linux_log_level_none() {
-        let config = Config::new("linux", Some("test/unit/config/linux/log_level_none.yml"));
-        assert_eq!(config.log_level, "info");
+        let cfg = AppConfig::new("linux", Some("test/unit/config/linux/log_level_none.yml"));
+        assert_eq!(cfg.log_level, "info");
     }
 
     // ------------------------------------------------------------------------
@@ -912,8 +945,8 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_new_config_linux_log_max_file_size_none() {
-        let config = Config::new("linux", Some("test/unit/config/linux/log_max_file_size_none.yml"));
-        assert_eq!(config.log_max_file_size, 64);
+        let cfg = AppConfig::new("linux", Some("test/unit/config/linux/log_max_file_size_none.yml"));
+        assert_eq!(cfg.log_max_file_size, 64);
     }
 
     // ------------------------------------------------------------------------
@@ -922,23 +955,23 @@ mod tests {
     #[test]
     fn test_new_config_linux() {
         if utils::get_os() == "linux" {
-            let config = Config::new("linux", None);
-            assert_eq!(config.version, String::from(VERSION));
-            assert_eq!(config.events_destination, String::from("file"));
-            assert_eq!(config.endpoint_type, String::from("Not_defined"));
-            assert_eq!(config.endpoint_address, String::from("Not_defined"));
-            assert_eq!(config.endpoint_user, String::from("Not_defined"));
-            assert_eq!(config.endpoint_pass, String::from("Not_defined"));
-            assert_eq!(config.endpoint_token, String::from("Not_defined"));
-            assert_eq!(config.events_file, String::from("/var/lib/fim/events.json"));
+            let cfg = AppConfig::new("linux", None);
+            assert_eq!(cfg.version, String::from(VERSION));
+            assert_eq!(cfg.events_destination, String::from("file"));
+            assert_eq!(cfg.endpoint_type, String::from("Not_defined"));
+            assert_eq!(cfg.endpoint_address, String::from("Not_defined"));
+            assert_eq!(cfg.endpoint_user, String::from("Not_defined"));
+            assert_eq!(cfg.endpoint_pass, String::from("Not_defined"));
+            assert_eq!(cfg.endpoint_token, String::from("Not_defined"));
+            assert_eq!(cfg.events_file, String::from("/var/lib/fim/events.json"));
             // monitor
             // audit
-            assert_eq!(config.node, String::from("FIM"));
-            assert_eq!(config.log_file, String::from("/var/log/fim/fim.log"));
-            assert_eq!(config.log_level, String::from("info"));
-            assert_eq!(config.log_max_file_size, 64);
-            assert_eq!(config.system, String::from("linux"));
-            assert_eq!(config.insecure, false);
+            assert_eq!(cfg.node, String::from("FIM"));
+            assert_eq!(cfg.log_file, String::from("/var/log/fim/fim.log"));
+            assert_eq!(cfg.log_level, String::from("info"));
+            assert_eq!(cfg.log_max_file_size, 64);
+            assert_eq!(cfg.system, String::from("linux"));
+            assert_eq!(cfg.insecure, false);
         }
     }
 
@@ -947,23 +980,23 @@ mod tests {
     #[cfg(target_os = "macos")]
     #[test]
     fn test_new_config_macos() {
-        let config = Config::new("macos", None);
-        assert_eq!(config.version, String::from(VERSION));
-        assert_eq!(config.events_destination, String::from("file"));
-        assert_eq!(config.endpoint_type, String::from("Not_defined"));
-        assert_eq!(config.endpoint_address, String::from("Not_defined"));
-        assert_eq!(config.endpoint_user, String::from("Not_defined"));
-        assert_eq!(config.endpoint_pass, String::from("Not_defined"));
-        assert_eq!(config.endpoint_token, String::from("Not_defined"));
-        assert_eq!(config.events_file, String::from("/var/lib/fim/events.json"));
+        let cfg = AppConfig::new("macos", None);
+        assert_eq!(cfg.version, String::from(VERSION));
+        assert_eq!(cfg.events_destination, String::from("file"));
+        assert_eq!(cfg.endpoint_type, String::from("Not_defined"));
+        assert_eq!(cfg.endpoint_address, String::from("Not_defined"));
+        assert_eq!(cfg.endpoint_user, String::from("Not_defined"));
+        assert_eq!(cfg.endpoint_pass, String::from("Not_defined"));
+        assert_eq!(cfg.endpoint_token, String::from("Not_defined"));
+        assert_eq!(cfg.events_file, String::from("/var/lib/fim/events.json"));
         // monitor
         // audit
-        assert_eq!(config.node, String::from("FIM"));
-        assert_eq!(config.log_file, String::from("/var/log/fim/fim.log"));
-        assert_eq!(config.log_level, String::from("info"));
-        assert_eq!(config.log_max_file_size, 64);
-        assert_eq!(config.system, String::from("macos"));
-        assert_eq!(config.insecure, false);
+        assert_eq!(cfg.node, String::from("FIM"));
+        assert_eq!(cfg.log_file, String::from("/var/log/fim/fim.log"));
+        assert_eq!(cfg.log_level, String::from("info"));
+        assert_eq!(cfg.log_max_file_size, 64);
+        assert_eq!(cfg.system, String::from("macos"));
+        assert_eq!(cfg.insecure, false);
     }
 
     // ------------------------------------------------------------------------
@@ -1078,20 +1111,22 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_read_config_windows() {
+        let dir = utils::get_current_dir();
+        let disk = dir.get(0..1).unwrap();
         let yaml = read_config(String::from("config/windows/config.yml"));
 
         assert_eq!(yaml[0]["node"].as_str().unwrap(), "FIM");
         assert_eq!(yaml[0]["events"]["destination"].as_str().unwrap(), "file");
-        assert_eq!(yaml[0]["events"]["file"].as_str().unwrap(), "C:\\ProgramData\\fim\\events.json");
+        assert_eq!(yaml[0]["events"]["file"].as_str().unwrap(), format!("{}:\\ProgramData\\fim\\events.json", disk) );
 
         assert_eq!(yaml[0]["monitor"][0]["path"].as_str().unwrap(), "C:\\Program Files\\");
         assert_eq!(yaml[0]["monitor"][0]["labels"][0].as_str().unwrap(), "Program Files");
         assert_eq!(yaml[0]["monitor"][0]["labels"][1].as_str().unwrap(), "windows");
-        assert_eq!(yaml[0]["monitor"][1]["path"].as_str().unwrap(), "C:\\Users\\");
+        assert_eq!(yaml[0]["monitor"][1]["path"].as_str().unwrap(), "C:\\Users\\" );
         assert_eq!(yaml[0]["monitor"][1]["labels"][0].as_str().unwrap(), "Users");
         assert_eq!(yaml[0]["monitor"][1]["labels"][1].as_str().unwrap(), "windows");
 
-        assert_eq!(yaml[0]["log"]["file"].as_str().unwrap(), "C:\\ProgramData\\fim\\fim.log");
+        assert_eq!(yaml[0]["log"]["file"].as_str().unwrap(), format!("{}:\\ProgramData\\fim\\fim.log", disk) );
         assert_eq!(yaml[0]["log"]["level"].as_str().unwrap(), "info");
     }
 
@@ -1137,18 +1172,18 @@ mod tests {
 
     #[test]
     fn test_path_in() {
-        let config = Config::new(&utils::get_os(), None);
+        let cfg = AppConfig::new(&utils::get_os(), None);
         if utils::get_os() == "linux" {
-            assert!(config.path_in("/bin/", "", config.monitor.clone()));
-            assert!(config.path_in("/bin", "", config.monitor.clone()));
-            assert!(config.path_in("/bin/test", "", config.monitor.clone()));
-            assert!(!config.path_in("/test", "", config.monitor.clone()));
-            assert!(config.path_in("/tmp", "", config.audit.clone()));
-            assert!(config.path_in("/tmp/", "", config.audit.clone()));
-            assert!(config.path_in("./", "/tmp", config.audit.clone()));
-            assert!(config.path_in("./", "/tmp/", config.audit.clone()));
-            assert!(!config.path_in("./", "/test", config.audit.clone()));
-            assert!(config.path_in("./", "/tmp/test", config.audit.clone()));
+            assert!(cfg.path_in("/bin/", "", cfg.monitor.clone()));
+            assert!(cfg.path_in("/bin", "", cfg.monitor.clone()));
+            assert!(cfg.path_in("/bin/test", "", cfg.monitor.clone()));
+            assert!(!cfg.path_in("/test", "", cfg.monitor.clone()));
+            assert!(cfg.path_in("/tmp", "", cfg.audit.clone()));
+            assert!(cfg.path_in("/tmp/", "", cfg.audit.clone()));
+            assert!(cfg.path_in("./", "/tmp", cfg.audit.clone()));
+            assert!(cfg.path_in("./", "/tmp/", cfg.audit.clone()));
+            assert!(!cfg.path_in("./", "/test", cfg.audit.clone()));
+            assert!(cfg.path_in("./", "/tmp/test", cfg.audit.clone()));
         }
     }
 
@@ -1156,18 +1191,18 @@ mod tests {
 
     #[test]
     fn test_get_index() {
-        let config = Config::new(&utils::get_os(), None);
+        let cfg = AppConfig::new(&utils::get_os(), None);
         if utils::get_os() == "linux" {
-            assert_eq!(config.get_index("/bin/", "", config.monitor.clone()), 0);
-            assert_eq!(config.get_index("./", "/bin", config.monitor.clone()), 0);
-            assert_eq!(config.get_index("/usr/bin/", "", config.monitor.clone()), 1);
-            assert_eq!(config.get_index("/etc", "", config.monitor.clone()), 2);
-            assert_eq!(config.get_index("/test", "", config.monitor.clone()), usize::MAX);
-            assert_eq!(config.get_index("./", "/test", config.monitor.clone()), usize::MAX);
-            assert_eq!(config.get_index("/tmp", "", config.audit.clone()), 0);
-            assert_eq!(config.get_index("/test", "", config.audit.clone()), usize::MAX);
-            assert_eq!(config.get_index("./", "/tmp", config.audit.clone()), 0);
-            assert_eq!(config.get_index("./", "/test", config.audit.clone()), usize::MAX);
+            assert_eq!(cfg.get_index("/bin/", "", cfg.monitor.clone()), 0);
+            assert_eq!(cfg.get_index("./", "/bin", cfg.monitor.clone()), 0);
+            assert_eq!(cfg.get_index("/usr/bin/", "", cfg.monitor.clone()), 1);
+            assert_eq!(cfg.get_index("/etc", "", cfg.monitor.clone()), 2);
+            assert_eq!(cfg.get_index("/test", "", cfg.monitor.clone()), usize::MAX);
+            assert_eq!(cfg.get_index("./", "/test", cfg.monitor.clone()), usize::MAX);
+            assert_eq!(cfg.get_index("/tmp", "", cfg.audit.clone()), 0);
+            assert_eq!(cfg.get_index("/test", "", cfg.audit.clone()), usize::MAX);
+            assert_eq!(cfg.get_index("./", "/tmp", cfg.audit.clone()), 0);
+            assert_eq!(cfg.get_index("./", "/test", cfg.audit.clone()), usize::MAX);
         }
     }
 
@@ -1175,21 +1210,21 @@ mod tests {
 
     #[test]
     fn test_get_labels() {
-        let config = Config::new(&utils::get_os(), None);
+        let cfg = AppConfig::new(&utils::get_os(), None);
         if utils::get_os() == "windows" {
-            let labels = config.get_labels(0, config.monitor.clone());
+            let labels = cfg.get_labels(0, cfg.monitor.clone());
             assert_eq!(labels[0], "Program Files");
             assert_eq!(labels[1], "windows");
         }else if utils::get_os() == "macos"{
-            let labels = config.get_labels(2, config.monitor.clone());
+            let labels = cfg.get_labels(2, cfg.monitor.clone());
             assert_eq!(labels[0], "usr/bin");
             assert_eq!(labels[1], "macos");
         }else{
-            let labels = config.get_labels(1, config.monitor.clone());
+            let labels = cfg.get_labels(1, cfg.monitor.clone());
             assert_eq!(labels[0], "usr/bin");
             assert_eq!(labels[1], "linux");
 
-            let labels = config.get_labels(0, config.audit.clone());
+            let labels = cfg.get_labels(0, cfg.audit.clone());
             assert_eq!(labels[0], "tmp");
             assert_eq!(labels[1], "linux");
         }
@@ -1199,10 +1234,10 @@ mod tests {
 
     #[test]
     fn test_match_ignore() {
-        let config = Config::new(&utils::get_os(), None);
+        let cfg = AppConfig::new(&utils::get_os(), None);
         if utils::get_os() == "linux" {
-            assert!(config.match_ignore(0, "file.swp", config.audit.clone()));
-            assert!(!config.match_ignore(0, "file.txt", config.audit.clone()));
+            assert!(cfg.match_ignore(0, "file.swp", cfg.audit.clone()));
+            assert!(!cfg.match_ignore(0, "file.txt", cfg.audit.clone()));
         }
     }
 
@@ -1211,17 +1246,17 @@ mod tests {
     #[test]
     fn test_match_allowed() {
         if utils::get_os() == "windows" {
-            let config = Config::new(&utils::get_os(), Some("test/unit/config/windows/monitor_allowed.yml"));
-            assert!(!config.match_allowed(1, "file.swp", config.monitor.clone()));
-            assert!(config.match_allowed(1, "file.txt", config.monitor.clone()));
+            let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/windows/monitor_allowed.yml"));
+            assert!(!cfg.match_allowed(1, "file.swp", cfg.monitor.clone()));
+            assert!(cfg.match_allowed(1, "file.txt", cfg.monitor.clone()));
         } else if utils::get_os() == "linux" {
-            let config = Config::new(&utils::get_os(), Some("test/unit/config/linux/monitor_allowed.yml"));
-            assert!(!config.match_allowed(2, "file.swp", config.monitor.clone()));
-            assert!(config.match_allowed(2, "file.txt", config.monitor.clone()));
+            let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/linux/monitor_allowed.yml"));
+            assert!(!cfg.match_allowed(2, "file.swp", cfg.monitor.clone()));
+            assert!(cfg.match_allowed(2, "file.txt", cfg.monitor.clone()));
 
-            let config_audit = Config::new(&utils::get_os(), Some("test/unit/config/linux/audit_allowed.yml"));
-            assert!(!config_audit.match_allowed(0, "file.swp", config_audit.audit.clone()));
-            assert!(config_audit.match_allowed(0, "file.txt", config_audit.audit.clone()));
+            let cfg_audit = AppConfig::new(&utils::get_os(), Some("test/unit/config/linux/audit_allowed.yml"));
+            assert!(!cfg_audit.match_allowed(0, "file.swp", cfg_audit.audit.clone()));
+            assert!(cfg_audit.match_allowed(0, "file.txt", cfg_audit.audit.clone()));
         }
     }
 
@@ -1230,22 +1265,22 @@ mod tests {
     #[test]
     fn test_get_integrations() {
         let os = utils::get_os();
-        let config = Config::new(&os,
+        let cfg = AppConfig::new(&os,
             Some(format!("test/unit/config/{}/monitor_integration.yml", os)
                 .as_str())
         );
-        if os.clone() == "windows" {
-            let integrations = config.get_integrations(2, config.monitor.clone());
+        if os == "windows" {
+            let integrations = cfg.get_integrations(2, cfg.monitor.clone());
             assert_eq!(integrations.len(), 1);
-        }else if os.clone() == "macos"{
-            let integrations = config.get_integrations(2, config.monitor.clone());
+        }else if os == "macos"{
+            let integrations = cfg.get_integrations(2, cfg.monitor.clone());
             assert_eq!(integrations.len(), 1);
         }else{
-            let integrations_monitor = config.get_integrations(2, config.monitor.clone());
+            let integrations_monitor = cfg.get_integrations(2, cfg.monitor.clone());
             assert_eq!(integrations_monitor.len(), 1);
 
             // Not implemented yet
-            //let integrations_audit = config.get_integrations(2, config.audit.clone());
+            //let integrations_audit = cfg.get_integrations(2, cfg.audit.clone());
             //assert_eq!(integrations_audit.len(), 1);
         }
     }
@@ -1254,8 +1289,8 @@ mod tests {
 
     #[test]
     fn test_new_config_watcher() {
-        let config = Config::new("windows", Some("test/unit/config/windows/events_watcher.yml"));
-        assert_eq!(config.events_watcher, "Poll");
+        let cfg = AppConfig::new("windows", Some("test/unit/config/windows/events_watcher.yml"));
+        assert_eq!(cfg.events_watcher, "Poll");
     }
 
 }

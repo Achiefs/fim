@@ -14,6 +14,7 @@ cargo build --release
 mkdir -p "${app_dir}"
 cp ./target/release/fim "${app_dir}/"
 cp ./config/macos/config.yml "${app_dir}"
+cp ./config/macos/rules.yml "${app_dir}"
 
 cd "${current_dir}"
 chmod 0755 ./Scripts/postinstall

@@ -20,7 +20,7 @@ jobs:
         uses: actions-rs/tarpaulin@v0.1
         with:
           version: 0.22.0
-          args: '--all-features --out Lcov --exclude-files src/main.rs src/monitor.rs'
+          args: '--all-features --out Lcov --exclude-files src/main.rs src/monitor.rs src/init.rs'
       - name: upload to Coveralls
         uses: coverallsapp/github-action@master
         with:

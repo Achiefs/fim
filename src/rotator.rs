@@ -6,9 +6,9 @@ use std::path::Path;
 use std::time::Duration;
 use std::thread;
 use log::{debug, error, info};
-use std::ptr::addr_of_mut;
+use std::sync::Mutex;
 
-use crate::config;
+use crate::appconfig::*;
 use crate::utils;
 
 // ----------------------------------------------------------------------------
@@ -56,7 +56,7 @@ fn compress_zip_file(filepath: &str) -> Result<String, String> {
             Ok(format!("File {} compressed successfully.", filename))
         },
         Err(e) => {
-            error!("Could not create file inside zip file, error: {}", e);
+            error!("Cannot create file inside zip file, error: {}", e);
             Err(format!("{}", e))
         }
     }
@@ -81,7 +81,7 @@ fn compress_tgz_file(filepath: &str) -> Result<String, String> {
     match tar.append_file(filename, &mut file){
         Ok(()) => Ok(format!("File {} compressed successfully.", filename)),
         Err(e) => {
-            error!("Could not create tar.gz archive, error: {}", e);
+            error!("Cannot not create tar.gz archive, error: {}", e);
             Err(format!("{}", e))
         }
     }
@@ -95,9 +95,10 @@ fn get_iteration(filepath: &str) -> u32{
 
 // ----------------------------------------------------------------------------
 
-fn rotate_file(filepath: &str, iteration: u32, lock: &mut bool){
+fn rotate_file(filepath: &str, iteration: u32, lock: Mutex<bool>){
     info!("Rotating {} file...", filepath);
-    *lock = true;
+    *lock.lock().unwrap() = true;
+
     thread::sleep(Duration::new(15, 0));
     let path = Path::new(filepath);
     let mut parent_path = path.parent().unwrap().to_path_buf();
@@ -138,7 +139,7 @@ fn rotate_file(filepath: &str, iteration: u32, lock: &mut bool){
         Err(e) => error!("File cannot be copied, retrying on next iteration, error: {}", e)
     };
 
-    *lock = false;
+    *lock.lock().unwrap() = false;
     info!("File {} rotated.", filepath);
     info!("Compressing rotated file {}", file_rotated);
     #[cfg(windows)]
@@ -174,20 +175,18 @@ fn rotate_file(filepath: &str, iteration: u32, lock: &mut bool){
 // ----------------------------------------------------------------------------
 
 #[cfg(not(tarpaulin_include))]
-pub fn rotator(){
-    let config = unsafe { super::GCONFIG.clone().unwrap() };
-
+pub fn rotator(cfg: AppConfig){
     loop{
-        let log_size = if Path::new(config.clone().log_file.as_str()).exists() {
-            metadata(config.clone().log_file).unwrap().len() as usize
+        let log_size = if Path::new(cfg.clone().log_file.as_str()).exists() {
+            metadata(cfg.clone().log_file).unwrap().len() as usize
         }else{ 0 };
             
-        let events_size = if Path::new(config.clone().events_file.as_str()).exists() {
-            metadata(config.clone().events_file).unwrap().len() as usize
+        let events_size = if Path::new(cfg.clone().events_file.as_str()).exists() {
+            metadata(cfg.clone().events_file).unwrap().len() as usize
         }else{ 0 };
 
-        if events_size >= config.events_max_file_size * 1000000 {
-            let events_path = Path::new(config.events_file.as_str());
+        if events_size >= cfg.events_max_file_size * 1000000 {
+            let events_path = Path::new(cfg.events_file.as_str());
             let mut parent_path = events_path.parent().unwrap().to_path_buf();
             parent_path.push("archive");
 
@@ -198,12 +197,14 @@ pub fn rotator(){
                 };
             }
 
-            unsafe { rotate_file(config.clone().events_file.as_str(),
-                get_iteration(parent_path.to_str().unwrap()), &mut *addr_of_mut!(config::TMP_EVENTS)) };
+            rotate_file(
+                cfg.clone().events_file.as_str(),
+                get_iteration(parent_path.to_str().unwrap()), 
+                cfg.clone().get_mutex(cfg.clone().events_lock));
         }
 
-        if log_size >= config.log_max_file_size * 1000000 {
-            let log_path = Path::new(config.log_file.as_str());
+        if log_size >= cfg.log_max_file_size * 1000000 {
+            let log_path = Path::new(cfg.log_file.as_str());
             let mut parent_path = log_path.parent().unwrap().to_path_buf();
             parent_path.push("archive");
 
@@ -214,8 +215,10 @@ pub fn rotator(){
                 };
             }
 
-            rotate_file(config.clone().log_file.as_str(),
-                get_iteration(parent_path.to_str().unwrap()), &mut true);
+            rotate_file(
+                cfg.clone().log_file.as_str(),
+                get_iteration(parent_path.to_str().unwrap()), 
+                cfg.clone().get_mutex(cfg.clone().log_lock));
         }
 
         debug!("Sleeping rotator thread for 30 minutes");
@@ -287,12 +290,12 @@ mod tests {
 
         copy(license_path, copy_path).unwrap();
 
-        let mut lock = false;
+        let lock = Mutex::new(false);
         let iteration = 0;
         let extension = if utils::get_os() == "windows" { "zip"
         }else{ "tar.gz" };
         let compressed_file = format!("{}.{}.{}", copy_path, iteration, extension);
-        rotate_file(copy_path, iteration, &mut lock);
+        rotate_file(copy_path, iteration, lock);
         assert_eq!(metadata(copy_path).unwrap().len(), 0);
         assert_ne!(metadata(compressed_file.clone()).unwrap().len(), 0);
         remove_file(copy_path).unwrap();

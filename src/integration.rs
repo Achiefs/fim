@@ -9,6 +9,7 @@ use std::process::Command;
 
 // Single event data management
 use crate::event::Event;
+use crate::monitorevent::MonitorEvent;
 use crate::utils;
 
 // ----------------------------------------------------------------------------
@@ -51,7 +52,7 @@ impl Integration {
     // ------------------------------------------------------------------------
 
     pub fn launch(&self, event: String) {
-        let formatted_event = match utils::get_os().as_str() {
+        let formatted_event = match utils::get_os() {
             "windows" => format!("'{}'", event),
             _ => event
         };
@@ -70,7 +71,7 @@ impl Integration {
 
 // ----------------------------------------------------------------------------
 
-pub fn get_event_integration(event: Event, integrations: Vec<Integration>) -> Option<Integration> {
+pub fn get_event_integration(event: MonitorEvent, integrations: Vec<Integration>) -> Option<Integration> {
     let option = integrations.iter().find(|integration|
         match integration.condition[1].as_str() {
             "==" => event.get_string(integration.condition[0].clone()) == integration.condition[2],
@@ -102,9 +103,9 @@ impl fmt::Debug for Integration {
 mod tests {
     use super::*;
     use notify::event::*;
-    use crate::config::*;
+    use crate::appconfig::*;
     use std::path::PathBuf;
-    use crate::event::Event;
+    use crate::monitorevent::MonitorEvent;
 
     // ------------------------------------------------------------------------
 
@@ -121,8 +122,8 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[cfg(target_os = "windows")]
-    pub fn create_dummy_event_windows(path: &str, operation: &str) -> Event {
-        Event{
+    pub fn create_dummy_event_windows(path: &str, operation: &str) -> MonitorEvent {
+        MonitorEvent{
             id: "Test_id".to_string(),
             timestamp: "Timestamp".to_string(),
             hostname: "Hostname".to_string(),
@@ -143,8 +144,8 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[cfg(any(target_os = "linux", target_os = "darwin"))]
-    pub fn create_dummy_event_unix(path: &str, operation: &str) -> Event {
-        Event{
+    pub fn create_dummy_event_unix(path: &str, operation: &str) -> MonitorEvent {
+        MonitorEvent{
             id: "Test_id".to_string(),
             timestamp: "Timestamp".to_string(),
             hostname: "Hostname".to_string(),
@@ -200,9 +201,9 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_get_event_integration_windows() {
-        let config = Config::new("windows", Some("test/unit/config/windows/monitor_integration.yml"));
+        let cfg = AppConfig::new("windows", Some("test/unit/config/windows/monitor_integration.yml"));
 
-        let integrations = config.get_integrations(2, config.monitor.clone());
+        let integrations = cfg.get_integrations(2, cfg.monitor.clone());
         let event = create_dummy_event_windows("tmp", "CREATE");
         let integration = get_event_integration(event, integrations.clone()).unwrap();
 
@@ -214,7 +215,7 @@ mod tests {
         assert_eq!(integration.script, "C:\\tmp\\remover.ps1");
         assert_eq!(integration.parameters, "");
 
-        let integrations2 = config.get_integrations(3, config.monitor.clone());
+        let integrations2 = cfg.get_integrations(3, cfg.monitor.clone());
         let event2 = create_dummy_event_windows("tmp2", "MODIFY");
         let integration2 = get_event_integration(event2, integrations2.clone()).unwrap();
 
@@ -233,10 +234,10 @@ mod tests {
     #[test]
     fn test_get_event_integration_unix() {
         let os = utils::get_os();
-        let config = Config::new(&os, Some(format!("test/unit/config/{}/monitor_integration.yml", os).as_str()));
+        let cfg = AppConfig::new(&os, Some(format!("test/unit/config/{}/monitor_integration.yml", os).as_str()));
 
         let event = create_dummy_event_unix("etc", "CREATE");
-        let integrations = config.get_integrations(2, config.monitor.clone());
+        let integrations = cfg.get_integrations(2, cfg.monitor.clone());
         let integration = get_event_integration(event, integrations).unwrap();
 
         assert_eq!(integration.name, "rmfile");
@@ -248,7 +249,7 @@ mod tests {
         assert_eq!(integration.parameters, "");
 
         let event2 = create_dummy_event_unix("etc2", "MODIFY");
-        let integrations2 = config.get_integrations(3, config.monitor.clone());
+        let integrations2 = cfg.get_integrations(3, cfg.monitor.clone());
         let integration2 = get_event_integration(event2, integrations2).unwrap();
 
         assert_eq!(integration2.name, "rmfile2");

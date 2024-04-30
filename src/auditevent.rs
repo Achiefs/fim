@@ -8,9 +8,11 @@ use log::*;
 use serde_json::{json, to_string};
 use reqwest::Client;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
-
-use crate::config;
+use crate::appconfig;
+use crate::appconfig::*;
+use crate::ruleset::*;
 use crate::utils;
 use crate::hash;
 
@@ -106,10 +108,10 @@ impl Event {
     pub fn from(syscall: HashMap<String, String>,
         cwd: HashMap<String, String>, proctitle: HashMap<String, String>,
         paths: Vec<HashMap<String, String>>,
-        config: config::Config) -> Self {
+        cfg: AppConfig) -> Self {
 
-        let parent = get_parent(paths.clone(),  cwd["cwd"].as_str(), config.clone());
-        let path = get_item_path(paths.clone(), cwd["cwd"].as_str(), config.clone());
+        let parent = get_parent(paths.clone(),  cwd["cwd"].as_str(), cfg.clone());
+        let path = get_item_path(paths.clone(), cwd["cwd"].as_str(), cfg.clone());
 
         let command = if proctitle["proctitle"].contains('/') ||
             proctitle["proctitle"].contains("bash") {
@@ -124,9 +126,9 @@ impl Event {
             .split(':').collect::<Vec<&str>>()[0]); // Getting the 13 digits timestamp
 
         let event_path = parent["name"].clone();
-        let index = config.get_index(event_path.as_str(),
-            cwd["cwd"].as_str(), config.audit.clone().to_vec());
-        let labels = config.get_labels(index, config.audit.clone());
+        let index = cfg.get_index(event_path.as_str(),
+            cwd["cwd"].as_str(), cfg.audit.clone().to_vec());
+        let labels = cfg.get_labels(index, cfg.audit.clone());
 
         Event{
             id: utils::get_uuid(),
@@ -134,8 +136,8 @@ impl Event {
             command,
             timestamp: clean_timestamp,
             hostname: utils::get_hostname(),
-            node: config.node,
-            version: String::from(config::VERSION),
+            node: cfg.node,
+            version: String::from(appconfig::VERSION),
             labels,
             operation: utils::get_field(path.clone(), "nametype"),
             path: utils::clean_path(&event_path),
@@ -143,9 +145,9 @@ impl Event {
             size: utils::get_file_size(path["name"].clone().as_str()),
             checksum: hash::get_checksum(format!("{}/{}",
                 parent["name"].clone(), path["name"].clone()),
-                config.events_max_file_checksum),
+                cfg.events_max_file_checksum),
             fpid: utils::get_pid(),
-            system: utils::get_os(),
+            system: String::from(utils::get_os()),
 
 
             ogid: get_field(path.clone(), "ogid"),
@@ -346,12 +348,11 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to send events through network
-    pub async fn send(&self, index: String) {
+    pub async fn send(&self, index: String, cfg: AppConfig) {
         let event = self.get_json();
-        let config = unsafe { super::GCONFIG.clone().unwrap() };
         
         // Splunk endpoint integration
-        if config.endpoint_type == "Splunk" {
+        if cfg.endpoint_type == "Splunk" {
             let data = json!({
                 "source": self.node.clone(),
                 "sourcetype": "_json",
@@ -359,14 +360,14 @@ impl Event {
                 "index": "fim_events"
             });
             debug!("Sending received event to Splunk integration, event: {}", data);
-            let request_url = format!("{}/services/collector/event", config.endpoint_address);
+            let request_url = format!("{}/services/collector/event", cfg.endpoint_address);
             let client = Client::builder()
-                .danger_accept_invalid_certs(config.insecure)
+                .danger_accept_invalid_certs(cfg.insecure)
                 .timeout(Duration::from_secs(30))
                 .build().unwrap();
             match client
                 .post(request_url)
-                .header("Authorization", format!("Splunk {}", config.endpoint_token))
+                .header("Authorization", format!("Splunk {}", cfg.endpoint_token))
                 .json(&data)
                 .send()
                 .await {
@@ -376,14 +377,14 @@ impl Event {
             }
         // Elastic endpoint integration
         } else {
-            let request_url = format!("{}/{}/_doc/{}", config.endpoint_address, index, self.id);
+            let request_url = format!("{}/{}/_doc/{}", cfg.endpoint_address, index, self.id);
             let client = Client::builder()
-                .danger_accept_invalid_certs(config.insecure)
+                .danger_accept_invalid_certs(cfg.insecure)
                 .timeout(Duration::from_secs(30))
                 .build().unwrap();
             match client
                 .post(request_url)
-                .basic_auth(config.endpoint_user, Some(config.endpoint_pass))
+                .basic_auth(cfg.endpoint_user, Some(cfg.endpoint_pass))
                 .json(&event)
                 .send()
                 .await {
@@ -397,17 +398,19 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to manage event destination
-    pub async fn process(&self, destination: &str, index_name: String, config: config::Config){
+    pub async fn process(&self, destination: &str, index_name: String, cfg: AppConfig, ruleset: Ruleset){
         match destination {
-            config::BOTH_MODE => {
-                self.log(&config.get_events_file());
-                self.send(index_name).await;
+            appconfig::BOTH_MODE => {
+                self.log(&cfg.get_events_file());
+                self.send(index_name, cfg.clone()).await;
             },
-            config::NETWORK_MODE => {
-                self.send(index_name).await;
+            appconfig::NETWORK_MODE => {
+                self.send(index_name, cfg.clone()).await;
             },
-            _ => self.log(&config.get_events_file())
+            _ => self.log(&cfg.get_events_file())
         }
+        let filepath = PathBuf::from(self.path.clone());
+        ruleset.match_rule(cfg, filepath.join(self.file.clone()), self.id.clone()).await;
     }
 }
 
@@ -422,26 +425,26 @@ fn get_field(map: HashMap<String, String>,field: &str) -> String {
 
 // ----------------------------------------------------------------------------
 
-pub fn get_parent(paths: Vec<HashMap<String, String>>, cwd: &str, config: config::Config) -> HashMap<String, String> {
+pub fn get_parent(paths: Vec<HashMap<String, String>>, cwd: &str, cfg: AppConfig) -> HashMap<String, String> {
     match paths.iter().find(|p|{
         utils::get_field((*p).clone(), "nametype") == "PARENT" &&
-        config.path_in(p["name"].as_str(), cwd, config.audit.clone())
+        cfg.path_in(p["name"].as_str(), cwd, cfg.audit.clone())
     }){
         Some(p) => p.clone(),
-        None => get_item_path(paths.clone(), cwd, config.clone())
+        None => get_item_path(paths.clone(), cwd, cfg.clone())
     }
 }
 
 // ----------------------------------------------------------------------------
 
-pub fn get_item_path(paths: Vec<HashMap<String, String>>, cwd: &str, config: config::Config) -> HashMap<String, String> {
+pub fn get_item_path(paths: Vec<HashMap<String, String>>, cwd: &str, cfg: AppConfig) -> HashMap<String, String> {
     match paths.iter().rfind(|p|{
         utils::get_field((*p).clone(), "nametype") != "PARENT" &&
         utils::get_field((*p).clone(), "nametype") != "UNKNOWN" &&
-        config.path_in(p["name"].as_str(), cwd, config.audit.clone())
+        cfg.path_in(p["name"].as_str(), cwd, cfg.audit.clone())
     }){
         Some(p) => p.clone(),
-        None => get_parent(paths.clone(), cwd, config.clone())
+        None => get_parent(paths.clone(), cwd, cfg.clone())
     }
 }
 
@@ -505,7 +508,6 @@ impl fmt::Debug for Event {
 mod tests {
     use super::*;
     use crate::auditevent::Event;
-    use crate::config::Config;
     use tokio_test::block_on;
     use std::fs;
 
@@ -513,12 +515,6 @@ mod tests {
 
     fn remove_test_file(filename: &str) {
         fs::remove_file(filename).unwrap()
-    }
-
-    fn initialize() {
-        unsafe{
-            super::super::GCONFIG = Some(config::Config::new(&utils::get_os(), None)); 
-        }
     }
 
     fn create_empty_event() -> Event {
@@ -592,7 +588,7 @@ mod tests {
     #[test]
     fn test_from() {
         if utils::get_os() == "linux" {
-            let config = Config::new(&utils::get_os(),
+            let cfg = AppConfig::new(&utils::get_os(),
                 Some("test/unit/config/linux/audit_from_test.yml"));
             let syscall = HashMap::<String, String>::from([
                 (String::from("syscall"), String::from("syscall")),
@@ -676,11 +672,11 @@ mod tests {
                 (String::from("msg"), String::from("audit(1659026449.689:6434)"))
             ]);
 
-            let event = Event::from(syscall.clone(), cwd.clone(), proctitle, paths.clone(), config.clone());
+            let event = Event::from(syscall.clone(), cwd.clone(), proctitle, paths.clone(), cfg.clone());
             assert_eq!(String::from("1659026449689"), event.timestamp);
             assert_eq!(utils::get_hostname(), event.hostname);
             assert_eq!(String::from("FIM"), event.node);
-            assert_eq!(String::from(config::VERSION), event.version);
+            assert_eq!(String::from(appconfig::VERSION), event.version);
             assert_eq!(String::from("/tmp"), event.path);
             assert_eq!(String::from("test.txt"), event.file);
             assert_eq!(0, event.size);
@@ -735,7 +731,7 @@ mod tests {
                 (String::from("proctitle"), String::from("bash")),
                 (String::from("msg"), String::from("audit(1659026449.689:6434)"))
             ]);
-            let event = Event::from(syscall, cwd, proctitle, paths.clone(), config.clone());
+            let event = Event::from(syscall, cwd, proctitle, paths.clone(), cfg.clone());
             assert_eq!(String::from("bash"), event.proctitle);
 
         }
@@ -946,34 +942,31 @@ mod tests {
 
     #[test]
     fn test_send() {
-        initialize();
         let event = create_test_event();
-        block_on( event.send(String::from("test")) );
+        let cfg = AppConfig::new(&utils::get_os(), None);
+        block_on( event.send(String::from("test"), cfg) );
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
     fn test_send_splunk() {
-        initialize();
-        let evt = create_test_event();
-        unsafe {
-            super::super::GCONFIG = Some(config::Config::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml")));
-        }
-        block_on( evt.send(String::from("test")) );
+        let event = create_test_event();
+        let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml"));
+        block_on( event.send(String::from("test"), cfg) );
     }
 
     // ------------------------------------------------------------------------
 
     #[test]
     fn test_process() {
-        initialize();
-        let config = Config::new(&utils::get_os(), None);
+        let cfg = AppConfig::new(&utils::get_os(), None);
+        let ruleset = Ruleset::new(&utils::get_os(), None);  
         let event = create_test_event();
 
-        block_on(event.process(config::NETWORK_MODE, String::from("test"), config.clone()));
-        block_on(event.process(config::FILE_MODE, String::from("test2"), config.clone()));
-        block_on(event.process(config::BOTH_MODE, String::from("test3"), config.clone()));
+        block_on(event.process(appconfig::NETWORK_MODE, String::from("test"), cfg.clone(), ruleset.clone()));
+        block_on(event.process(appconfig::FILE_MODE, String::from("test2"), cfg.clone(), ruleset.clone()));
+        block_on(event.process(appconfig::BOTH_MODE, String::from("test3"), cfg.clone(), ruleset.clone()));
     }
 
     // ------------------------------------------------------------------------
