@@ -112,8 +112,8 @@ pub async fn monitor(
             };
 
             match element["exclude"].as_vec() {
-                Some(ig) => {
-                    let exclude_vec  = ig.iter().map(|e| e.as_str().unwrap() );
+                Some(ex) => {
+                    let exclude_vec  = ex.iter().map(|e| e.as_str().unwrap() );
                     let exclude_list : String = Itertools::intersperse(exclude_vec, ", ").collect();
                     info!("Excluding folders: '{}' inside '{}' path.", exclude_list, path);
                 },
@@ -124,7 +124,7 @@ pub async fn monitor(
                 Some(allowed) => {
                     let allowed_vec = allowed.iter().map(|e| e.as_str().unwrap());
                     let allowed_list : String = Itertools::intersperse(allowed_vec, ", ").collect();
-                    info!("Only files with '{}' will trigger event inside '{}'.", allowed_list, path)
+                    info!("Only files with '{}' will trigger event inside '{}' path.", allowed_list, path)
                 },
                 None => debug!("Monitoring files under '{}' path.", path)
             }
@@ -147,18 +147,27 @@ pub async fn monitor(
                 Some(allowed) => {
                     let allowed_vec  = allowed.iter().map(|e| e.as_str().unwrap() );
                     let allowed_list : String = Itertools::intersperse(allowed_vec, ", ").collect();
-                    info!("Only files with '{}' will trigger event inside '{}'", allowed_list, path)
+                    info!("Only files with '{}' will trigger event inside '{}' path.", allowed_list, path)
                 },
-                None => debug!("Monitoring all files under this path '{}'", path)
+                None => debug!("Monitoring files under '{}' path.", path)
+            };
+
+            match element["exclude"].as_vec() {
+                Some(ex) => {
+                    let exclude_vec  = ex.iter().map(|e| e.as_str().unwrap() );
+                    let exclude_list : String = Itertools::intersperse(exclude_vec, ", ").collect();
+                    info!("Excluding folders: '{}' inside '{}' path.", exclude_list, path);
+                },
+                None => debug!("Exclude folders for '{}' path not set.", path)
             };
 
             match element["ignore"].as_vec() {
                 Some(ig) => {
                     let ignore_list_vec  = ig.iter().map(|e| e.as_str().unwrap() );
                     let ignore_list : String = Itertools::intersperse(ignore_list_vec, ", ").collect();
-                    info!("Ignoring files with: {} inside {}", ignore_list, path);
+                    info!("Ignoring files with: '{}' inside '{}' path", ignore_list, path);
                 },
-                None => info!("Ignore for '{}' not set", path)
+                None => info!("Ignore for '{}' pat not set", path)
             };
         }
         // Detect if Audit file is moved or renamed (rotation)
