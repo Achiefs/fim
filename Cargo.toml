@@ -31,7 +31,7 @@ default-features = false
 features = ["std"]
 
 [target.'cfg(windows)'.dependencies]
-windows-service = "0.6.0"
+windows-service = "0.7.0"
 zip = "1.1.2"
 
 [target.'cfg(unix)'.dependencies]
