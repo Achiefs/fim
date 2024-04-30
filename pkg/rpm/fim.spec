@@ -101,7 +101,7 @@ rm -fr %{buildroot}
 # -----------------------------------------------------------------------------
 
 %changelog
-* Thu Apr 25 2024 support <support@achiefs.com> - 0.5.0
+* Tue Apr 30 2024 support <support@achiefs.com> - 0.5.0
 - More info: https://github.com/Achiefs/fim/releases/tag/v0.5.0
 
 * Fri Apr 19 2024 support <support@achiefs.com> - 0.4.11
