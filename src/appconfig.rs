@@ -1252,7 +1252,7 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "linux")]
     #[test]
     fn test_match_exclude() {
         let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/linux/audit_exclude.yml"));
