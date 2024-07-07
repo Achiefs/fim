@@ -42,7 +42,7 @@ jobs:
         run: sudo docker run --rm okynos/fim-builder:centos7 ${{ github.ref_name }}
 
   Pkg-build-macos11:
-    runs-on: macos-11
+    runs-on: macos-12
     steps:
       - name: Check out code
         uses: actions/checkout@v2
