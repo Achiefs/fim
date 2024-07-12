@@ -110,10 +110,10 @@ pub fn extract_fields(data: Vec<HashMap<String, String>>) -> (SHashMap,
 
     data.iter().for_each(|v| {
         match v["type"].as_str() {
-            "SYSCALL" => syscall = v.clone(),
+            "SYSCALL" => syscall.clone_from(v),
             "PATH" => paths.push(v.clone()),
-            "CWD" => cwd = v.clone(),
-            "PROCTITLE" => proctitle = v.clone(),
+            "CWD" => cwd.clone_from(v),
+            "PROCTITLE" => proctitle.clone_from(v),
             _ => error!("Unidentified Audit field")
         }
     });

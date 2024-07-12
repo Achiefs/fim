@@ -349,10 +349,8 @@ impl AppConfig {
     // ------------------------------------------------------------------------
 
     pub fn get_labels(&self, index: usize, array: Array) -> Vec<String> {
-        match array[index]["labels"].clone().into_vec() {
-            Some(labels) => labels,
-            None => Vec::new()
-        }.to_vec().iter().map(|element| String::from(element.as_str().unwrap()) ).collect()
+        array[index]["labels"].clone().into_vec().unwrap_or_default()
+        .to_vec().iter().map(|element| String::from(element.as_str().unwrap()) ).collect()
     }
 
     // ------------------------------------------------------------------------
@@ -399,10 +397,8 @@ impl AppConfig {
     // ------------------------------------------------------------------------
 
     pub fn get_integrations(&self, index: usize, array: Array) -> Vec<Integration> {
-        let data = match array[index]["integrations"].clone().into_vec() {
-            Some(integrations) => integrations,
-            None => Vec::new()
-        };
+        let default = array[index]["integrations"].clone().into_vec();
+        let data = default.unwrap_or_default();
         let mut integrations: Vec<Integration> = Vec::new();
         data.iter().for_each(|info|
             integrations.push(Integration::new(
