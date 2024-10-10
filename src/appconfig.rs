@@ -211,7 +211,7 @@ impl AppConfig {
         // Manage null value on audit value
         let audit = match yaml[0]["audit"].as_vec() {
             Some(value) => {
-                if utils::get_os() != "linux"{
+                if utils::get_os() != "linux" {
                     panic!("Audit only supported in Linux systems.");
                 }
                 value.to_vec()

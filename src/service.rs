@@ -2,9 +2,9 @@
 // Parts of the code here is based on mullvad/windows-service-rs crate examples
 // Crate link: https://github.com/mullvad/windows-service-rs
 
-use futures::executor::block_on;
 use notify::event::{Event, EventKind, EventAttributes};
 use std::thread;
+use tokio::runtime::Runtime;
 
 use crate::monitor;
 use crate::rotator;
@@ -108,7 +108,9 @@ pub fn run_service() -> Result<()> {
         Ok(_v) => info!("FIM rotator thread started."),
         Err(e) => error!("Could not start FIM rotator thread, error: {}", e)
     };
-    block_on(monitor::monitor(tx, rx, cfg, ruleset));
+
+    let rt = Runtime::new().unwrap();
+    rt.block_on(monitor::monitor(tx, rx, cfg, ruleset));
 
     // Tell the system that service has stopped.
     status_handle.set_service_status(ServiceStatus {
