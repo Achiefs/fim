@@ -32,6 +32,9 @@ https://github.com/Achiefs/fim/wiki" />
                     <Component Id='ConfigFile' Guid='*' Win64="yes">
                         <File Id='CONFIG' Name='config.yml' DiskId='1' Source='config.yml' KeyPath='yes'></File>
                     </Component>
+                    <Component Id='IndexTemplateFile' Guid='*' Win64="yes">
+                        <File Id='CONFIG' Name='index_template.json' DiskId='1' Source='index_template.json' KeyPath='yes'></File>
+                    </Component>
                     <Component Id='RulesFile' Guid='*' Win64="yes">
                         <File Id='RULES' Name='rules.yml' DiskId='1' Source='rules.yml' KeyPath='yes'></File>
                     </Component>
@@ -44,6 +47,7 @@ https://github.com/Achiefs/fim/wiki" />
             <Feature Id='MainProgram' Title='Program' Description='The main executable.' Level='1'>
                 <ComponentRef Id='MainExecutable' />
                 <ComponentRef Id='ConfigFile' />
+                <ComponentRef Id='IndexTemplateFile' />
                 <ComponentRef Id='RulesFile' />
             </Feature>
         </Feature>
