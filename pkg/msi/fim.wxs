@@ -33,7 +33,7 @@ https://github.com/Achiefs/fim/wiki" />
                         <File Id='CONFIG' Name='config.yml' DiskId='1' Source='config.yml' KeyPath='yes'></File>
                     </Component>
                     <Component Id='IndexTemplateFile' Guid='*' Win64="yes">
-                        <File Id='CONFIG' Name='index_template.json' DiskId='1' Source='index_template.json' KeyPath='yes'></File>
+                        <File Id='INDEXTEMPLATE' Name='index_template.json' DiskId='1' Source='index_template.json' KeyPath='yes'></File>
                     </Component>
                     <Component Id='RulesFile' Guid='*' Win64="yes">
                         <File Id='RULES' Name='rules.yml' DiskId='1' Source='rules.yml' KeyPath='yes'></File>
