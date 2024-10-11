@@ -31,12 +31,10 @@ fn get_template_path() -> String {
         String::from(relative_path)
     }else if Path::new(config_path).exists() {
         String::from(config_path)
+    }else if utils::get_os() != "windows" {
+        format!("{}/{}", executable_path.clone().parent().unwrap().to_str().unwrap(), "index_template.json")
     }else{
-        if utils::get_os() != "windows"{
-            format!("{}/{}", executable_path.clone().parent().unwrap().to_str().unwrap(), "index_template.json")
-        }else{
-            format!("{}\\{}", executable_path.clone().parent().unwrap().to_str().unwrap(), "index_template.json")
-        }
+        format!("{}\\{}", executable_path.clone().parent().unwrap().to_str().unwrap(), "index_template.json")
     }
 }
 
