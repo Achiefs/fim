@@ -12,21 +12,29 @@ use log::{info, debug, error};
 use std::path::Path;
 // Handle time intervals
 use std::time::Duration;
+use std::env;
 
 use crate::appconfig::*;
+use crate::utils;
 
 fn get_template_path() -> String {
     let relative_path = "./../../config/index_template.json";
     let config_path = "/etc/fim/index_template.json";
     let default_path = "config/index_template.json";
+    let executable_path = env::current_exe().unwrap();
+    
     if Path::new(default_path).exists() {
         String::from(default_path)
     }else if Path::new("./index_template.json").exists() {
         String::from("./index_template.json")
     }else if Path::new(relative_path).exists() {
         String::from(relative_path)
-    }else{
+    }else if Path::new(config_path).exists() {
         String::from(config_path)
+    }else if utils::get_os() != "windows" {
+        format!("{}/{}", executable_path.clone().parent().unwrap().to_str().unwrap(), "index_template.json")
+    }else{
+        format!("{}\\{}", executable_path.clone().parent().unwrap().to_str().unwrap(), "index_template.json")
     }
 }
 

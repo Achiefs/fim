@@ -1,7 +1,7 @@
 // Copyright (C) 2021, Achiefs.
 
 // Global constants definitions
-pub const VERSION: &str = "0.5.0";
+pub const VERSION: &str = "0.5.1";
 pub const NETWORK_MODE: &str = "NETWORK";
 pub const FILE_MODE: &str = "FILE";
 pub const BOTH_MODE: &str = "BOTH";
@@ -211,7 +211,7 @@ impl AppConfig {
         // Manage null value on audit value
         let audit = match yaml[0]["audit"].as_vec() {
             Some(value) => {
-                if utils::get_os() != "linux"{
+                if utils::get_os() != "linux" {
                     panic!("Audit only supported in Linux systems.");
                 }
                 value.to_vec()
