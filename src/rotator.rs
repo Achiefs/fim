@@ -174,7 +174,6 @@ fn rotate_file(filepath: &str, iteration: u32, lock: Mutex<bool>){
 
 // ----------------------------------------------------------------------------
 
-#[cfg(not(tarpaulin_include))]
 pub fn rotator(cfg: AppConfig){
     loop{
         let log_size = if Path::new(cfg.clone().log_file.as_str()).exists() {
