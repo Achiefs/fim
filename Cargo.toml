@@ -40,3 +40,6 @@ tar = "0.4.40"
 
 [dev-dependencies]
 tokio-test = "*"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(tarpaulin_include)"] }

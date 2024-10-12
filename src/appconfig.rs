@@ -99,10 +99,7 @@ impl AppConfig {
 
         // Manage value on events->watcher value
         let events_watcher = match yaml[0]["events"]["watcher"].as_str() {
-            Some(value) => match value {
-                "poll"|"P"|"POLL"|"Poll" => String::from("Poll"),
-                _ => String::from("Recommended")
-            },
+            Some("poll"|"P"|"POLL"|"Poll") => String::from("Poll"),
             _ => String::from("Recommended")
         };
 
