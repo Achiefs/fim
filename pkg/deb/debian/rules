@@ -10,11 +10,11 @@ export DH_OPTIONS
 
 # Package build options
 export BUILD_DIR="../.."
-export TARGET_DIR="${CURDIR}/debian/fim"
+export TARGET_DIR="${CURDIR}/debian/filemonitor"
 export PKG_DIR="${TARGET_DIR}/usr"
-export CONFIG_DIR="${TARGET_DIR}/etc/fim"
+export CONFIG_DIR="${TARGET_DIR}/etc/filemonitor"
 export BIN_DIR="${PKG_DIR}/bin"
-export DOC_DIR="${PKG_DIR}/share/doc/fim"
+export DOC_DIR="${PKG_DIR}/share/doc/filemonitor"
 export SYS_DIR="${TARGET_DIR}/lib/systemd/system"
 
 %:
@@ -33,12 +33,12 @@ override_dh_install:
 	mkdir -p ${DOC_DIR}
 	mkdir -p ${SYS_DIR}
 
-	install -m 0750 ${BUILD_DIR}/target/release/fim ${BIN_DIR}/
+	install -m 0750 ${BUILD_DIR}/target/release/filemonitor ${BIN_DIR}/
 	install -m 0640 ${BUILD_DIR}/config/linux/config.yml ${CONFIG_DIR}/
 	install -m 0640 ${BUILD_DIR}/config/linux/rules.yml ${CONFIG_DIR}/
 	install -m 0640 ${BUILD_DIR}/config/index_template.json ${CONFIG_DIR}/
 	install -m 0640 ${BUILD_DIR}/pkg/deb/debian/copyright ${DOC_DIR}/
-	install -m 0644 ${BUILD_DIR}/pkg/fim.service ${SYS_DIR}/
+	install -m 0644 ${BUILD_DIR}/pkg/filemonitor.service ${SYS_DIR}/
 	gzip -9 ${BUILD_DIR}/pkg/deb/debian/changelog -c -n > ${DOC_DIR}/changelog.Debian.gz
 
 override_dh_installdocs:

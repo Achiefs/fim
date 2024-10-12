@@ -20,5 +20,5 @@
     <choice id="com.Achiefs.fim" visible="false">
         <pkg-ref id="com.Achiefs.fim"/>
     </choice>
-    <pkg-ref id="com.Achiefs.fim" version="VERSION" onConclusion="none">fim.pkg</pkg-ref>
+    <pkg-ref id="com.Achiefs.fim" version="VERSION" onConclusion="none">filemonitor.pkg</pkg-ref>
 </installer-gui-script>

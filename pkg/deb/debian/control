@@ -1,4 +1,4 @@
-Source: fim
+Source: filemonitor
 Section: admin
 Priority: optional
 Maintainer: Jose Fernandez <support@achiefs.com>
@@ -6,7 +6,7 @@ Build-Depends: debhelper (>=9), dh-systemd
 Standards-Version: 4.0.0
 Homepage: https://github.com/Achiefs/fim
 
-Package: fim
+Package: filemonitor
 Architecture: any
 Depends: ${shlibs:Depends}
 Description: This software helps you to monitor your files of any unwanted action.

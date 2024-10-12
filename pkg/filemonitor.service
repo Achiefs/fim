@@ -1,4 +1,4 @@
-# Contents of /etc/systemd/system/fim.service
+# Contents of /etc/systemd/system/filemonitor.service
 # Copyright (C) 2021, Achiefs.
 
 [Unit]
@@ -8,7 +8,7 @@ After=network.target
 [Service]
 Type=simple
 Restart=always
-ExecStart=/usr/bin/fim
+ExecStart=/usr/bin/filemonitor
 
 [Install]
 WantedBy=multi-user.target

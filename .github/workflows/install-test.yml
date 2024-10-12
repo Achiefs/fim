@@ -12,7 +12,7 @@ jobs:
         working-directory: ./pkg/msi
 
       - name: Installing package
-        run: ./fim*.msi /q /l*v msi.log
+        run: ./filemonitor*.msi /q /l*v msi.log
         working-directory: ./pkg/msi
 
       - name: Print install log
@@ -37,7 +37,7 @@ jobs:
         working-directory: ./pkg/deb
 
       - name: Installing package
-        run: sudo dpkg --install ./fim*.deb
+        run: sudo dpkg --install ./filemonitor*.deb
         working-directory: ./pkg/deb
 
       - name: Start FIM service
@@ -62,7 +62,7 @@ jobs:
         working-directory: ./pkg/rpm
 
       - name: Installing package
-        run: sudo yum install -y ./fim*.rpm
+        run: sudo yum install -y ./filemonitor*.rpm
         working-directory: ./pkg/rpm
 
       - name: Start FIM service

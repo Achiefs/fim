@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-ln -s /Applications/FileMonitor.app/fim /usr/local/bin/fim
+ln -s /Applications/FileMonitor.app/filemonitor /usr/local/bin/filemonitor
 chmod 0644 /Library/LaunchDaemons/com.Achiefs.fim.launchd.plist
 
 #launchctl load -w /Library/LaunchDaemons/com.Achiefs.fim.launchd.plist

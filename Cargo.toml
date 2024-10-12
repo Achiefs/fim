@@ -1,5 +1,5 @@
 [package]
-name = "fim"
+name = "filemonitor"
 version = "0.5.0"
 authors = ["José Fernández <´pylott@gmail.com´>"]
 edition = "2021"

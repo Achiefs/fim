@@ -9,7 +9,7 @@
             Manufacturer='Achiefs LLC.' InstallerVersion='200' Languages='1033'
             Compressed='yes' SummaryCodepage='1252' Platform="x64" />
         <Condition Message="This MSI installer requires administrator rights.">Privileged</Condition>
-        <Media Id='1' Cabinet='fim.cab' EmbedCab='yes' CompressionLevel="high" />
+        <Media Id='1' Cabinet='filemonitor.cab' EmbedCab='yes' CompressionLevel="high" />
         <Icon Id="ICO" SourceFile="ui/favicon.ico" />
         <Property Id="ARPPRODUCTICON" Value="ICO" />
         <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
@@ -18,14 +18,14 @@ Checkout our documentation to start using it.
 
 Please visit:
 https://achiefs.com
-https://github.com/Achiefs/fim/wiki" />
+https://documentation.achiefs.com/" />
         <Property Id="ALLUSERS" Value="1" />
 
         <Directory Id='TARGETDIR' Name='SourceDir'>
             <Directory Id='ProgramFiles64Folder' Name='PFiles'>
                 <Directory Id='INSTALLDIR' Name='File Integrity Monitor'>
                     <Component Id='MainExecutable' Guid='*' Win64="yes">
-                        <File Id='FIMEXE' Name='fim.exe' DiskId='1' Source='fim.exe' KeyPath='yes'></File>
+                        <File Id='FIMEXE' Name='filemonitor.exe' DiskId='1' Source='filemonitor.exe' KeyPath='yes'></File>
                         <ServiceInstall Id="fim_service_install" Name="FimService" Type="ownProcess" Start="auto" ErrorControl="normal" Description="File integrity monitoring Windows service." DisplayName="File Integrity Monitor" />
                         <ServiceControl Id="ServiceControl" Name="FimService" Stop="both" Remove="uninstall" Wait="yes" />
                     </Component>

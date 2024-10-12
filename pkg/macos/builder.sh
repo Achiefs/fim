@@ -1,5 +1,6 @@
 #!/bin/sh
 
+brand="filemonitor"
 current_dir=$(pwd)
 base_dir="${current_dir}/../../"
 version="$(grep -m1 'version' ${base_dir}/Cargo.toml | cut -d' ' -f3 | tr -d '"')"
@@ -12,7 +13,7 @@ cd ../../
 cargo build --release
 
 mkdir -p "${app_dir}"
-cp ./target/release/fim "${app_dir}/"
+cp "./target/release/${brand}" "${app_dir}/"
 cp ./config/macos/config.yml "${app_dir}"
 cp ./config/macos/rules.yml "${app_dir}"
 
@@ -28,17 +29,17 @@ pkgbuild  --root ./files \
           --identifier com.Achiefs.fim \
           --version "${version}" \
           --install-location / \
-          fim.pkg
+          "${brand}.pkg"
 
 productbuild  --distribution ./distribution.xml \
               --resources Resources \
-              --package-path ./fim.pkg \
-              fim-"${version}-${architecture}".pkg
+              --package-path "./${brand}.pkg" \
+              "${brand}-${version}-${architecture}".pkg
 
-rm -rf fim.pkg
+rm -rf "${brand}.pkg"
 
 if [ "$1" = "-s" ]; then
     productsign --sign "$2" \
-    fim-"${version}-${architecture}".pkg \
-    fim-"${version}-${architecture}"-signed.pkg
+    "${brand}-${version}-${architecture}".pkg \
+    "${brand}-${version}-${architecture}"-signed.pkg
 fi

@@ -8,5 +8,5 @@ cd /tmp/repo
 git clone https://github.com/Achiefs/fim.git -b ${ref} --depth=1
 cd fim/pkg/deb
 ./builder.sh
-cp fim_*.deb /tmp/output/
+cp filemonitor_*.deb /tmp/output/
 chown 1000:1000 /tmp/output/*

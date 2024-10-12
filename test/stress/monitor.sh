@@ -3,7 +3,7 @@
 echo DATE,TIMESTAMP,PID,%CPU,%MEM,RSS,VSZ,CMD
 while true;
 do
-        PID="$(ps -C fim -o pid= | tr -d ' ')"
+        PID="$(ps -C filemonitor -o pid= | tr -d ' ')"
         sleep 1
         echo -n $(date)
         echo -n ",$(date +%s)"

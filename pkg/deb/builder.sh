@@ -4,7 +4,7 @@
 # Dependencies: curl, devscripts, equivs, tar, gcc, gzip, pkg-config, libssl-dev
 set -ex
 
-brand="fim"
+brand="filemonitor"
 target_dir=$(pwd)
 if [ $(uname -i) = "x86_64" ]; then architecture="amd64"; elif [ $(uname -i) = "aarch64" ]; then architecture="arm64"; fi
 base_dir="${target_dir}/../../"
@@ -19,7 +19,7 @@ pkg_dir="${sources_dir}/pkg/deb"
 
 mkdir -p ${sources_dir}
 cp -R ${base_dir}/* ${sources_dir}/
-sed -i "s|FIM_VERSION|${version}|g" ${sources_dir}/pkg/fim.1
+sed -i "s|FIM_VERSION|${version}|g" ${sources_dir}/pkg/filemonitor.1
 
 # Generating directory structure to build the .deb package
 cd ${build_dir} && tar -czf ${pkg_name}.orig.tar.gz "${pkg_name}"

@@ -23,7 +23,7 @@ jobs:
         run: sed -i '' 's|usr/bin.*|tmp/test|g' config/linux/config.yml
 
       - name: Copy FIM binary to main folder
-        run: cp ./target/release/fim ./
+        run: cp ./target/release/filemonitor ./
 
       - name: Create required directories
         run: mkdir -p /tmp/test
@@ -35,7 +35,7 @@ jobs:
         run: sudo mkdir -p /var/log/fim/ && sudo touch /var/log/fim/fim.log && sudo chown -R runner:runner /var/log/fim
 
       - name: Start FIM process
-        run: sudo ./fim &
+        run: sudo ./filemonitor &
 
       - name: Launch test suite
         run: python3 -m pytest test/system/monitor.py -v --noconftest
@@ -61,7 +61,7 @@ jobs:
         run: sed -i 's|/tmp|/tmp/test|g' config/linux/config.yml
 
       - name: Copy FIM binary to main folder
-        run: cp ./target/release/fim ./
+        run: cp ./target/release/filemonitor ./
 
       - name: Create required directories
         run: mkdir -p /tmp/test
@@ -73,7 +73,7 @@ jobs:
         run: sudo mkdir -p /var/log/fim/ && sudo touch /var/log/fim/fim.log && sudo chown -R okynos:okynos /var/log/fim
 
       - name: Start FIM process
-        run: sudo ./fim &
+        run: sudo ./filemonitor &
 
       - name: Check FIM running
         run: sleep 5 && ps a | grep fim | grep -v grep
@@ -130,7 +130,7 @@ jobs:
         run: sed -i 's|/tmp|/tmp/test|g' config/linux/config.yml
 
       - name: Copy FIM binary to main folder
-        run: cp ./target/release/fim ./
+        run: cp ./target/release/filemonitor ./
 
       - name: Create required directories
         run: mkdir -p /tmp/test
@@ -142,7 +142,7 @@ jobs:
         run: sudo mkdir -p /var/log/fim/ && sudo touch /var/log/fim/fim.log && sudo chown -R okynos:okynos /var/log/fim
 
       - name: Start FIM process
-        run: sudo ./fim &
+        run: sudo ./filemonitor &
 
       - name: Check FIM running
         run: sleep 5 && ps a | grep fim | grep -v grep

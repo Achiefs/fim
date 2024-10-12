@@ -4,7 +4,7 @@
 # Dependencies: rpm-build, tar, gcc, openssl-devel
 set -ex
 
-brand="fim"
+brand="filemonitor"
 current_dir=$(pwd)
 architecture=$(uname -i)
 rpmbuild="/usr/bin/rpmbuild"
@@ -13,7 +13,7 @@ bin_path="/usr/bin"
 config_path="/etc/${brand}"
 
 # Build directories
-build_dir="/tmp/fim"
+build_dir="/tmp/filemonitor"
 pkg_name="${brand}-${version}"
 sources_dir="${build_dir}/${pkg_name}"
 rpm_build_dir="${build_dir}/rpmbuild"
@@ -22,7 +22,7 @@ mkdir -p ${rpm_build_dir}/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
 # Prepare the sources directory to build the source tar.gz
 mkdir -p ${sources_dir}
 cp -R ../../* ${sources_dir}
-sed -i "s|FIM_VERSION|${version}|g" ${sources_dir}/pkg/fim.1
+sed -i "s|FIM_VERSION|${version}|g" ${sources_dir}/pkg/filemonitor.1
 
 cp ${brand}.spec ${rpm_build_dir}/SPECS/${pkg_name}.spec
 
