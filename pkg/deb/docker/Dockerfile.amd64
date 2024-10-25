@@ -1,4 +1,4 @@
-FROM amd64/ubuntu:xenial
+FROM ubuntu:xenial
 
 RUN echo 'Acquire::Retries "3";' > /etc/apt/apt.conf.d/80-retries && \
     sed -i 's|deb http://security|#deb http://security|g' /etc/apt/sources.list && \
@@ -8,5 +8,6 @@ RUN echo 'Acquire::Retries "3";' > /etc/apt/apt.conf.d/80-retries && \
 
 # It requires to copy the entrypoint.sh to the docker folder.
 ADD entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
