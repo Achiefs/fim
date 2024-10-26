@@ -4,7 +4,7 @@ RUN yum update -y && \
     yum install -y rpm-build tar gcc git && \
     mkdir -p /tmp/output
 
-ADD entrypoint_rpm.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+ADD entrypoint.sh /usr/local/bin/entrypoint_rpm.sh
+RUN chmod +x /usr/local/bin/entrypoint_rpm.sh
 
-ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
+ENTRYPOINT [ "/usr/local/bin/entrypoint_rpm.sh" ]
