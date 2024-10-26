@@ -7,7 +7,7 @@ RUN echo 'Acquire::Retries "3";' > /etc/apt/apt.conf.d/80-retries && \
     mkdir -p /tmp/output
 
 # It requires to copy the entrypoint.sh to the docker folder.
-ADD entrypoint.sh /usr/local/bin/entrypoint.sh
+ADD entrypoint_deb.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
