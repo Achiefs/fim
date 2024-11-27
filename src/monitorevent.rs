@@ -17,20 +17,20 @@ use std::io::Write;
 
 
 pub struct MonitorEvent {
-  pub id: String,
-  pub timestamp: String,
-  pub hostname: String,
-  pub node: String,
-  pub version: String,
-  pub path: PathBuf,
-  pub size: u64,
-  pub kind: notify::EventKind,
-  pub labels: Vec<String>,
-  pub operation: String,
-  pub detailed_operation: String,
-  pub checksum: String,
-  pub fpid: u32,
-  pub system: String
+    pub id: String,
+    pub timestamp: String,
+    pub hostname: String,
+    pub node: String,
+    pub version: String,
+    pub path: PathBuf,
+    pub size: u64,
+    pub kind: notify::EventKind,
+    pub labels: Vec<String>,
+    pub operation: String,
+    pub detailed_operation: String,
+    pub checksum: String,
+    pub fpid: u32,
+    pub system: String
 }
 
 
@@ -59,22 +59,22 @@ impl Event for MonitorEvent {
   // ------------------------------------------------------------------------
 
   fn clone(&self) -> Self {
-      MonitorEvent {
-          id: self.id.clone(),
-          timestamp: self.timestamp.clone(),
-          hostname: self.hostname.clone(),
-          node: self.node.clone(),
-          version: self.version.clone(),
-          path: self.path.clone(),
-          size: self.size,
-          kind: self.kind,
-          labels: self.labels.clone(),
-          operation: self.operation.clone(),
-          detailed_operation: self.detailed_operation.clone(),
-          checksum: self.checksum.clone(),
-          fpid: self.fpid,
-          system: self.system.clone()
-      }
+        MonitorEvent {
+            id: self.id.clone(),
+            timestamp: self.timestamp.clone(),
+            hostname: self.hostname.clone(),
+            node: self.node.clone(),
+            version: self.version.clone(),
+            path: self.path.clone(),
+            size: self.size,
+            kind: self.kind,
+            labels: self.labels.clone(),
+            operation: self.operation.clone(),
+            detailed_operation: self.detailed_operation.clone(),
+            checksum: self.checksum.clone(),
+            fpid: self.fpid,
+            system: self.system.clone()
+        }
   }
 
   // ------------------------------------------------------------------------
@@ -100,7 +100,7 @@ impl Event for MonitorEvent {
         use time::OffsetDateTime;
         let current_date = OffsetDateTime::now_utc();
         let index = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
-        
+
         // Splunk endpoint integration
         if cfg.endpoint_type == "Splunk" {
             let data = json!({
@@ -441,7 +441,7 @@ mod tests {
     fn test_process() {
         let event = create_test_event();
         let cfg = AppConfig::new(&utils::get_os(), None);
-        let ruleset = Ruleset::new(&utils::get_os(), None);  
+        let ruleset = Ruleset::new(&utils::get_os(), None);
 
         block_on(event.process(cfg, ruleset));
         //block_on(event.process(appconfig::NETWORK_MODE, String::from("test"), cfg.clone()));

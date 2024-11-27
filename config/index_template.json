@@ -60,7 +60,25 @@
       "source": { "type": "keyword" },
       "parent_id": { "type": "keyword" },
       "message": { "type": "keyword" },
-      "rule": { "type": "keyword" }
+      "rule": { "type": "keyword" },
+      "operations": { "type": "keyword" },
+      "subject_user_sid": { "type": "keyword" },
+      "subject_user_name": { "type": "keyword" },
+      "subject_domain_name": { "type": "keyword" },
+      "subject_logon_id": { "type": "keyword" },
+      "object_server": { "type": "keyword" },
+      "object_type": { "type": "keyword" },
+      "object_name": { "type": "keyword" },
+      "handle_id": { "type": "keyword" },
+      "transaction_id": { "type": "keyword" },
+      "access_list": { "type": "keyword" },
+      "access_reason": { "type": "keyword" },
+      "access_mask": { "type": "keyword" },
+      "privilege_list": { "type": "keyword" },
+      "restricted_sid_count": { "type": "keyword" },
+      "process_id": { "type": "keyword" },
+      "process_name": { "type": "keyword" },
+      "resource_attributes": { "type": "keyword" }
     }
   },
   "settings": {
@@ -126,7 +144,25 @@
           "source",
           "parent_id",
           "message",
-          "rule"
+          "rule",
+          "operations",
+          "subject_user_sid",
+          "subject_user_name",
+          "subject_domain_name",
+          "subject_logon_id",
+          "object_server",
+          "object_type",
+          "object_name",
+          "handle_id",
+          "transaction_id",
+          "access_list",
+          "access_reason",
+          "access_mask",
+          "privilege_list",
+          "restricted_sid_count",
+          "process_id",
+          "process_name",
+          "resource_attributes"
         ]
       }
     }

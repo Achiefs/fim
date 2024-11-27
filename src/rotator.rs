@@ -77,7 +77,7 @@ fn compress_tgz_file(filepath: &str) -> Result<String, String> {
     let enc = GzEncoder::new(tgz, Compression::default());
     let mut tar = tar::Builder::new(enc);
     let mut file = File::open(filepath).unwrap();
-    
+
     match tar.append_file(filename, &mut file){
         Ok(()) => Ok(format!("File {} compressed successfully.", filename)),
         Err(e) => {
@@ -106,7 +106,7 @@ fn rotate_file(filepath: &str, iteration: u32, lock: Mutex<bool>){
 
     let file_rotated = format!("{}.{}",
         parent_path.to_str().unwrap(), iteration);
-    
+
     match copy(filepath, file_rotated.clone()){
         Ok(_v) => {
             debug!("File copied successfully.");
@@ -168,19 +168,19 @@ fn rotate_file(filepath: &str, iteration: u32, lock: Mutex<bool>){
             Err(e) => error!("Error compressing file, error: {}", e)
         };
     }
-    
-    
+
+
 }
 
 // ----------------------------------------------------------------------------
 
-#[cfg(not(tarpaulin_include))]
+//#[cfg(not(tarpaulin_include))]
 pub fn rotator(cfg: AppConfig){
     loop{
         let log_size = if Path::new(cfg.clone().log_file.as_str()).exists() {
             metadata(cfg.clone().log_file).unwrap().len() as usize
         }else{ 0 };
-            
+
         let events_size = if Path::new(cfg.clone().events_file.as_str()).exists() {
             metadata(cfg.clone().events_file).unwrap().len() as usize
         }else{ 0 };
@@ -199,7 +199,7 @@ pub fn rotator(cfg: AppConfig){
 
             rotate_file(
                 cfg.clone().events_file.as_str(),
-                get_iteration(parent_path.to_str().unwrap()), 
+                get_iteration(parent_path.to_str().unwrap()),
                 cfg.clone().get_mutex(cfg.clone().events_lock));
         }
 
@@ -217,7 +217,7 @@ pub fn rotator(cfg: AppConfig){
 
             rotate_file(
                 cfg.clone().log_file.as_str(),
-                get_iteration(parent_path.to_str().unwrap()), 
+                get_iteration(parent_path.to_str().unwrap()),
                 cfg.clone().get_mutex(cfg.clone().log_lock));
         }
 

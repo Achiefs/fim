@@ -21,6 +21,7 @@ mod index;
 // Single event data management
 mod event;
 mod monitorevent;
+mod winevent;
 mod ruleevent;
 // File reading continuously
 mod logreader;
@@ -36,6 +37,8 @@ mod launcher;
 mod multiwatcher;
 mod rotator;
 mod init;
+mod wineventsubscriber;
+mod winhandler;
 
 // ----------------------------------------------------------------------------
 

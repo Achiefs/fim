@@ -333,7 +333,7 @@ impl AppConfig {
     // ------------------------------------------------------------------------
 
     pub fn get_index(&self, raw_path: &str, cwd: &str, array: Array) -> usize {
-        // Iterate over monitoring paths to match ignore string and ignore event or not
+        // Iterate over monitoring paths to match the event path.
         match array.iter().position(|it| {
             if !cwd.is_empty() && (raw_path.starts_with("./") || raw_path == "." || !raw_path.contains('/')) {
                 utils::match_path(cwd, it["path"].as_str().unwrap())
@@ -406,12 +406,12 @@ impl AppConfig {
         let mut integrations: Vec<Integration> = Vec::new();
         data.iter().for_each(|info|
             integrations.push(Integration::new(
-                String::from(info["name"].as_str().unwrap()), 
+                String::from(info["name"].as_str().unwrap()),
                 info["condition"]
-                    .clone().into_vec().unwrap().iter().map(|element| 
-                        String::from(element.as_str().unwrap()) ).collect(), 
-                String::from(info["binary"].as_str().unwrap()), 
-                String::from(info["script"].as_str().unwrap()), 
+                    .clone().into_vec().unwrap().iter().map(|element|
+                        String::from(element.as_str().unwrap()) ).collect(),
+                String::from(info["binary"].as_str().unwrap()),
+                String::from(info["script"].as_str().unwrap()),
                 String::from(info["parameters"].as_str().unwrap()) ))
         );
         integrations
@@ -501,7 +501,7 @@ pub fn get_config_path(system: &str) -> String {
             String::from(CONFIG_MACOS_PATH)
         }else{
             String::from(CONFIG_LINUX_PATH)
-        } 
+        }
     }
 }
 

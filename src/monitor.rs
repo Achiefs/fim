@@ -11,6 +11,7 @@ use log::{info, error, debug, warn};
 use std::path::Path;
 // To manage date and time
 use std::time::{SystemTime, UNIX_EPOCH};
+//use std::ffi::c_void;
 use time::OffsetDateTime;
 // To use intersperse()
 use itertools::Itertools;
@@ -36,6 +37,8 @@ use crate::logreader;
 // integrations checker
 use crate::launcher;
 use crate::multiwatcher::MultiWatcher;
+use crate::wineventsubscriber;
+use crate::winhandler::*;
 
 // ----------------------------------------------------------------------------
 
@@ -83,8 +86,8 @@ fn clean_audit_rules(cfg: &AppConfig){
 
 // Function that monitorize files in loop
 pub async fn monitor(
-    tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
-    rx: mpsc::Receiver<Result<notify::Event, notify::Error>>, 
+    tx: mpsc::Sender<core::result::Result<notify::Event, notify::Error>>,
+    rx: mpsc::Receiver<core::result::Result<notify::Event, notify::Error>>,
     cfg: AppConfig,
     ruleset: Ruleset){
 
@@ -95,7 +98,7 @@ pub async fn monitor(
     push_template(destination.as_str(), cfg.clone()).await;
 
     let mut watcher = MultiWatcher::new(cfg.clone().events_watcher.as_str(), tx);
-    
+
     // Iterating over monitor paths and set watcher on each folder to watch.
     if ! cfg.clone().monitor.is_empty() {
         for element in cfg.clone().monitor {
@@ -129,10 +132,207 @@ pub async fn monitor(
                 None => debug!("Monitoring files under '{}' path.", path)
             }
 
-            match watcher.watch(Path::new(path), RecursiveMode::Recursive) {
-                Ok(_d) => debug!("Monitoring '{}' path.", path),
-                Err(e) => warn!("Could not monitor given path '{}', description: {}", path, e)
-            };
+            if utils::get_os() != "windows" {
+                match watcher.watch(Path::new(path), RecursiveMode::Recursive) {
+                    Ok(_d) => debug!("Monitoring '{}' path.", path),
+                    Err(e) => warn!("Could not monitor given path '{}', description: {}", path, e)
+                };
+            } else {
+
+
+                use windows::core::{ PCWSTR, HSTRING, PWSTR };
+                use windows::Win32::System::SystemServices::{
+                    SECURITY_DESCRIPTOR_REVISION,
+                    MAXDWORD
+                };
+                use windows::Win32::Security::{
+                    PSID,
+                    ACL_REVISION,
+                    ACL_REVISION_DS,
+                    ACL,
+                    InitializeSecurityDescriptor,
+                    InitializeAcl,
+                    GetAce,
+                    AddAce,
+                    SYSTEM_AUDIT_OBJECT_ACE,
+                    IsValidAcl,
+                    ACE_HEADER,
+                    SYSTEM_AUDIT_ACE,
+                };
+                use windows::Win32::Security::Authorization::ConvertStringSidToSidW;
+                use windows::Win32::Security::Authorization::BuildExplicitAccessWithNameW;
+                use windows::Win32::Security::Authorization::EXPLICIT_ACCESS_W;
+                use windows::Win32::Security::Authorization::SET_AUDIT_FAILURE;
+                use windows::Win32::Security::Authorization::SET_AUDIT_SUCCESS;
+                use windows::Win32::Security::CONTAINER_INHERIT_ACE;
+                use windows::Win32::Security::NO_INHERITANCE;
+                use windows::Win32::Security::Authorization::TRUSTEE_W;
+                use windows::Win32::Security::Authorization::NO_MULTIPLE_TRUSTEE;
+                use windows::Win32::Security::Authorization::TRUSTEE_IS_SID;
+                use windows::Win32::Security::Authorization::TRUSTEE_IS_NAME;
+                use windows::Win32::Security::Authorization::TRUSTEE_IS_WELL_KNOWN_GROUP;
+                use windows::Win32::Security::Authorization::GetExplicitEntriesFromAclW;
+                use windows::Win32::Foundation::GENERIC_ALL;
+                use windows::Win32::System::SystemServices::ACCESS_SYSTEM_SECURITY;
+                use windows::Win32::Security::Authorization::ACCESS_MODE;
+                use windows::Win32::Security::Authorization::SetEntriesInAclW;
+                use windows::Win32::Storage::FileSystem::FILE_ALL_ACCESS;
+                use windows::Win32::Security::Authorization::SET_ACCESS;
+                use windows::Win32::System::SystemServices::SYSTEM_AUDIT_ACE_TYPE;
+
+                let mut sid = PSID::default();
+                let mut raw_sidE = HSTRING::from("S-1-1-0\0"); // Everyone
+                let raw_sid = HSTRING::from("Everyone\0"); // Everyone
+
+                unsafe {
+                    //let mut ptr = *(raw_sid.as_ptr());
+                    //let array = raw_sid.as_wide();
+                    //println!("Array: {:?}", array);
+                    //let mut ptr = raw_sid.as_ptr() as *mut _;
+                    let pwstr = PWSTR::from_raw(raw_sid.as_ptr() as *mut _);
+                    //println!("PWSTR: {:?}", pwstr.to_string().unwrap());
+
+                    enable_privilege();
+                    let handle = get_handle(HSTRING::from("C:\\tmp2\\file.txt\0"));
+
+                    // Convert the SID string to a PSID
+                    let _result = ConvertStringSidToSidW(PCWSTR::from_raw(raw_sidE.as_ptr()), &mut sid);
+                    let mut acl = get_sacl_security_info(handle);
+
+
+                    use std::ffi::c_void;
+                    println!("Getting ACL ACEs...");
+                    for n in 0..acl.AceCount {
+                        let mut pace: *mut c_void = std::ptr::null_mut();
+                        GetAce(&acl, n as u32, &mut pace);
+
+                        let ace_header: *mut ACE_HEADER = pace as *mut ACE_HEADER;
+                        println!("{:?}", *ace_header);
+                        acl.AclSize += (*ace_header).AceSize;
+                    }
+
+
+
+
+                    /*let mut explicit_access = EXPLICIT_ACCESS_W {
+                        grfAccessPermissions: ACCESS_SYSTEM_SECURITY,
+                        grfAccessMode: ACCESS_MODE(SET_AUDIT_SUCCESS.0 | SET_AUDIT_FAILURE.0),
+                        grfInheritance: CONTAINER_INHERIT_ACE,
+                        Trustee: TRUSTEE_W {
+                            pMultipleTrustee: std::ptr::null_mut(),
+                            MultipleTrusteeOperation: NO_MULTIPLE_TRUSTEE,
+                            TrusteeForm: TRUSTEE_IS_NAME,
+                            TrusteeType: TRUSTEE_IS_WELL_KNOWN_GROUP,
+                            ptstrName: pwstr,
+                        },
+                    };*/
+                    //let explicit_access = &mut EXPLICIT_ACCESS_W::default();
+                    //println!();
+                    //println!("Explicit access: {:?}", explicit_access);
+                    //println!();
+                    /*BuildExplicitAccessWithNameW(
+                        explicit_access,
+                        pwstr,
+                        ACCESS_SYSTEM_SECURITY,
+                        ACCESS_MODE(SET_AUDIT_SUCCESS.0 | SET_AUDIT_FAILURE.0),
+                        NO_INHERITANCE
+                    );*/
+
+                    let mut explicit_access_failure = EXPLICIT_ACCESS_W::default();
+                    explicit_access_failure.grfAccessPermissions = GENERIC_ALL.0;
+                    explicit_access_failure.grfAccessMode = SET_AUDIT_FAILURE;
+                    explicit_access_failure.grfInheritance = NO_INHERITANCE;
+                    explicit_access_failure.Trustee.pMultipleTrustee = std::ptr::null_mut();
+                    explicit_access_failure.Trustee.MultipleTrusteeOperation = NO_MULTIPLE_TRUSTEE;
+                    explicit_access_failure.Trustee.TrusteeForm = TRUSTEE_IS_NAME;
+                    explicit_access_failure.Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+                    explicit_access_failure.Trustee.ptstrName = pwstr;
+                    let mut explicit_access_success = EXPLICIT_ACCESS_W::default();
+                    explicit_access_success.grfAccessPermissions = GENERIC_ALL.0;
+                    explicit_access_success.grfAccessMode = SET_AUDIT_SUCCESS;
+                    explicit_access_success.grfInheritance = NO_INHERITANCE;
+                    explicit_access_success.Trustee.pMultipleTrustee = std::ptr::null_mut();
+                    explicit_access_success.Trustee.MultipleTrusteeOperation = NO_MULTIPLE_TRUSTEE;
+                    explicit_access_success.Trustee.TrusteeForm = TRUSTEE_IS_NAME;
+                    explicit_access_success.Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+                    explicit_access_success.Trustee.ptstrName = pwstr;
+
+                    let mut explicit_access_array = [explicit_access_failure, explicit_access_success];
+                    //println!();
+                    //println!("Explicit access: {:?}", explicit_access);
+                    //println!("PWSTR text: {:?}", explicit_access.Trustee.ptstrName.to_string().unwrap());
+                    //println!();
+
+                    //let mut new_acl: *mut ACL = &mut ACL::default();
+                    let mut new_acl: *mut [c_void; 65536] = &mut [const { std::mem::zeroed() }; 65536] as *mut _;
+                    let mut tacl = new_acl as *mut ACL;
+                    println!("The old ACL is: {:?}", acl);
+                    //let array = &mut [*explicit_access];
+                    //println!("Array: {:?}", array);
+                    let result = SetEntriesInAclW(
+                        Some(&explicit_access_array),
+                        Some(&acl),
+                        &mut tacl
+                    );
+                    println!("Result = {:?}", result);
+
+                    println!("The new ACL is: {:?}", *tacl);
+                    println!("Getting ACL ACEs...");
+                    //let cacl = *tacl as *mut ACL;
+                    for n in 0..(*tacl).AceCount {
+                        let sacl = *tacl;
+                        let mut pace: *mut c_void = std::ptr::null_mut();
+                        GetAce(&sacl, n as u32, &mut pace);
+
+                        let ace_header: *mut ACE_HEADER = pace as *mut ACE_HEADER;
+                        println!("ACE_HEADER: {:?}", *ace_header);
+                        //acl.AclSize += (*ace_header).AceSize;
+                    }
+
+
+
+                    //println!("Monitor PSI: {:?}", security_info);
+                    //use std::ffi::c_void;
+                    //let mut ace: [u8; 28] = [std::mem::zeroed(); 28];
+                    //let ace_info: *mut *mut c_void = &mut &mut ace as *mut _ as *mut _;
+                    //GetAce(&acl, 0, ace_info);
+                    //let ptr_ace_struct = *ace_info as *mut SYSTEM_AUDIT_OBJECT_ACE;
+                    //println!("ACE entry: {:?}", * ptr_ace_struct);
+
+                    /*let ace = SYSTEM_AUDIT_OBJECT_ACE {
+                        Header: ,
+                        Mask: ,
+                        Flags: ,
+                        ObjectType: ,
+                        InheritedObjectType: ,
+                        SidStart: ,
+                    };
+                    AddAce(acl, acl.AclRevision, MAXDWORD, &ace, size_of::<ACE> as u32);*/
+
+                    /*let mut iacl = ACL::default();
+                    match InitializeAcl(&mut iacl, (size_of::<ACL>() as u32) * 100, ACL_REVISION_DS) {
+                        Ok(_v) => println!("ACL initialized!"),
+                        Err(e) => println!("Error initializing ACL, {:?}", e)
+                    };
+                    println!("Initialized ACL: {:?}", iacl);*/
+
+                    // Initialize a new security descriptor
+                    /*println!("Initializing Security Descriptor");
+                    match InitializeSecurityDescriptor(security_info,
+                        SECURITY_DESCRIPTOR_REVISION){
+                        Ok(_v) => println!("Security Descriptor initialized."),
+                        Err(_e) => println!("Error initializing security descriptor")
+                    };
+
+                    println!("Initialized SecDesc: {:?}", security_info);*/
+
+                    //add_security_ace(new_acl, sid);
+                    //set_security_info(handle, new_acl);
+                    // disable_privilege();
+                }
+
+                //debug!("Monitoring windows '{}' audit path.", path);
+            }
         }
     }
     let mut last_position = 0;
@@ -173,7 +373,7 @@ pub async fn monitor(
         // Detect if Audit file is moved or renamed (rotation)
         watcher.watch(Path::new(logreader::AUDIT_PATH), RecursiveMode::NonRecursive).unwrap();
         last_position = utils::get_file_end(logreader::AUDIT_LOG_PATH, 0);
-       
+
         // Remove auditd rules introduced by FIM
         // Setting ctrl + C handler
         let cloned_cfg = cfg.clone();
@@ -183,6 +383,11 @@ pub async fn monitor(
         }
     }
 
+
+    // ----------------------------------------
+
+    // Subscribing to windows event channel
+    wineventsubscriber::subscribe_event_channel(cfg.clone(), ruleset.clone());
 
     // Main loop, receive any produced event and write it into the events log.
     loop {
@@ -286,11 +491,11 @@ pub async fn monitor(
                                     detailed_operation: event::get_detailed_operation(kind),
                                     checksum: hash::get_checksum( String::from(path.to_str().unwrap()), cfg.clone().events_max_file_checksum ),
                                     fpid: utils::get_pid(),
-                                    system: cfg.clone().system
+                                    system: cfg.clone().system,
                                 };
 
                                 debug!("Event processed: {:?}", event);
-                                event.process(cfg.clone(), ruleset.clone()).await;
+                                //event.process(cfg.clone(), ruleset.clone()).await;
                                 launcher::check_integrations(event.clone(), cfg.clone());
                             }else{
                                 debug!("Event ignored/excluded not stored in alerts");
