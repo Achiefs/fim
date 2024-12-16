@@ -7,6 +7,7 @@ use std::sync::mpsc;
 use std::thread;
 use log::{error, info};
 use crate::init::init;
+use crate::db::DBFile;
 
 // Utils functions
 mod utils;
@@ -36,6 +37,7 @@ mod launcher;
 mod multiwatcher;
 mod rotator;
 mod init;
+mod db;
 
 // ----------------------------------------------------------------------------
 
@@ -75,6 +77,17 @@ async fn main() -> windows_service::Result<()> {
                         Ok(_v) => info!("FIM rotator thread started."),
                         Err(e) => error!("Could not start FIM rotator thread, error: {}", e)
                     };
+                let db = db::DB::new();
+                db.create_table();
+                db.insert_file(DBFile {
+                    id: 0, // Not used for insert auto-increment
+                    timestamp: String::from("Test"),
+                    hash: String::from("Test"),
+                    path: String::from("/test3"),
+                    size: 0
+                });
+                db.get_file(String::from("/test3"));
+                db.print();
                 monitor::monitor(tx, rx, cfg, ruleset).await;
                 Ok(())
             },
