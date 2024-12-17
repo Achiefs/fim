@@ -12,7 +12,7 @@ pub struct DBFile {
     pub timestamp: String,
     pub hash: String,
     pub path: String,
-    pub size: u32
+    pub size: u64
 }
 
 pub struct DB {
@@ -69,8 +69,8 @@ impl DB {
             (),
         );
         match result {
-            Ok(_v) => println!("GOOD"),
-            Err(e) => println!("ERROR: {:?}", e)
+            Ok(_v) => info!("Database successfully created."),
+            Err(e) => error!("Error creating database, Error: '{}'", e)
         }
         self.close(connection);
     }
@@ -104,7 +104,7 @@ impl DB {
                 path: row.get(3).unwrap(),
                 size: row.get(4).unwrap()
             })
-        );
+        ).unwrap();
 
         self.close(connection);
         data
@@ -137,6 +137,7 @@ impl DB {
 impl fmt::Debug for DBFile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
         f.debug_tuple("")
+        .field(&self.id)
         .field(&self.timestamp)
         .field(&self.hash)
         .field(&self.path)

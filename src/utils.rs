@@ -19,6 +19,7 @@ use std::process::Command;
 use log::{warn, debug, error};
 // To manage maps
 use std::collections::HashMap;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 // ----------------------------------------------------------------------------
 
@@ -266,6 +267,13 @@ pub fn run_auditctl(args: &[&str]) {
         Ok(d) => debug!("Auditctl command info: {:?}", d),
         Err(e) => error!("Auditctl command error: {}", e)
     };
+}
+
+// ----------------------------------------------------------------------------
+
+pub fn get_current_time_millis() -> String {
+    format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH)
+        .expect("Time went backwards").as_millis())
 }
 
 // ----------------------------------------------------------------------------

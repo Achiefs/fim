@@ -9,13 +9,12 @@ use std::sync::mpsc;
 use log::{info, error, debug, warn};
 // To manage paths
 use std::path::Path;
-// To manage date and time
-use std::time::{SystemTime, UNIX_EPOCH};
 use time::OffsetDateTime;
 // To use intersperse()
 use itertools::Itertools;
 // Event handling
 use notify::event::{EventKind, AccessKind};
+use sha3::{Digest, Sha3_512};
 
 
 // Utils functions
@@ -36,6 +35,7 @@ use crate::logreader;
 // integrations checker
 use crate::launcher;
 use crate::multiwatcher::MultiWatcher;
+use crate::scanner;
 
 // ----------------------------------------------------------------------------
 
@@ -130,7 +130,12 @@ pub async fn monitor(
             }
 
             match watcher.watch(Path::new(path), RecursiveMode::Recursive) {
-                Ok(_d) => debug!("Monitoring '{}' path.", path),
+                Ok(_d) => {
+                    debug!("Monitoring '{}' path.", path);
+                    debug!("Starting file scan to create hash database.");
+                    scanner::scan_path(cfg.clone(), String::from(path));
+                    debug!("Path '{}' scanned all files are hashed in DB.", path);
+                },
                 Err(e) => warn!("Could not monitor given path '{}', description: {}", path, e)
             };
         }
@@ -206,7 +211,7 @@ pub async fn monitor(
 
                     let current_date = OffsetDateTime::now_utc();
                     let index_name = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
-                    let current_timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
+                    let current_timestamp = utils::get_current_time_millis();
                     let kind: notify::EventKind = event.kind;
                     let path = event.paths[0].clone();
 
@@ -284,7 +289,7 @@ pub async fn monitor(
                                     labels,
                                     operation: event::get_operation(kind),
                                     detailed_operation: event::get_detailed_operation(kind),
-                                    checksum: hash::get_checksum( String::from(path.to_str().unwrap()), cfg.clone().events_max_file_checksum ),
+                                    checksum: hash::get_checksum( String::from(path.to_str().unwrap()), cfg.clone().events_max_file_checksum, Sha3_512::new()),
                                     fpid: utils::get_pid(),
                                     system: cfg.clone().system
                                 };

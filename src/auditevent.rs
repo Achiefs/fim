@@ -9,6 +9,7 @@ use serde_json::{json, to_string};
 use reqwest::Client;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use sha3::{Digest, Sha3_512};
 
 use crate::appconfig;
 use crate::appconfig::*;
@@ -145,7 +146,7 @@ impl Event {
             size: utils::get_file_size(path["name"].clone().as_str()),
             checksum: hash::get_checksum(format!("{}/{}",
                 parent["name"].clone(), path["name"].clone()),
-                cfg.events_max_file_checksum),
+                cfg.events_max_file_checksum, Sha3_512::new()),
             fpid: utils::get_pid(),
             system: String::from(utils::get_os()),
 
