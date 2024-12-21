@@ -37,6 +37,7 @@ mod multiwatcher;
 mod rotator;
 mod init;
 mod db;
+mod dbfile;
 mod scanner;
 
 // ----------------------------------------------------------------------------

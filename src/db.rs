@@ -1,19 +1,14 @@
-use rusqlite::Connection;
-use std::path::Path;
 use crate::appconfig;
 use crate::utils;
+use crate::dbfile::*;
+
+use rusqlite::{Connection, Error};
+use rusqlite::Error::QueryReturnedNoRows;
+use std::path::Path;
 use log::*;
-use std::fmt;
+
 
 pub const DBNAME: &str = "fim.db";
-
-pub struct DBFile {
-    pub id: u64,
-    pub timestamp: String,
-    pub hash: String,
-    pub path: String,
-    pub size: u64
-}
 
 pub struct DB {
     path: String
@@ -57,6 +52,35 @@ impl DB {
 
     // ------------------------------------------------------------------------
 
+    pub fn exists(&self) -> bool {
+        let mut config_folder = Path::new(&appconfig::get_config_path(utils::get_os()))
+        .parent().unwrap().to_path_buf();
+        config_folder.push(DBNAME);
+
+        config_folder.exists()
+    }
+
+    // ------------------------------------------------------------------------
+
+    pub fn is_empty(&self) -> bool {
+        let connection = self.open();
+        let result = connection.query_row("SELECT * FROM files LIMIT 1", [], |_row| Ok(0));
+        self.close(connection); 
+        match result {
+            Ok(_v) => false,
+            Err(e) => {
+                if e == QueryReturnedNoRows {
+                    true
+                } else {
+                    error!("Could not check if the database is empty, Error: {}", e);
+                    true
+                }
+            }
+        } 
+    }
+
+    // ------------------------------------------------------------------------
+
     pub fn create_table(&self) {
         let connection = self.open();
         let result = connection.execute(
@@ -92,11 +116,44 @@ impl DB {
 
     // ------------------------------------------------------------------------
 
-    pub fn get_file(&self, path: String) -> DBFile {
+    pub fn get_file_by_path(&self, path: String) -> Result<DBFile, DBFileError> {
+        let connection = self.open();
+        let result = connection.query_row(
+            "SELECT * FROM files WHERE path = ?1 LIMIT 1",
+            [path.clone()],
+            |row| Ok(DBFile {
+                id: row.get(0).unwrap(),
+                timestamp: row.get(1).unwrap(),
+                hash: row.get(2).unwrap(),
+                path: row.get(3).unwrap(),
+                size: row.get(4).unwrap()
+            })
+        );
+        
+        let data = match result {
+            Ok(d) => Ok(d),
+            Err(e) => {
+                match e {
+                    Error::QueryReturnedNoRows => Err(DBFileError::not_found_error()),
+                    _ => {
+                        error!("Could not get file '{}' information in database, Error: {:?}", path, e);
+                        Err(DBFileError::from(e))
+                    }
+                }
+            }
+        };
+
+        self.close(connection);
+        data
+    }
+
+    // ------------------------------------------------------------------------
+
+    pub fn get_file_by_id(&self, id: u64) -> DBFile {
         let connection = self.open();
         let data = connection.query_row(
-            "SELECT * FROM files WHERE path = ?1 LIMIT 1",
-            [path],
+            "SELECT * FROM files WHERE id = ?1 LIMIT 1",
+            [id],
             |row| Ok(DBFile {
                 id: row.get(0).unwrap(),
                 timestamp: row.get(1).unwrap(),
@@ -108,6 +165,36 @@ impl DB {
 
         self.close(connection);
         data
+    }
+
+    // ------------------------------------------------------------------------
+
+    pub fn update_file(&self, dbfile: DBFile, timestamp: Option<String>, hash: Option<String>, size: Option<u64>) {
+        let connection = self.open();
+
+        let timestamp_str = match timestamp {
+            Some(t) => format!("timestamp = '{}'", t),
+            None => String::new()
+        };
+        let hash_str = match hash {
+            Some(h) => format!("hash = '{}'", h),
+            None => String::new()
+        };
+        let size_str = match size {
+            Some(s) => format!("size = '{}'", s),
+            None => String::new()
+        };
+
+        let query = format!("UPDATE files SET {}, {}, {} WHERE id = {}",
+            timestamp_str, hash_str, size_str, dbfile.id);
+
+        let mut statement = connection.prepare(&query).unwrap();
+        let result = statement.execute([]);
+        match result {
+            Ok(_v) => debug!("File '{}', updated with new information.", dbfile.path),
+            Err(e) => error!("Cannot update file '{}' information, Error: {:?}", dbfile.path, e)
+        }
+
     }
 
     // ------------------------------------------------------------------------
@@ -129,19 +216,5 @@ impl DB {
         for file in files {
             println!("{:?}", file.unwrap());
         }
-    }
-}
-
-// ----------------------------------------------------------------------------
-
-impl fmt::Debug for DBFile {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
-        f.debug_tuple("")
-        .field(&self.id)
-        .field(&self.timestamp)
-        .field(&self.hash)
-        .field(&self.path)
-        .field(&self.size)
-        .finish()
     }
 }

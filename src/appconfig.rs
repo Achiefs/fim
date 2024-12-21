@@ -32,6 +32,7 @@ pub struct AppConfig {
     pub events_destination: String,
     pub events_max_file_checksum: usize,
     pub events_max_file_size: usize,
+    pub checksum_method: String,
     pub endpoint_type: String,
     pub endpoint_address: String,
     pub endpoint_user: String,
@@ -60,6 +61,7 @@ impl AppConfig {
             events_destination: self.events_destination.clone(),
             events_max_file_checksum: self.events_max_file_checksum,
             events_max_file_size: self.events_max_file_size,
+            checksum_method: self.checksum_method.clone(),
             endpoint_type: self.endpoint_type.clone(),
             endpoint_address: self.endpoint_address.clone(),
             endpoint_user: self.endpoint_user.clone(),
@@ -127,6 +129,9 @@ impl AppConfig {
             Some(value) => usize::try_from(value).unwrap(),
             None => 128
         };
+
+        // Temporal value
+        let checksum_method = String::from("Partial");
 
         // Manage null value on events->endpoint->insecure value
         let insecure = match yaml[0]["events"]["endpoint"]["insecure"].as_bool() {
@@ -273,6 +278,7 @@ impl AppConfig {
             events_destination,
             events_max_file_checksum,
             events_max_file_size,
+            checksum_method,
             endpoint_type,
             endpoint_address,
             endpoint_user,
@@ -514,6 +520,8 @@ mod tests {
             events_destination: String::from(events_destination),
             events_max_file_checksum: 64,
             events_max_file_size: 128,
+            checksum_method: String::from("Partial"),
+            //////////////////////////////////////////////////////Include checksum method tests
             endpoint_type: String::from("Elastic"),
             endpoint_address: String::from("test"),
             endpoint_user: String::from("test"),

@@ -16,65 +16,8 @@ use std::path::Path;
 // To read file content
 use std::io::{BufRead, BufReader};
 
-// To calculate file content hash (SHA3 implementation)
+// To calculate file content hash
 pub fn get_checksum<T: Digest>(filename: String, read_limit: usize, mut hasher: T) -> String {
-    //let mut hasher = Sha3_512::new();
-    let mut length = 1;
-    let mut iteration = 0;
-    let mut data_read = 0;
-    let limit: u64 = (read_limit * 1024 * 1024).try_into().unwrap();
-    
-    if Path::new(&filename).is_file() { 
-        debug!("Getting hash of file: {}", filename);
-        match File::open(filename.clone()){
-            Ok(file) => {
-                let size = file.metadata().unwrap().len();
-                let mut reader = BufReader::with_capacity(READ_CAPACITY, file);
-
-                
-                if size > limit {
-                    info!("File '{}' checksum skipped. File size is above limit.", filename);
-                    String::from("UNKNOWN")
-                }else{
-                    while length > 0 && data_read <= read_limit {
-                        if iteration == 2 {
-                            debug!("Big file detected, the hash will take a while");
-                        }
-                        
-                        length = {
-                            match reader.fill_buf(){
-                                Ok(buffer) =>{
-                                    hasher.update(buffer);
-                                    buffer.len()
-                                },
-                                Err(e) => {
-                                    debug!("Cannot read file. Checksum set to 'UNKNOWN', error: {}", e);
-                                    0
-                                }
-                            }
-                        };
-                        reader.consume(length);
-                        data_read += length / (1024 * 1024);
-                        iteration += 1;
-                    };
-                    encode(hasher.finalize())
-                }
-            },
-            Err(e) => {
-                debug!("Cannot open file to get checksum, error: {:?}", e);
-                String::from("UNKNOWN")
-            }
-        }
-    }else{
-        debug!("Cannot produce checksum of a removed file or directory.");
-        String::from("UNKNOWN")
-    }
-}
-
-// ----------------------------------------------------------------------------
-
-pub fn get_checksumv2<T: Digest>(filename: String, read_limit: usize, mut hasher: T) -> String {
-    //let mut hasher = Sha3_512::new();
     let mut length = 1;
     let mut iteration = 0;
     let mut data_read = 0;
@@ -87,7 +30,6 @@ pub fn get_checksumv2<T: Digest>(filename: String, read_limit: usize, mut hasher
                 let size: usize = file.metadata().unwrap().len() as usize;
                 let mut reader = BufReader::with_capacity(READ_CAPACITY, file);
 
-                
                 if size > limit {
                     info!("File '{}' checksum skipped. File size is above limit.", filename);
                     String::from("UNKNOWN")
@@ -115,6 +57,47 @@ pub fn get_checksumv2<T: Digest>(filename: String, read_limit: usize, mut hasher
                     };
                     encode(hasher.finalize())
                 }
+            },
+            Err(e) => {
+                debug!("Cannot open file to get checksum, error: {:?}", e);
+                String::from("UNKNOWN")
+            }
+        }
+    }else{
+        debug!("Cannot produce checksum of a removed file or directory.");
+        String::from("UNKNOWN")
+    }
+}
+
+// ----------------------------------------------------------------------------
+
+pub fn get_partial_checksum<T: Digest>(filename: String, mut hasher: T) -> String {
+    let limit: usize = 1024 * 1024; // 1MB
+
+    if Path::new(&filename).is_file() {
+        debug!("Getting hash of file: {}", filename);
+        match File::open(filename.clone()){
+            Ok(file) => {
+                let metadata = file.metadata().unwrap();
+                let mut reader = BufReader::with_capacity(limit, file);
+
+                let length = {
+                    match reader.fill_buf(){
+                        Ok(buffer) =>{
+                            hasher.update(buffer);
+                            buffer.len()
+                        },
+                        Err(e) => {
+                            debug!("Cannot read file. Checksum set to 'UNKNOWN', error: {}", e);
+                            0
+                        }
+                    }
+                };
+                reader.consume(length);
+                let mut hash_data: Vec<u8> = Vec::new();
+                hash_data.push(metadata.len() as u8);
+                hasher.update(hash_data);
+                encode(hasher.finalize())
             },
             Err(e) => {
                 debug!("Cannot open file to get checksum, error: {:?}", e);
