@@ -1,10 +1,16 @@
+// Copyright (C) 2024, Achiefs.
+
 use crate::db;
 use crate::dbfile::*;
 use crate::utils;
 use crate::appconfig::AppConfig;
+use crate::hashevent::HashEvent;
 
 use walkdir::WalkDir;
 use log::*;
+
+// Temporal
+use tokio::runtime::Runtime;
 
 pub fn scan_path(cfg: AppConfig, root: String) {
     let db = db::DB::new();
@@ -42,6 +48,9 @@ pub fn check_changes(cfg: AppConfig, root: String) {
                             Some(utils::get_current_time_millis()),
                             Some(hash),
                             Some(metadata.len()));
+                        let event = HashEvent::new(dbfile);
+                        let rt = Runtime::new().unwrap();
+                        rt.block_on(event.process(cfg.clone()));
                         // Trigger new event
                     }
                 },

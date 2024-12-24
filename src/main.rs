@@ -39,6 +39,7 @@ mod init;
 mod db;
 mod dbfile;
 mod scanner;
+mod hashevent;
 
 // ----------------------------------------------------------------------------
 

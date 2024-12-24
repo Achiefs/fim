@@ -1,3 +1,5 @@
+// Copyright (C) 2024, Achiefs.
+
 use crate::appconfig;
 use crate::utils;
 use crate::dbfile::*;
@@ -65,7 +67,7 @@ impl DB {
     pub fn is_empty(&self) -> bool {
         let connection = self.open();
         let result = connection.query_row("SELECT * FROM files LIMIT 1", [], |_row| Ok(0));
-        self.close(connection); 
+        self.close(connection);
         match result {
             Ok(_v) => false,
             Err(e) => {
@@ -76,7 +78,7 @@ impl DB {
                     true
                 }
             }
-        } 
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -85,11 +87,13 @@ impl DB {
         let connection = self.open();
         let result = connection.execute(
             "CREATE TABLE IF NOT EXISTS files (
-                id INTEGER PRIMARY KEY,
+                dbid INTEGER PRIMARY KEY,
+                id TEXT PRIMARY KEY,
                 timestamp TEXT NOT NULL,
                 hash TEXT NOT NULL,
                 path TEXT NOT NULL UNIQUE,
-                size INTEGER)",
+                size INTEGER,
+                PRIMARY KEY(dbid, id) )",
             (),
         );
         match result {
@@ -122,14 +126,15 @@ impl DB {
             "SELECT * FROM files WHERE path = ?1 LIMIT 1",
             [path.clone()],
             |row| Ok(DBFile {
-                id: row.get(0).unwrap(),
-                timestamp: row.get(1).unwrap(),
-                hash: row.get(2).unwrap(),
-                path: row.get(3).unwrap(),
-                size: row.get(4).unwrap()
+                dbid: row.get(0).unwrap(),
+                id: row.get(1).unwrap(),
+                timestamp: row.get(2).unwrap(),
+                hash: row.get(3).unwrap(),
+                path: row.get(4).unwrap(),
+                size: row.get(5).unwrap()
             })
         );
-        
+
         let data = match result {
             Ok(d) => Ok(d),
             Err(e) => {
@@ -149,17 +154,18 @@ impl DB {
 
     // ------------------------------------------------------------------------
 
-    pub fn get_file_by_id(&self, id: u64) -> DBFile {
+    pub fn get_file_by_id(&self, dbid: u64) -> DBFile {
         let connection = self.open();
         let data = connection.query_row(
-            "SELECT * FROM files WHERE id = ?1 LIMIT 1",
-            [id],
+            "SELECT * FROM files WHERE dbid = ?1 LIMIT 1",
+            [dbid],
             |row| Ok(DBFile {
-                id: row.get(0).unwrap(),
-                timestamp: row.get(1).unwrap(),
-                hash: row.get(2).unwrap(),
-                path: row.get(3).unwrap(),
-                size: row.get(4).unwrap()
+                dbid: row.get(0).unwrap(),
+                id: row.get(1).unwrap(),
+                timestamp: row.get(2).unwrap(),
+                hash: row.get(3).unwrap(),
+                path: row.get(4).unwrap(),
+                size: row.get(5).unwrap()
             })
         ).unwrap();
 
@@ -185,8 +191,8 @@ impl DB {
             None => String::new()
         };
 
-        let query = format!("UPDATE files SET {}, {}, {} WHERE id = {}",
-            timestamp_str, hash_str, size_str, dbfile.id);
+        let query = format!("UPDATE files SET {}, {}, {} WHERE dbid = {}",
+            timestamp_str, hash_str, size_str, dbfile.dbid);
 
         let mut statement = connection.prepare(&query).unwrap();
         let result = statement.execute([]);
@@ -205,11 +211,12 @@ impl DB {
             "SELECT * from files").unwrap();
         let files = query.query_map([], |row|{
             Ok(DBFile {
-                id: row.get(0).unwrap(),
-                timestamp: row.get(1).unwrap(),
-                hash: row.get(2).unwrap(),
-                path: row.get(3).unwrap(),
-                size: row.get(4).unwrap(),
+                dbid: row.get(0).unwrap(),
+                id: row.get(1).unwrap(),
+                timestamp: row.get(2).unwrap(),
+                hash: row.get(3).unwrap(),
+                path: row.get(4).unwrap(),
+                size: row.get(5).unwrap(),
             })
         }).unwrap();
 

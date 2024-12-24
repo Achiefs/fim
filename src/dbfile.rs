@@ -1,3 +1,5 @@
+// Copyright (C) 2024, Achiefs.
+
 use crate::utils;
 use crate::hash;
 use crate::appconfig::*;
@@ -13,7 +15,8 @@ pub struct DBFileError {
 }
 
 pub struct DBFile {
-    pub id: u64,
+    pub dbid: u64,
+    pub id: String,
     pub timestamp: String,
     pub hash: String,
     pub path: String,
@@ -64,6 +67,7 @@ impl fmt::Debug for DBFileError {
 impl fmt::Debug for DBFile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
         f.debug_tuple("")
+        .field(&self.dbid)
         .field(&self.id)
         .field(&self.timestamp)
         .field(&self.hash)
@@ -98,7 +102,8 @@ impl DBFile {
         };
 
         DBFile {
-            id: 0,
+            dbid: 0,
+            id: utils::get_uuid(),
             timestamp: utils::get_current_time_millis(),
             hash,
             path: String::from(path),
@@ -110,7 +115,8 @@ impl DBFile {
 
     pub fn clone(&self) -> Self {
         DBFile {
-            id: self.id,
+            dbid: self.dbid,
+            id: self.id.clone(),
             timestamp: self.timestamp.clone(),
             hash: self.hash.clone(),
             path: self.path.clone(),
