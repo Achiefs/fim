@@ -133,7 +133,7 @@ pub async fn monitor(
                 Ok(_d) => {
                     debug!("Monitoring '{}' path.", path);
                     debug!("Starting file scan to create hash database.");
-                    scanner::first_scan(cfg.clone(), String::from(path));
+                    scanner::first_scan(cfg.clone(), String::from(path)).await;
                     debug!("Path '{}' scanned all files are hashed in DB.", path);
                 },
                 Err(e) => warn!("Could not monitor given path '{}', description: {}", path, e)

@@ -15,7 +15,6 @@ pub struct DBFileError {
 }
 
 pub struct DBFile {
-    pub dbid: u64,
     pub id: String,
     pub timestamp: String,
     pub hash: String,
@@ -67,7 +66,6 @@ impl fmt::Debug for DBFileError {
 impl fmt::Debug for DBFile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
         f.debug_tuple("")
-        .field(&self.dbid)
         .field(&self.id)
         .field(&self.timestamp)
         .field(&self.hash)
@@ -88,7 +86,7 @@ impl fmt::Display for DBFile {
 // ----------------------------------------------------------------------------
 
 impl DBFile {
-    pub fn new(cfg: AppConfig, path: &str) -> Self {
+    pub fn new(cfg: AppConfig, path: &str, id: Option<String>) -> Self {
         let size = Path::new(path).metadata().unwrap().len();
         let hash = match cfg.clone().checksum_method.as_str() {
             "Partial" => hash::get_partial_checksum(
@@ -101,9 +99,13 @@ impl DBFile {
                 Sha256::new())
         };
 
+        let target_id = match id {
+            Some(data) => data,
+            None => utils::get_uuid()
+        };
+
         DBFile {
-            dbid: 0,
-            id: utils::get_uuid(),
+            id: target_id,
             timestamp: utils::get_current_time_millis(),
             hash,
             path: String::from(path),
@@ -115,7 +117,6 @@ impl DBFile {
 
     pub fn clone(&self) -> Self {
         DBFile {
-            dbid: self.dbid,
             id: self.id.clone(),
             timestamp: self.timestamp.clone(),
             hash: self.hash.clone(),

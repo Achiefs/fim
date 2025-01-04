@@ -12,13 +12,17 @@ use reqwest::Client;
 use std::time::Duration;
 
 pub struct HashEvent {
-    dbfile: DBFile
+    //dbfile: DBFile,
+    previous_dbfile: DBFile,
+    current_dbfile: DBFile,
+    //operation: String
 }
 
 impl HashEvent {
-    pub fn new(dbfile: DBFile) -> Self {
+    pub fn new(previous_dbfile: DBFile, current_dbfile: DBFile) -> Self {
         HashEvent {
-            dbfile
+            previous_dbfile,
+            current_dbfile
         }
     }
 
@@ -72,7 +76,7 @@ impl HashEvent {
             }
         // Elastic endpoint integration
         } else {
-            let request_url = format!("{}/{}/_doc/{}", cfg.endpoint_address, index, self.dbfile.id);
+            let request_url = format!("{}/{}/_doc/{}", cfg.endpoint_address, index, self.current_dbfile.id);
             let client = Client::builder()
                 .danger_accept_invalid_certs(cfg.insecure)
                 .timeout(Duration::from_secs(30))
@@ -113,11 +117,16 @@ impl HashEvent {
 
     fn get_json(&self) -> serde_json::Value {
         json!({
-            "dbfile.id": self.dbfile.id.clone(),
-            "dbfile.timestamp": self.dbfile.timestamp.clone(),
-            "dbfile.hash": self.dbfile.hash.clone(),
-            "dbfile.path": self.dbfile.path.clone(),
-            "dbfile.size": self.dbfile.size.clone()
+            "previous_dbfile.id": self.previous_dbfile.id.clone(),
+            "previous_dbfile.timestamp": self.previous_dbfile.timestamp.clone(),
+            "previous_dbfile.hash": self.previous_dbfile.hash.clone(),
+            "previous_dbfile.path": self.previous_dbfile.path.clone(),
+            "previous_dbfile.size": self.previous_dbfile.size.clone(),
+            "current_dbfile.id": self.current_dbfile.id.clone(),
+            "current_dbfile.timestamp": self.current_dbfile.timestamp.clone(),
+            "current_dbfile.hash": self.current_dbfile.hash.clone(),
+            "current_dbfile.path": self.current_dbfile.path.clone(),
+            "current_dbfile.size": self.current_dbfile.size.clone()
         })
     }
 }

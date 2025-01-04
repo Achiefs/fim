@@ -2,15 +2,11 @@
 
 use crate::db;
 use crate::dbfile::*;
-use crate::utils;
 use crate::appconfig::AppConfig;
 use crate::hashevent::HashEvent;
 
 use walkdir::WalkDir;
 use log::*;
-
-// Temporal
-use tokio::runtime::Runtime;
 
 pub fn scan_path(cfg: AppConfig, root: String) {
     let db = db::DB::new();
@@ -19,9 +15,7 @@ pub fn scan_path(cfg: AppConfig, root: String) {
         let metadata = entry.metadata().unwrap();
         let path = entry.path();
         if metadata.clone().is_file(){
-
-
-            let dbfile = DBFile::new(cfg.clone(), path.to_str().unwrap());
+            let dbfile = DBFile::new(cfg.clone(), path.to_str().unwrap(), None);
             db.insert_file(dbfile);
         }
     }
@@ -29,7 +23,7 @@ pub fn scan_path(cfg: AppConfig, root: String) {
 
 // ----------------------------------------------------------------------------
 
-pub fn check_changes(cfg: AppConfig, root: String) {
+pub async fn check_changes(cfg: AppConfig, root: String) {
     let db = db::DB::new();
     for res in WalkDir::new(root) {
         let entry = res.unwrap();
@@ -43,21 +37,20 @@ pub fn check_changes(cfg: AppConfig, root: String) {
                     let hash = dbfile.get_disk_hash(cfg.clone());
                     if dbfile.hash != hash {
                         debug!("The file '{}', has changed.", path.display());
-                        db.update_file(
-                            dbfile.clone(),
-                            Some(utils::get_current_time_millis()),
-                            Some(hash),
-                            Some(metadata.len()));
-                        let event = HashEvent::new(dbfile);
-                        let rt = Runtime::new().unwrap();
-                        rt.block_on(event.process(cfg.clone()));
-                        // Trigger new event
+                        let current_dbfile = db.update_file(cfg.clone(), dbfile.clone());
+                        match current_dbfile {
+                            Some(data) => {
+                                let event = HashEvent::new(dbfile, data);
+                                event.process(cfg.clone()).await;
+                            },
+                            None => debug!("Could not get current DBFile data.")
+                        }
                     }
                 },
                 Err(e) => {
                     if e.kind() == "DBFileNotFoundError" {
                         debug!("New file '{}' found in directory.", path.display());
-                        let dbfile = DBFile::new(cfg.clone(), path.to_str().unwrap());
+                        let dbfile = DBFile::new(cfg.clone(), path.to_str().unwrap(), None);
                         db.insert_file(dbfile);
                         // Trigger new event
                     } else {
@@ -71,10 +64,10 @@ pub fn check_changes(cfg: AppConfig, root: String) {
 
 // ----------------------------------------------------------------------------
 
-pub fn first_scan(cfg: AppConfig, root: String) {
+pub async fn first_scan(cfg: AppConfig, root: String) {
     let db = db::DB::new();
     if ! db.is_empty() {
-        check_changes(cfg, root);
+        check_changes(cfg, root).await;
     } else {
         scan_path(cfg, root);
     }

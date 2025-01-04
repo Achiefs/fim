@@ -3,8 +3,9 @@
 use crate::appconfig;
 use crate::utils;
 use crate::dbfile::*;
+use crate::appconfig::AppConfig;
 
-use rusqlite::{Connection, Error};
+use rusqlite::{Connection, Error, params};
 use rusqlite::Error::QueryReturnedNoRows;
 use std::path::Path;
 use log::*;
@@ -87,13 +88,11 @@ impl DB {
         let connection = self.open();
         let result = connection.execute(
             "CREATE TABLE IF NOT EXISTS files (
-                dbid INTEGER PRIMARY KEY,
                 id TEXT PRIMARY KEY,
                 timestamp TEXT NOT NULL,
                 hash TEXT NOT NULL,
                 path TEXT NOT NULL UNIQUE,
-                size INTEGER,
-                PRIMARY KEY(dbid, id) )",
+                size INTEGER)",
             (),
         );
         match result {
@@ -108,8 +107,8 @@ impl DB {
     pub fn insert_file(&self, file: DBFile) {
         let connection = self.open();
         let result = connection.execute(
-            "INSERT INTO files (timestamp, hash, path, size) VALUES (?1, ?2, ?3, ?4)",
-            (file.timestamp, file.hash, file.path, file.size)
+            "INSERT INTO files (id, timestamp, hash, path, size) VALUES (?1, ?2, ?3, ?4, ?5)",
+            (file.id, file.timestamp, file.hash, file.path, file.size)
         );
         match result {
             Ok(_) => debug!("Inserted new file in DB"),
@@ -126,12 +125,11 @@ impl DB {
             "SELECT * FROM files WHERE path = ?1 LIMIT 1",
             [path.clone()],
             |row| Ok(DBFile {
-                dbid: row.get(0).unwrap(),
-                id: row.get(1).unwrap(),
-                timestamp: row.get(2).unwrap(),
-                hash: row.get(3).unwrap(),
-                path: row.get(4).unwrap(),
-                size: row.get(5).unwrap()
+                id: row.get(0).unwrap(),
+                timestamp: row.get(1).unwrap(),
+                hash: row.get(2).unwrap(),
+                path: row.get(3).unwrap(),
+                size: row.get(4).unwrap()
             })
         );
 
@@ -154,18 +152,17 @@ impl DB {
 
     // ------------------------------------------------------------------------
 
-    pub fn get_file_by_id(&self, dbid: u64) -> DBFile {
+    pub fn get_file_by_id(&self, id: String) -> DBFile {
         let connection = self.open();
         let data = connection.query_row(
-            "SELECT * FROM files WHERE dbid = ?1 LIMIT 1",
-            [dbid],
+            "SELECT * FROM files WHERE id = ?1 LIMIT 1",
+            [id],
             |row| Ok(DBFile {
-                dbid: row.get(0).unwrap(),
-                id: row.get(1).unwrap(),
-                timestamp: row.get(2).unwrap(),
-                hash: row.get(3).unwrap(),
-                path: row.get(4).unwrap(),
-                size: row.get(5).unwrap()
+                id: row.get(0).unwrap(),
+                timestamp: row.get(1).unwrap(),
+                hash: row.get(2).unwrap(),
+                path: row.get(3).unwrap(),
+                size: row.get(4).unwrap()
             })
         ).unwrap();
 
@@ -175,32 +172,28 @@ impl DB {
 
     // ------------------------------------------------------------------------
 
-    pub fn update_file(&self, dbfile: DBFile, timestamp: Option<String>, hash: Option<String>, size: Option<u64>) {
+    pub fn update_file(&self, cfg: AppConfig, dbfile: DBFile) -> Option<DBFile>{
         let connection = self.open();
+        let current_dbfile = DBFile::new(cfg, &dbfile.path, Some(dbfile.id));
 
-        let timestamp_str = match timestamp {
-            Some(t) => format!("timestamp = '{}'", t),
-            None => String::new()
-        };
-        let hash_str = match hash {
-            Some(h) => format!("hash = '{}'", h),
-            None => String::new()
-        };
-        let size_str = match size {
-            Some(s) => format!("size = '{}'", s),
-            None => String::new()
-        };
-
-        let query = format!("UPDATE files SET {}, {}, {} WHERE dbid = {}",
-            timestamp_str, hash_str, size_str, dbfile.dbid);
+        let query = "UPDATE files SET timestamp = ?1, hash = ?2, size = ?3 WHERE id = ?4";
 
         let mut statement = connection.prepare(&query).unwrap();
-        let result = statement.execute([]);
+        let result = statement.execute(params![
+            current_dbfile.timestamp,
+            current_dbfile.hash,
+            current_dbfile.size,
+            current_dbfile.id]);
         match result {
-            Ok(_v) => debug!("File '{}', updated with new information.", dbfile.path),
-            Err(e) => error!("Cannot update file '{}' information, Error: {:?}", dbfile.path, e)
+            Ok(_v) => {
+                debug!("File '{}', updated with new information.", dbfile.path);
+                Some(current_dbfile)
+            },
+            Err(e) => {
+                error!("Cannot update file '{}' information, Error: {:?}", dbfile.path, e);
+                None
+            }
         }
-
     }
 
     // ------------------------------------------------------------------------
@@ -211,12 +204,11 @@ impl DB {
             "SELECT * from files").unwrap();
         let files = query.query_map([], |row|{
             Ok(DBFile {
-                dbid: row.get(0).unwrap(),
-                id: row.get(1).unwrap(),
-                timestamp: row.get(2).unwrap(),
-                hash: row.get(3).unwrap(),
-                path: row.get(4).unwrap(),
-                size: row.get(5).unwrap(),
+                id: row.get(0).unwrap(),
+                timestamp: row.get(1).unwrap(),
+                hash: row.get(2).unwrap(),
+                path: row.get(3).unwrap(),
+                size: row.get(4).unwrap(),
             })
         }).unwrap();
 
