@@ -4,9 +4,11 @@ use crate::db;
 use crate::dbfile::*;
 use crate::appconfig::AppConfig;
 use crate::hashevent::HashEvent;
+use crate::utils;
 
 use walkdir::WalkDir;
 use log::*;
+use std::collections::HashSet;
 
 pub fn scan_path(cfg: AppConfig, root: String) {
     let db = db::DB::new();
@@ -23,7 +25,7 @@ pub fn scan_path(cfg: AppConfig, root: String) {
 
 // ----------------------------------------------------------------------------
 
-pub async fn check_changes(cfg: AppConfig, root: String) {
+pub async fn check_path(cfg: AppConfig, root: String) {
     let db = db::DB::new();
     for res in WalkDir::new(root) {
         let entry = res.unwrap();
@@ -43,7 +45,7 @@ pub async fn check_changes(cfg: AppConfig, root: String) {
                                 let event = HashEvent::new(dbfile, data);
                                 event.process(cfg.clone()).await;
                             },
-                            None => debug!("Could not get current DBFile data.")
+                            None => warn!("Could not update file information in database, file: '{}'", path.display())
                         }
                     }
                 },
@@ -52,9 +54,9 @@ pub async fn check_changes(cfg: AppConfig, root: String) {
                         debug!("New file '{}' found in directory.", path.display());
                         let dbfile = DBFile::new(cfg.clone(), path.to_str().unwrap(), None);
                         db.insert_file(dbfile);
-                        // Trigger new event
+                        // In this case we don't trigger an event due the watcher will trigger new file in monitoring path.
                     } else {
-                        error!("Could not get file '{}' databse information, Error: {:?}", path.display(), e)
+                        error!("Could not get file '{}' information from database, Error: {:?}", path.display(), e)
                     }
                 }
             };
@@ -64,11 +66,27 @@ pub async fn check_changes(cfg: AppConfig, root: String) {
 
 // ----------------------------------------------------------------------------
 
+pub fn update_db(cfg: AppConfig, root: String) {
+    let db = db::DB::new();
+
+    let list = db.get_file_list(root.clone());
+    let path_list = utils::get_path_file_list(root);
+
+    //path_list.iter().filter()
+
+    let path_set: HashSet<_> = path_list.iter().collect();
+    let diff: Vec<_> = list.iter().filter(|item| !path_set.contains(&item.path)).collect();
+    println!("DIFF: {:?}", diff);
+}
+
+// ----------------------------------------------------------------------------
+
 pub async fn first_scan(cfg: AppConfig, root: String) {
     let db = db::DB::new();
-    if ! db.is_empty() {
-        check_changes(cfg, root).await;
-    } else {
+    if db.is_empty() {
         scan_path(cfg, root);
+    } else {
+        check_path(cfg.clone(), root.clone()).await;
+        update_db(cfg, root);
     }
 }

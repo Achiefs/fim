@@ -172,6 +172,27 @@ impl DB {
 
     // ------------------------------------------------------------------------
 
+    pub fn get_file_list(&self, path: String) -> Vec<DBFile> {
+        let connection = self.open();
+        let mut list = Vec::new();
+        let mut statement = connection.prepare_cached("SELECT * FROM files WHERE path LIKE '?1%'").unwrap();
+        let file_iter = statement.query_map([path], |row| {
+            Ok(DBFile {
+                id: row.get(0).unwrap(),
+                timestamp: row.get(1).unwrap(),
+                hash: row.get(2).unwrap(),
+                path: row.get(3).unwrap(),
+                size: row.get(4).unwrap()
+            })
+        }).unwrap();
+        for file in file_iter {
+            list.push(file.unwrap())
+        }
+        list
+    }
+
+    // ------------------------------------------------------------------------
+
     pub fn update_file(&self, cfg: AppConfig, dbfile: DBFile) -> Option<DBFile>{
         let connection = self.open();
         let current_dbfile = DBFile::new(cfg, &dbfile.path, Some(dbfile.id));

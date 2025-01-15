@@ -12,10 +12,8 @@ use reqwest::Client;
 use std::time::Duration;
 
 pub struct HashEvent {
-    //dbfile: DBFile,
     previous_dbfile: DBFile,
     current_dbfile: DBFile,
-    //operation: String
 }
 
 impl HashEvent {

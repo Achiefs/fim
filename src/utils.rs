@@ -20,6 +20,7 @@ use log::{warn, debug, error};
 // To manage maps
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
+use walkdir::WalkDir;
 
 // ----------------------------------------------------------------------------
 
@@ -274,6 +275,16 @@ pub fn run_auditctl(args: &[&str]) {
 pub fn get_current_time_millis() -> String {
     format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH)
         .expect("Time went backwards").as_millis())
+}
+
+// ----------------------------------------------------------------------------
+
+pub fn get_path_file_list(root: String) -> Vec<String> {
+    let mut list = Vec::new();
+    for result in WalkDir::new(root) {
+        list.push(String::from(result.unwrap().path().to_str().unwrap()))
+    }
+    list
 }
 
 // ----------------------------------------------------------------------------
