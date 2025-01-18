@@ -1,0 +1,13 @@
+FROM centos:7
+
+RUN sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/* && \
+    sed -i 's|mirrorlist|#mirrorlist|g' /etc/yum.repos.d/*
+    
+RUN yum update -y && \
+    yum install -y rpm-build tar gcc git && \
+    mkdir -p /tmp/output
+
+ADD entrypoint.sh /usr/local/bin/entrypoint_rpm.sh
+RUN chmod +x /usr/local/bin/entrypoint_rpm.sh
+
+ENTRYPOINT [ "/usr/local/bin/entrypoint_rpm.sh" ]
