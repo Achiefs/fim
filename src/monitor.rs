@@ -185,7 +185,7 @@ pub async fn monitor(
 
 
     // Main loop, receive any produced event and write it into the events log.
-    loop {
+    'processor: loop {
         for message in &rx {
             match message {
                 Ok(event) => {
@@ -198,7 +198,7 @@ pub async fn monitor(
                     };
                     if plain_path == "DISCONNECT" {
                         info!("Received exit signal, exiting...");
-                        break;
+                        break 'processor;
                     }
 
                     let event_path = Path::new(plain_path);
