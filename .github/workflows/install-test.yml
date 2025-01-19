@@ -56,17 +56,18 @@ jobs:
     env:
       repodir: ${{ github.workspace }}/${{ github.run_id }}
       pkgdir: ${repodir}/pkg/rpm
+      relpkgdir: ${{ github.run_id }}/pkg/rpm
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         run: git clone https://github.com/${{ github.repository }}.git -b ${{ github.ref_name }} $repodir
 
       - name: Building package
         run: sudo ./builder.sh
-        working-directory: $pkgdir
+        working-directory: $relpkgdir
 
       - name: Installing package
         run: sudo yum install -y ./fim*.rpm
-        working-directory: $pkgdir
+        working-directory: $relpkgdir
 
       - name: Start FIM service
         run: sudo systemctl start fim
