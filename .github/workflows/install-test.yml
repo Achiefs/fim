@@ -55,7 +55,7 @@ jobs:
     runs-on: [self-hosted, centos7]
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
-        run: git clone ${{ github.repositoryUrl }} -b ${{ github.ref_name }} ${{ github.run_id }} ; cd ${{ github.run_id }}
+        run: git clone https://github.com/${{ github.repository }}.git -b ${{ github.ref_name }} ${{ github.run_id }} ; cd ${{ github.run_id }}
 
       - name: Building package
         run: sudo ./builder.sh
