@@ -55,8 +55,6 @@ jobs:
     runs-on: [self-hosted, centos7]
     env:
       repodir: ${{ github.workspace }}/${{ github.run_id }}
-      pkgdir: ${repodir}/pkg/rpm
-      relpkgdir: ${{ github.run_id }}/pkg/rpm
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         run: git clone https://github.com/${{ github.repository }}.git -b ${{ github.ref_name }} $repodir
