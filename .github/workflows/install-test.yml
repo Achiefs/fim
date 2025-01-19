@@ -53,17 +53,19 @@ jobs:
 
   Build-install-centos:
     runs-on: [self-hosted, centos7]
+    env:
+      repodir: ${{ github.workspace }}/${{ github.run_id }}
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
-        uses: actions/checkout@v2
+        run: git clone https://github.com/${{ github.repository }}.git -b ${{ github.ref_name }} $repodir
 
       - name: Building package
         run: sudo ./builder.sh
-        working-directory: ./pkg/rpm
+        working-directory: ${{ github.run_id }}/pkg/rpm
 
       - name: Installing package
         run: sudo yum install -y ./fim*.rpm
-        working-directory: ./pkg/rpm
+        working-directory: ${{ github.run_id }}/pkg/rpm
 
       - name: Start FIM service
         run: sudo systemctl start fim
@@ -74,6 +76,10 @@ jobs:
       - name: Remove package installation
         if: always()
         run: sudo yum remove -y fim
+
+      - name: Remove repository
+        if: always()
+        run: sudo rm -rf $repodir
 
 
   Build-install-macos:
