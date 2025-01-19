@@ -55,7 +55,7 @@ jobs:
     runs-on: [self-hosted, centos7]
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
-        uses: actions/checkout@v1
+        run: git clone ${{ github.repositoryUrl }} -b ${{ github.ref_name }} ${{ github.run_id }} ; cd ${{ github.run_id }}
 
       - name: Building package
         run: sudo ./builder.sh
@@ -74,6 +74,10 @@ jobs:
       - name: Remove package installation
         if: always()
         run: sudo yum remove -y fim
+
+      - name: Remove repository
+        if: always()
+        run: cd .. ; sudo rm -rf ${{ github.run_id }}
 
 
   Build-install-macos:
