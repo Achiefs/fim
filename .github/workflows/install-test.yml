@@ -63,11 +63,11 @@ jobs:
 
       - name: Building package
         run: sudo ./builder.sh
-        working-directory: $relpkgdir
+        working-directory: ${{ github.run_id }}/pkg/rpm
 
       - name: Installing package
         run: sudo yum install -y ./fim*.rpm
-        working-directory: $relpkgdir
+        working-directory: ${{ github.run_id }}/pkg/rpm
 
       - name: Start FIM service
         run: sudo systemctl start fim
