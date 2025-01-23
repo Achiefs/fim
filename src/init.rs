@@ -7,8 +7,7 @@ use crate::utils;
 
 pub fn init() -> (AppConfig, Ruleset) {
   use std::path::Path;
-  use simplelog::WriteLogger;
-  use simplelog::Config;
+  use simplelog::{ WriteLogger, ConfigBuilder, format_description };
   use std::fs;
 
   println!("[INFO] Achiefs File Integrity Monitoring software starting!");
@@ -21,10 +20,16 @@ pub fn init() -> (AppConfig, Ruleset) {
       ).parent().unwrap().to_str().unwrap()
   ).unwrap();
 
+  // Modify the logger configuration
+  let log_config = ConfigBuilder::new()
+    .set_time_format_custom(format_description!(
+      "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond digits:4]"))
+    .build();
+
   // Create logger output to write generated logs.
   WriteLogger::init(
       cfg.clone().get_level_filter(),
-      Config::default(),
+      log_config,
       fs::OpenOptions::new()
           .create(true)
           .append(true)
