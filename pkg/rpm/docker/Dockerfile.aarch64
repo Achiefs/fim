@@ -1,0 +1,10 @@
+FROM redhat/ubi8:8.8-1067.1698056881
+
+RUN yum update -y && \
+    yum install -y rpm-build tar gcc git && \
+    mkdir -p /tmp/output
+
+ADD entrypoint.sh /usr/local/bin/entrypoint_rpm.sh
+RUN chmod +x /usr/local/bin/entrypoint_rpm.sh
+
+ENTRYPOINT [ "/usr/local/bin/entrypoint_rpm.sh" ]

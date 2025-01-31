@@ -118,19 +118,24 @@ jobs:
 
   audit-system-tests-centos7:
     runs-on: [self-hosted, centos7]
+    env:
+      repodir: ${{ github.workspace }}/${{ github.run_id }}
 
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
-        uses: actions/checkout@v2
+        run: git clone https://github.com/${{ github.repository }}.git -b ${{ github.ref_name }} $repodir
 
       - name: Build FIM
         run: /home/okynos/.cargo/bin/cargo build --release
+        working-directory: ${{ github.run_id }}
 
       - name: Change configuration
         run: sed -i 's|/tmp|/tmp/test|g' config/linux/config.yml
+        working-directory: ${{ github.run_id }}
 
       - name: Copy FIM binary to main folder
         run: cp ./target/release/fim ./
+        working-directory: ${{ github.run_id }}
 
       - name: Create required directories
         run: mkdir -p /tmp/test
@@ -143,16 +148,19 @@ jobs:
 
       - name: Start FIM process
         run: sudo ./fim &
+        working-directory: ${{ github.run_id }}
 
       - name: Check FIM running
         run: sleep 5 && ps a | grep fim | grep -v grep
 
       - name: Launch test suite
         run: sudo python3 -m pytest test/system/audit.py -v
+        working-directory: ${{ github.run_id }}
 
       - name: Print config file
         if: always()
-        run: cat ${{ github.workspace }}/config/linux/config.yml || true
+        run: cat ./config/linux/config.yml || true
+        working-directory: ${{ github.run_id }}
 
       - name: Print log file
         if: always()
@@ -176,10 +184,16 @@ jobs:
 
       - name: Clean workspace
         if: always()
-        run: sudo rm -rf ${{ github.workspace }}/test/system/__pycache__/ ${{ github.workspace }}/test/system/.pytest_cache ${{ github.workspace }}/.pytest_cache
+        run: sudo rm -rf ./test/system/__pycache__/ ./test/system/.pytest_cache ./.pytest_cache
+        working-directory: ${{ github.run_id }}
 
       - name: Clean test output
         if: always()
-        run: sudo rm -rf ${{ github.workspace }}/test_*
+        run: sudo rm -rf ./test_*
+        working-directory: ${{ github.run_id }}
+
+      - name: Remove repository
+        if: always()
+        run: sudo rm -rf $repodir
 
       - run: echo "Job's status is ${{ job.status }}."

@@ -7,10 +7,9 @@ use crate::db;
 
 
 pub fn init() -> (AppConfig, Ruleset) {
-    use std::path::Path;
-    use simplelog::WriteLogger;
-    use simplelog::Config;
-    use std::fs;
+  use std::path::Path;
+  use simplelog::{ WriteLogger, ConfigBuilder, format_description };
+  use std::fs;
 
     println!("[INFO] Achiefs File Integrity Monitoring software starting!");
     println!("[INFO] Reading config...");
@@ -22,16 +21,22 @@ pub fn init() -> (AppConfig, Ruleset) {
         ).parent().unwrap().to_str().unwrap()
     ).unwrap();
 
-    // Create logger output to write generated logs.
-    WriteLogger::init(
-        cfg.clone().get_level_filter(),
-        Config::default(),
-        fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(cfg.clone().log_file)
-            .expect("Unable to open log file")
-    ).unwrap();
+  // Modify the logger configuration
+  let log_config = ConfigBuilder::new()
+    .set_time_format_custom(format_description!(
+      "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond digits:4]"))
+    .build();
+
+  // Create logger output to write generated logs.
+  WriteLogger::init(
+      cfg.clone().get_level_filter(),
+      log_config,
+      fs::OpenOptions::new()
+          .create(true)
+          .append(true)
+          .open(cfg.clone().log_file)
+          .expect("Unable to open log file")
+  ).unwrap();
 
     println!("[INFO] Configuration successfully read, forwarding output to log file.");
     println!("[INFO] Log file: '{}'", cfg.clone().log_file);
