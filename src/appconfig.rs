@@ -48,7 +48,9 @@ pub struct AppConfig {
     pub system: String,
     pub insecure: bool,
     pub events_lock: Arc<Mutex<bool>>,
-    pub log_lock: Arc<Mutex<bool>>
+    pub log_lock: Arc<Mutex<bool>>,
+    pub hashscanner_interval: usize,
+    pub engine: String
 }
 
 impl AppConfig {
@@ -77,7 +79,9 @@ impl AppConfig {
             system: self.system.clone(),
             insecure: self.insecure,
             events_lock: self.events_lock.clone(),
-            log_lock: self.log_lock.clone()
+            log_lock: self.log_lock.clone(),
+            hashscanner_interval: self.hashscanner_interval.clone(),
+            engine: self.engine.clone()
         }
     }
 
@@ -211,11 +215,13 @@ impl AppConfig {
         };
 
         // Manage null value on audit value
+        let mut engine = String::from("monitor");
         let audit = match yaml[0]["audit"].as_vec() {
             Some(value) => {
                 if utils::get_os() != "linux" {
                     panic!("Audit only supported in Linux systems.");
                 }
+                engine = String::from("audit");
                 value.to_vec()
             },
             None => {
@@ -271,6 +277,14 @@ impl AppConfig {
             None => 64
         };
 
+        let hashscanner_interval = match yaml[0]["hashscanner"]["interval"].as_i64() {
+            Some(value) => {
+                let interval = usize::try_from(value).unwrap();
+                if interval >= 5 { interval * 60 }else{ 300 } // Five minutes 
+            },
+            None => 3600 // One hour
+        };
+
         AppConfig {
             version: String::from(VERSION),
             path: cfg,
@@ -295,6 +309,8 @@ impl AppConfig {
             insecure,
             events_lock: Arc::new(Mutex::new(false)),
             log_lock: Arc::new(Mutex::new(false)),
+            hashscanner_interval,
+            engine
         }
     }
 
@@ -538,6 +554,8 @@ mod tests {
             insecure: true,
             events_lock: Arc::new(Mutex::new(false)),
             log_lock: Arc::new(Mutex::new(false)),
+            hashscanner_interval: 60,
+            engine: String::from("monitor")
         }
     }
 
@@ -566,6 +584,9 @@ mod tests {
         assert_eq!(cfg.log_max_file_size, cloned.log_max_file_size);
         assert_eq!(cfg.system, cloned.system);
         assert_eq!(cfg.insecure, cloned.insecure);
+        //
+        assert_eq!(cfg.hashscanner_interval, cloned.hashscanner_interval);
+        assert_eq!(cfg.engine, cloned.engine);
     }
 
     // ------------------------------------------------------------------------
@@ -593,6 +614,9 @@ mod tests {
         assert_eq!(cfg.log_max_file_size, 64);
         assert_eq!(cfg.system, String::from("windows"));
         assert_eq!(cfg.insecure, false);
+        //
+        assert_eq!(cfg.hashscanner_interval, 60);
+        assert_eq!(cfg.engine, String::from("monitor"));
     }
 
     // ------------------------------------------------------------------------
@@ -982,6 +1006,9 @@ mod tests {
             assert_eq!(cfg.log_max_file_size, 64);
             assert_eq!(cfg.system, String::from("linux"));
             assert_eq!(cfg.insecure, false);
+            //
+            assert_eq!(cfg.hashscanner_interval, 60);
+            assert_eq!(cfg.engine, String::from("monitor"));
         }
     }
 
@@ -1007,6 +1034,9 @@ mod tests {
         assert_eq!(cfg.log_max_file_size, 64);
         assert_eq!(cfg.system, String::from("macos"));
         assert_eq!(cfg.insecure, false);
+        //
+        assert_eq!(cfg.hashscanner_interval, 60);
+        assert_eq!(cfg.engine, String::from("monitor"));
     }
 
     // ------------------------------------------------------------------------

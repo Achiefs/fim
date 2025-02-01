@@ -135,6 +135,7 @@ mod tests {
     use std::fs;
     use std::fs::File;
     use std::io::prelude::*;
+    use sha3::{Digest, Sha3_512};
 
     fn create_test_file(filename: String) {
         File::create(filename).unwrap().write_all(b"This is a test!").unwrap();
@@ -150,7 +151,7 @@ mod tests {
     fn test_get_checksum_file() {
         let filename = String::from("test_get_checksum_file");
         create_test_file(filename.clone());
-        assert_eq!(get_checksum(filename.clone(), MAX_FILE_READ), String::from("46512636eeeb22dee0d60f3aba6473b1fb3258dc0c9ed6fbdbf26bed06df796bc70d4c1f6d50ca977b45f35b494e4bd9fb34e55a1576d6d9a3b5e1ab059953ee"));
+        assert_eq!(get_checksum(filename.clone(), MAX_FILE_READ, Sha3_512::new()), String::from("46512636eeeb22dee0d60f3aba6473b1fb3258dc0c9ed6fbdbf26bed06df796bc70d4c1f6d50ca977b45f35b494e4bd9fb34e55a1576d6d9a3b5e1ab059953ee"));
         remove_test_file(filename.clone());
     }
 
@@ -158,8 +159,8 @@ mod tests {
 
     #[test]
     fn test_get_checksum_not_exists() {
-        assert_ne!(get_checksum(String::from("not_exists"), MAX_FILE_READ), String::from("This is a test"));
-        assert_eq!(get_checksum(String::from("not_exists"), MAX_FILE_READ), String::from("UNKNOWN"));
+        assert_ne!(get_checksum(String::from("not_exists"), MAX_FILE_READ, Sha3_512::new()), String::from("This is a test"));
+        assert_eq!(get_checksum(String::from("not_exists"), MAX_FILE_READ, Sha3_512::new()), String::from("UNKNOWN"));
     }
 
     // ------------------------------------------------------------------------
@@ -168,7 +169,7 @@ mod tests {
     fn test_get_checksum_bad() {
         let filename = String::from("test_get_checksum_bad");
         create_test_file(filename.clone());
-        assert_ne!(get_checksum(filename.clone(), MAX_FILE_READ), String::from("This is a test"));
+        assert_ne!(get_checksum(filename.clone(), MAX_FILE_READ, Sha3_512::new()), String::from("This is a test"));
         remove_test_file(filename.clone());
     }
 

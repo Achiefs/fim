@@ -9,6 +9,9 @@ use crate::utils;
 use walkdir::WalkDir;
 use log::*;
 use std::collections::HashSet;
+use std::time::Duration;
+use std::thread;
+use tokio::runtime::Runtime;
 
 pub fn scan_path(cfg: AppConfig, root: String) {
     let db = db::DB::new();
@@ -66,27 +69,62 @@ pub async fn check_path(cfg: AppConfig, root: String) {
 
 // ----------------------------------------------------------------------------
 
-pub fn update_db(cfg: AppConfig, root: String) {
+pub fn update_db(root: String) {
     let db = db::DB::new();
 
-    let list = db.get_file_list(root.clone());
-    let path_list = utils::get_path_file_list(root);
-
-    //path_list.iter().filter()
+    let db_list = db.get_file_list(root.clone());
+    let path_list = utils::get_fs_list(root);
 
     let path_set: HashSet<_> = path_list.iter().collect();
-    let diff: Vec<_> = list.iter().filter(|item| !path_set.contains(&item.path)).collect();
-    println!("DIFF: {:?}", diff);
+    let diff: Vec<_> = db_list.iter().filter(|item| !path_set.contains(&item.path)).collect();
+
+    for file in diff {
+        let result = db.delete_file(DBFile {
+            id: file.id.clone(),
+            timestamp: file.timestamp.clone(),
+            hash: file.hash.clone(),
+            path: file.path.clone(),
+            size: file.size
+        });
+        match result {
+            Ok(_v) => {
+                // In this case we don't trigger an event due to the watcher will trigger file deleted event in monitoring path.
+                debug!("File {} deleted from databse", file.path)
+            },
+            Err(e) => error!("Could not delete file {} from database, error: {:?}", file.path, e)
+        }
+    }
 }
 
 // ----------------------------------------------------------------------------
 
-pub async fn first_scan(cfg: AppConfig, root: String) {
+#[cfg(not(tarpaulin_include))]
+pub fn scan(cfg: AppConfig) {
     let db = db::DB::new();
-    if db.is_empty() {
-        scan_path(cfg, root);
-    } else {
-        check_path(cfg.clone(), root.clone()).await;
-        update_db(cfg, root);
+    let rt = Runtime::new().unwrap();
+    let interval = cfg.clone().hashscanner_interval;
+    debug!("Starting file scan to create hash database.");
+
+    let config_paths = match cfg.clone().engine.as_str() {
+        "audit" => cfg.clone().audit,
+        _ => cfg.clone().monitor,
+    };
+
+    loop{
+
+        for element in config_paths.clone() {
+            let path = String::from(element["path"].as_str().unwrap());
+            if db.is_empty() {
+                scan_path(cfg.clone(), path.clone());
+            } else {
+                rt.block_on(check_path(cfg.clone(), path.clone()));
+                update_db(path.clone());
+            }
+            debug!("Path '{}' scanned all files are hashed in DB.", path.clone());
+        }
+
+        debug!("Sleeping HashScanner thread for {} minutes", interval.clone());
+        thread::sleep(Duration::from_secs(interval.try_into().unwrap()));
     }
+
 }

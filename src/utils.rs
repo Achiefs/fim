@@ -279,7 +279,7 @@ pub fn get_current_time_millis() -> String {
 
 // ----------------------------------------------------------------------------
 
-pub fn get_path_file_list(root: String) -> Vec<String> {
+pub fn get_fs_list(root: String) -> Vec<String> {
     let mut list = Vec::new();
     for result in WalkDir::new(root) {
         list.push(String::from(result.unwrap().path().to_str().unwrap()))
