@@ -18,6 +18,10 @@ monitor:
     labels: ["usr/bin", "linux"]
   - path: /etc
     labels: ["etc", "linux"]
+  - path: /tmp
+    labels: ["tmp", "linux"]
+    ignore: [".swp"]
+
 
 # App procedure and errors logging
 log:

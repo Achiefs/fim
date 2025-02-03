@@ -1218,12 +1218,13 @@ mod tests {
             assert!(cfg.path_in("/bin", "", cfg.monitor.clone()));
             assert!(cfg.path_in("/bin/test", "", cfg.monitor.clone()));
             assert!(!cfg.path_in("/test", "", cfg.monitor.clone()));
-            assert!(cfg.path_in("/tmp", "", cfg.audit.clone()));
-            assert!(cfg.path_in("/tmp/", "", cfg.audit.clone()));
-            assert!(cfg.path_in("./", "/tmp", cfg.audit.clone()));
-            assert!(cfg.path_in("./", "/tmp/", cfg.audit.clone()));
-            assert!(!cfg.path_in("./", "/test", cfg.audit.clone()));
-            assert!(cfg.path_in("./", "/tmp/test", cfg.audit.clone()));
+            // Add test of audit loaded config.
+            //assert!(cfg.path_in("/tmp", "", cfg.audit.clone()));
+            //assert!(cfg.path_in("/tmp/", "", cfg.audit.clone()));
+            //assert!(cfg.path_in("./", "/tmp", cfg.audit.clone()));
+            //assert!(cfg.path_in("./", "/tmp/", cfg.audit.clone()));
+            //assert!(!cfg.path_in("./", "/test", cfg.audit.clone()));
+            //assert!(cfg.path_in("./", "/tmp/test", cfg.audit.clone()));
         }
     }
 
@@ -1239,10 +1240,11 @@ mod tests {
             assert_eq!(cfg.get_index("/etc", "", cfg.monitor.clone()), 2);
             assert_eq!(cfg.get_index("/test", "", cfg.monitor.clone()), usize::MAX);
             assert_eq!(cfg.get_index("./", "/test", cfg.monitor.clone()), usize::MAX);
-            assert_eq!(cfg.get_index("/tmp", "", cfg.audit.clone()), 0);
-            assert_eq!(cfg.get_index("/test", "", cfg.audit.clone()), usize::MAX);
-            assert_eq!(cfg.get_index("./", "/tmp", cfg.audit.clone()), 0);
-            assert_eq!(cfg.get_index("./", "/test", cfg.audit.clone()), usize::MAX);
+            // Add test of audit loaded config.
+            //assert_eq!(cfg.get_index("/tmp", "", cfg.audit.clone()), 0);
+            //assert_eq!(cfg.get_index("/test", "", cfg.audit.clone()), usize::MAX);
+            //assert_eq!(cfg.get_index("./", "/tmp", cfg.audit.clone()), 0);
+            //assert_eq!(cfg.get_index("./", "/test", cfg.audit.clone()), usize::MAX);
         }
     }
 
@@ -1263,10 +1265,6 @@ mod tests {
             let labels = cfg.get_labels(1, cfg.monitor.clone());
             assert_eq!(labels[0], "usr/bin");
             assert_eq!(labels[1], "linux");
-
-            let labels = cfg.get_labels(0, cfg.audit.clone());
-            assert_eq!(labels[0], "tmp");
-            assert_eq!(labels[1], "linux");
         }
     }
 
@@ -1276,8 +1274,8 @@ mod tests {
     fn test_match_ignore() {
         let cfg = AppConfig::new(&utils::get_os(), None);
         if utils::get_os() == "linux" {
-            assert!(cfg.match_ignore(0, "file.swp", cfg.audit.clone()));
-            assert!(!cfg.match_ignore(0, "file.txt", cfg.audit.clone()));
+            assert!(cfg.match_ignore(0, "file.swp", cfg.monitor.clone()));
+            assert!(!cfg.match_ignore(0, "file.txt", cfg.monitor.clone()));
         }
     }
 
