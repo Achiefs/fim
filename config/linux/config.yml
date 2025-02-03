@@ -5,11 +5,11 @@ events:
   destination: file
   file: /var/lib/fim/events.json
 
-# Audit extended files and folders information
-audit:
-  - path: /tmp
-    labels: ["tmp", "linux"]
-    ignore: [".swp"]
+# Audit extended files and folders information. Only Available on Linux + Audit installed.
+#audit:
+#  - path: /tmp
+#    labels: ["tmp", "linux"]
+#    ignore: [".swp"]
 
 # Simple files and folders information
 monitor:
