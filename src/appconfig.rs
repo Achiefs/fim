@@ -554,7 +554,7 @@ mod tests {
             insecure: true,
             events_lock: Arc::new(Mutex::new(false)),
             log_lock: Arc::new(Mutex::new(false)),
-            hashscanner_interval: 60,
+            hashscanner_interval: 3600,
             engine: String::from("monitor")
         }
     }
@@ -615,7 +615,7 @@ mod tests {
         assert_eq!(cfg.system, String::from("windows"));
         assert_eq!(cfg.insecure, false);
         //
-        assert_eq!(cfg.hashscanner_interval, 60);
+        assert_eq!(cfg.hashscanner_interval, 3600);
         assert_eq!(cfg.engine, String::from("monitor"));
     }
 
@@ -1007,7 +1007,7 @@ mod tests {
             assert_eq!(cfg.system, String::from("linux"));
             assert_eq!(cfg.insecure, false);
             //
-            assert_eq!(cfg.hashscanner_interval, 60);
+            assert_eq!(cfg.hashscanner_interval, 3600);
             assert_eq!(cfg.engine, String::from("monitor"));
         }
     }
@@ -1035,7 +1035,7 @@ mod tests {
         assert_eq!(cfg.system, String::from("macos"));
         assert_eq!(cfg.insecure, false);
         //
-        assert_eq!(cfg.hashscanner_interval, 60);
+        assert_eq!(cfg.hashscanner_interval, 3600);
         assert_eq!(cfg.engine, String::from("monitor"));
     }
 
