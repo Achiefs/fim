@@ -48,7 +48,9 @@ jobs:
 
 
   audit-system-tests-ubuntu18:
-    runs-on: [self-hosted, ubuntu18]
+    runs-on:
+      group: Default
+      labels: ubuntu18
 
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
@@ -57,8 +59,8 @@ jobs:
       - name: Build FIM
         run: cargo build --release
 
-      - name: Change configuration
-        run: sed -i 's|/tmp|/tmp/test|g' config/linux/config.yml
+      - name: Copy configuration
+        run: cp -f test/system/audit_config.yml config/linux/config.yml
 
       - name: Copy FIM binary to main folder
         run: cp ./target/release/fim ./
@@ -117,7 +119,8 @@ jobs:
 
 
   audit-system-tests-centos7:
-    runs-on: [self-hosted, centos7]
+    runs-on:
+      group: centos7
     env:
       repodir: ${{ github.workspace }}/${{ github.run_id }}
 
@@ -129,8 +132,8 @@ jobs:
         run: /home/okynos/.cargo/bin/cargo build --release
         working-directory: ${{ github.run_id }}
 
-      - name: Change configuration
-        run: sed -i 's|/tmp|/tmp/test|g' config/linux/config.yml
+      - name: Copy configuration
+        run: cp -f test/system/audit_config.yml config/linux/config.yml
         working-directory: ${{ github.run_id }}
 
       - name: Copy FIM binary to main folder

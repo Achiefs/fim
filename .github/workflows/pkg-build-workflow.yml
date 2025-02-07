@@ -26,7 +26,8 @@ jobs:
       - run: echo "Job's status is ${{ job.status }}."
 
   Pkg-build-ubuntu16:
-    runs-on: [self-hosted]
+    runs-on:
+      group: Default
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -34,7 +35,8 @@ jobs:
         run: sudo docker run --rm okynos/fim-builder:xenial ${{ github.ref_name }}
 
   Pkg-build-centos7:
-    runs-on: [self-hosted]
+    runs-on:
+      group: Default
     steps:
       - name: Check out code
         uses: actions/checkout@v2
