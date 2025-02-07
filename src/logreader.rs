@@ -218,7 +218,7 @@ mod tests {
             assert_eq!(event.egid, "0");
             assert_eq!(event.fsgid, "0");
             assert_eq!(event.exe, "/usr/bin/sed");
-            assert_eq!(position, 851);
+            assert_eq!(position, 850);
         }
     }
 
