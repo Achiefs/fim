@@ -1,5 +1,5 @@
 type=SYSCALL msg=audit(1659026449.689:6434): arch=c000003e syscall=257 success=yes exit=4 a0=ffffff9c a1=556150ee3c00 a2=c2 a3=180 items=2 ppid=161880 pid=161937 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=pts0 ses=807 comm="sed" exe="/usr/bin/sed" key="fim"
-type=CWD msg=audit(1659026449.689:6434): cwd="/tmp"
+type=CWD msg=audit(1659026449.689:6434): cwd="/tmp/test"
 type=PATH msg=audit(1659026449.689:6434): item=0 name="./" inode=1966138 dev=08:02 mode=040755 ouid=1000 ogid=0 rdev=00:00 nametype=PARENT cap_fp=0 cap_fi=0 cap_fe=0 cap_fver=0 cap_frootid=0
 type=PATH msg=audit(1659026449.689:6434): item=1 name="./sedTsutP7" inode=1972630 dev=08:02 mode=0100000 ouid=0 ogid=0 rdev=00:00 nametype=CREATE cap_fp=0 cap_fi=0 cap_fe=0 cap_fver=0 cap_frootid=0
 type=PROCTITLE msg=audit(1659026449.689:6434): proctitle=736564002D6900737C68656C6C6F7C4849217C670066696C6531302E747874
