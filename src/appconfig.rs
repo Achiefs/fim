@@ -1274,7 +1274,7 @@ mod tests {
     fn test_match_ignore() {
         let cfg = AppConfig::new(&utils::get_os(), None);
         if utils::get_os() == "linux" {
-            assert!(cfg.match_ignore(0, "file.swp", cfg.monitor.clone()));
+            assert!(cfg.match_ignore(3, "file.swp", cfg.monitor.clone()));
             assert!(!cfg.match_ignore(0, "file.txt", cfg.monitor.clone()));
         }
     }
