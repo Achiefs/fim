@@ -5,7 +5,7 @@ const READ_CAPACITY: usize = 1024 * 1024 * 8; // Read file in chunks of 8MB
 
 // To get file checksums
 use hex::{encode, decode};
-use sha3::Digest;
+use sha3::{Digest, Sha3_256, Sha3_512, Sha3_224};
 // To log the program process
 use log::*;
 // To manage hex to ascii conversion

@@ -18,6 +18,8 @@ use std::path::Path;
 use simplelog::LevelFilter;
 use std::sync::{Arc, Mutex};
 use log::error;
+use sha2::{Digest, Sha224, Sha256, Sha384, Sha512};
+//use sha3::{Sha3_224, Sha3_256, Sha3_384, Sha3_512};
 
 use crate::utils;
 use crate::integration::Integration;
@@ -136,6 +138,22 @@ impl AppConfig {
 
         // Temporal value
         let checksum_method = String::from("Partial");
+        let hashscanner_hasher = match yaml[0]["hashscanner"]["hash_method"].as_str() {
+            Some(value) => {
+                match value {
+                    //"sha2_224" => Sha224::new(),
+                    "sha2_256" => Sha256::new(),
+                    //"sha2_384" => Sha384::new(),
+                    //"sha2_512" => Sha512::new(),
+                    //"sha3_224" => Sha3_224::new(),
+                    //"sha3_256" => Sha3_256::new(),
+                    //"sha3_384" => Sha3_384::new(),
+                    //"sha3_512" => Sha3_512::new(),
+                    _ => Sha256::new()
+                }
+            },
+            None => Sha256::new()
+        };
 
         // Manage null value on events->endpoint->insecure value
         let insecure = match yaml[0]["events"]["endpoint"]["insecure"].as_bool() {

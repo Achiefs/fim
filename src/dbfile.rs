@@ -127,7 +127,7 @@ impl DBFile {
 
     // ------------------------------------------------------------------------
 
-    pub fn get_disk_hash(&self, cfg: AppConfig) -> String {
+    pub fn get_file_hash(&self, cfg: AppConfig) -> String {
         match cfg.clone().checksum_method.as_str() {
             "Partial" => hash::get_partial_checksum(
                 String::from(&self.path),
@@ -135,8 +135,7 @@ impl DBFile {
             ),
             _ => hash::get_checksum(
                 String::from(&self.path),
-                cfg.clone().events_max_file_checksum,
-                Sha256::new())
+                cfg.clone().events_max_file_checksum, Sha256::new())//hash::get_hasher("Sha256"))
         }
     }
 }

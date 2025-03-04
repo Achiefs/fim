@@ -3,6 +3,7 @@
 use crate::db;
 use crate::dbfile::*;
 use crate::appconfig::AppConfig;
+use crate::hashevent;
 use crate::hashevent::HashEvent;
 use crate::utils;
 
@@ -28,7 +29,7 @@ pub fn scan_path(cfg: AppConfig, root: String) {
 
 // ----------------------------------------------------------------------------
 
-pub async fn check_path(cfg: AppConfig, root: String) {
+pub async fn check_path(cfg: AppConfig, root: String, first_scan: bool) {
     let db = db::DB::new();
     for res in WalkDir::new(root) {
         let entry = res.unwrap();
@@ -39,13 +40,13 @@ pub async fn check_path(cfg: AppConfig, root: String) {
             let result = db.get_file_by_path(String::from(path.to_str().unwrap()));
             match result {
                 Ok(dbfile) => {
-                    let hash = dbfile.get_disk_hash(cfg.clone());
+                    let hash = dbfile.get_file_hash(cfg.clone());
                     if dbfile.hash != hash {
                         debug!("The file '{}', has changed.", path.display());
                         let current_dbfile = db.update_file(cfg.clone(), dbfile.clone());
                         match current_dbfile {
                             Some(data) => {
-                                let event = HashEvent::new(dbfile, data);
+                                let event = HashEvent::new(Some(dbfile), data, String::from(hashevent::WRITE));
                                 event.process(cfg.clone()).await;
                             },
                             None => warn!("Could not update file information in database, file: '{}'", path.display())
@@ -56,8 +57,12 @@ pub async fn check_path(cfg: AppConfig, root: String) {
                     if e.kind() == "DBFileNotFoundError" {
                         debug!("New file '{}' found in directory.", path.display());
                         let dbfile = DBFile::new(cfg.clone(), path.to_str().unwrap(), None);
-                        db.insert_file(dbfile);
-                        // In this case we don't trigger an event due the watcher will trigger new file in monitoring path.
+                        db.insert_file(dbfile.clone());
+                        // Only trigger new file event in case it is a first scan else monitor will notify.
+                        if first_scan {
+                            let event = HashEvent::new(None, dbfile, String::from(hashevent::CREATE));
+                            event.process(cfg.clone()).await;
+                        }
                     } else {
                         error!("Could not get file '{}' information from database, Error: {:?}", path.display(), e)
                     }
@@ -69,7 +74,7 @@ pub async fn check_path(cfg: AppConfig, root: String) {
 
 // ----------------------------------------------------------------------------
 
-pub fn update_db(root: String) {
+pub async fn update_db(cfg: AppConfig, root: String, first_scan: bool) {
     let db = db::DB::new();
 
     let db_list = db.get_file_list(root.clone());
@@ -79,16 +84,21 @@ pub fn update_db(root: String) {
     let diff: Vec<_> = db_list.iter().filter(|item| !path_set.contains(&item.path)).collect();
 
     for file in diff {
-        let result = db.delete_file(DBFile {
+        let dbfile = DBFile {
             id: file.id.clone(),
             timestamp: file.timestamp.clone(),
             hash: file.hash.clone(),
             path: file.path.clone(),
             size: file.size
-        });
+        };
+        let result = db.delete_file(dbfile.clone());
         match result {
             Ok(_v) => {
-                // In this case we don't trigger an event due to the watcher will trigger file deleted event in monitoring path.
+                // Only trigger delete file event in case it is a first scan else monitor will notify.
+                if first_scan {
+                    let event = HashEvent::new(None, dbfile, String::from(hashevent::REMOVE));
+                    event.process(cfg.clone()).await;
+                }
                 debug!("File {} deleted from databse", file.path)
             },
             Err(e) => error!("Could not delete file {} from database, error: {:?}", file.path, e)
@@ -103,6 +113,7 @@ pub fn scan(cfg: AppConfig) {
     let db = db::DB::new();
     let rt = Runtime::new().unwrap();
     let interval = cfg.clone().hashscanner_interval;
+    let mut first_scan = true;
     debug!("Starting file scan to create hash database.");
 
     let config_paths = match cfg.clone().engine.as_str() {
@@ -117,8 +128,9 @@ pub fn scan(cfg: AppConfig) {
             if db.is_empty() {
                 scan_path(cfg.clone(), path.clone());
             } else {
-                rt.block_on(check_path(cfg.clone(), path.clone()));
-                update_db(path.clone());
+                rt.block_on(check_path(cfg.clone(), path.clone(), first_scan));
+                rt.block_on(update_db(cfg.clone(), path.clone(), first_scan));
+                first_scan = false;
             }
             debug!("Path '{}' scanned all files are hashed in DB.", path.clone());
         }
