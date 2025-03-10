@@ -5,7 +5,10 @@ const READ_CAPACITY: usize = 1024 * 1024 * 8; // Read file in chunks of 8MB
 
 // To get file checksums
 use hex::{encode, decode};
-use sha3::{Digest, Sha3_256, Sha3_512, Sha3_224};
+//use sha3::{Digest, Sha3_256, Sha3_512, Sha3_224};
+use sha3::{Digest, digest::DynDigest,
+    Sha3_224, Sha3_256, Sha3_384, Sha3_512,
+    Keccak224, Keccak256, Keccak384, Keccak512};
 // To log the program process
 use log::*;
 // To manage hex to ascii conversion
@@ -16,12 +19,37 @@ use std::path::Path;
 // To read file content
 use std::io::{BufRead, BufReader};
 
+// ----------------------------------------------------------------------------
+
+#[derive(PartialEq)]
+#[derive(Clone)]
+pub enum ShaType {
+    Sha224,
+    Sha256,
+    Sha384,
+    Sha512,
+    Keccak224,
+    Keccak256,
+    Keccak384,
+    Keccak512
+}
+
 // To calculate file content hash
-pub fn get_checksum<T: Digest>(filename: String, read_limit: usize, mut hasher: T) -> String {
+pub fn get_checksum(filename: String, read_limit: usize, algorithm: ShaType) -> String {
     let mut length = 1;
     let mut iteration = 0;
     let mut data_read = 0;
     let limit: usize = read_limit * 1024 * 1024;
+    let mut hasher: Box<dyn DynDigest> = match algorithm {
+        ShaType::Sha224 => Box::new(Sha3_224::new()),
+        ShaType::Sha256 => Box::new(Sha3_256::new()),
+        ShaType::Sha384 => Box::new(Sha3_384::new()),
+        ShaType::Sha512 => Box::new(Sha3_512::new()),
+        ShaType::Keccak224 => Box::new(Keccak224::new()),
+        ShaType::Keccak256 => Box::new(Keccak256::new()),
+        ShaType::Keccak384 => Box::new(Keccak384::new()),
+        ShaType::Keccak512 => Box::new(Keccak512::new()),
+    };
     
     if Path::new(&filename).is_file() { 
         debug!("Getting hash of file: {}", filename);
@@ -57,47 +85,6 @@ pub fn get_checksum<T: Digest>(filename: String, read_limit: usize, mut hasher: 
                     };
                     encode(hasher.finalize())
                 }
-            },
-            Err(e) => {
-                debug!("Cannot open file to get checksum, error: {:?}", e);
-                String::from("UNKNOWN")
-            }
-        }
-    }else{
-        debug!("Cannot produce checksum of a removed file or directory.");
-        String::from("UNKNOWN")
-    }
-}
-
-// ----------------------------------------------------------------------------
-
-pub fn get_partial_checksum<T: Digest>(filename: String, mut hasher: T) -> String {
-    let limit: usize = 1024 * 1024; // 1MB
-
-    if Path::new(&filename).is_file() {
-        debug!("Getting hash of file: {}", filename);
-        match File::open(filename.clone()){
-            Ok(file) => {
-                let metadata = file.metadata().unwrap();
-                let mut reader = BufReader::with_capacity(limit, file);
-
-                let length = {
-                    match reader.fill_buf(){
-                        Ok(buffer) =>{
-                            hasher.update(buffer);
-                            buffer.len()
-                        },
-                        Err(e) => {
-                            debug!("Cannot read file. Checksum set to 'UNKNOWN', error: {}", e);
-                            0
-                        }
-                    }
-                };
-                reader.consume(length);
-                let mut hash_data: Vec<u8> = Vec::new();
-                hash_data.push(metadata.len() as u8);
-                hasher.update(hash_data);
-                encode(hasher.finalize())
             },
             Err(e) => {
                 debug!("Cannot open file to get checksum, error: {:?}", e);

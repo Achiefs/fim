@@ -4,7 +4,7 @@ use crate::utils;
 use crate::hash;
 use crate::appconfig::*;
 
-use sha2::{Digest, Sha256};
+//use sha2::{Digest, Sha256};
 use std::fmt;
 use std::path::Path;
 use rusqlite;
@@ -88,16 +88,10 @@ impl fmt::Display for DBFile {
 impl DBFile {
     pub fn new(cfg: AppConfig, path: &str, id: Option<String>) -> Self {
         let size = Path::new(path).metadata().unwrap().len();
-        let hash = match cfg.clone().checksum_method.as_str() {
-            "Partial" => hash::get_partial_checksum(
-                String::from(path),
-                Sha256::new()
-            ),
-            _ => hash::get_checksum(
-                String::from(path),
-                cfg.clone().events_max_file_checksum,
-                Sha256::new())
-        };
+        let hash = hash::get_checksum(
+            String::from(path), 
+            cfg.clone().events_max_file_checksum,
+            cfg.clone().hashscanner_algorithm);
 
         let target_id = match id {
             Some(data) => data,
@@ -128,14 +122,10 @@ impl DBFile {
     // ------------------------------------------------------------------------
 
     pub fn get_file_hash(&self, cfg: AppConfig) -> String {
-        match cfg.clone().checksum_method.as_str() {
-            "Partial" => hash::get_partial_checksum(
-                String::from(&self.path),
-                Sha256::new()
-            ),
-            _ => hash::get_checksum(
-                String::from(&self.path),
-                cfg.clone().events_max_file_checksum, Sha256::new())//hash::get_hasher("Sha256"))
-        }
+        hash::get_checksum(
+            String::from(&self.path),
+            cfg.clone().events_max_file_checksum,
+            cfg.clone().hashscanner_algorithm
+        )
     }
 }

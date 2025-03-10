@@ -14,7 +14,6 @@ use time::OffsetDateTime;
 use itertools::Itertools;
 // Event handling
 use notify::event::{EventKind, AccessKind};
-use sha3::{Digest, Sha3_512};
 
 
 // Utils functions
@@ -283,7 +282,7 @@ pub async fn monitor(
                                     labels,
                                     operation: event::get_operation(kind),
                                     detailed_operation: event::get_detailed_operation(kind),
-                                    checksum: hash::get_checksum( String::from(path.to_str().unwrap()), cfg.clone().events_max_file_checksum, Sha3_512::new()),
+                                    checksum: hash::get_checksum( String::from(path.to_str().unwrap()), cfg.clone().events_max_file_checksum, cfg.clone().checksum_algorithm),
                                     fpid: utils::get_pid(),
                                     system: cfg.clone().system
                                 };

@@ -18,11 +18,10 @@ use std::path::Path;
 use simplelog::LevelFilter;
 use std::sync::{Arc, Mutex};
 use log::error;
-use sha2::{Digest, Sha224, Sha256, Sha384, Sha512};
-//use sha3::{Sha3_224, Sha3_256, Sha3_384, Sha3_512};
 
 use crate::utils;
 use crate::integration::Integration;
+use crate::hash::ShaType;
 
 // ----------------------------------------------------------------------------
 
@@ -34,7 +33,7 @@ pub struct AppConfig {
     pub events_destination: String,
     pub events_max_file_checksum: usize,
     pub events_max_file_size: usize,
-    pub checksum_method: String,
+    pub checksum_algorithm: ShaType,
     pub endpoint_type: String,
     pub endpoint_address: String,
     pub endpoint_user: String,
@@ -52,6 +51,7 @@ pub struct AppConfig {
     pub events_lock: Arc<Mutex<bool>>,
     pub log_lock: Arc<Mutex<bool>>,
     pub hashscanner_interval: usize,
+    pub hashscanner_algorithm: ShaType,
     pub engine: String
 }
 
@@ -65,7 +65,7 @@ impl AppConfig {
             events_destination: self.events_destination.clone(),
             events_max_file_checksum: self.events_max_file_checksum,
             events_max_file_size: self.events_max_file_size,
-            checksum_method: self.checksum_method.clone(),
+            checksum_algorithm: self.checksum_algorithm.clone(),
             endpoint_type: self.endpoint_type.clone(),
             endpoint_address: self.endpoint_address.clone(),
             endpoint_user: self.endpoint_user.clone(),
@@ -83,6 +83,7 @@ impl AppConfig {
             events_lock: self.events_lock.clone(),
             log_lock: self.log_lock.clone(),
             hashscanner_interval: self.hashscanner_interval.clone(),
+            hashscanner_algorithm: self.hashscanner_algorithm.clone(),
             engine: self.engine.clone()
         }
     }
@@ -137,22 +138,38 @@ impl AppConfig {
         };
 
         // Temporal value
-        let checksum_method = String::from("Partial");
-        let hashscanner_hasher = match yaml[0]["hashscanner"]["hash_method"].as_str() {
+        let checksum_algorithm = match yaml[0]["events"]["checksum_algorithm"].as_str() {
             Some(value) => {
                 match value {
-                    //"sha2_224" => Sha224::new(),
-                    "sha2_256" => Sha256::new(),
-                    //"sha2_384" => Sha384::new(),
-                    //"sha2_512" => Sha512::new(),
-                    //"sha3_224" => Sha3_224::new(),
-                    //"sha3_256" => Sha3_256::new(),
-                    //"sha3_384" => Sha3_384::new(),
-                    //"sha3_512" => Sha3_512::new(),
-                    _ => Sha256::new()
+                    "sha224"|"224"|"SHA224"|"Sha224" => ShaType::Sha224,
+                    "sha256"|"256"|"SHA256"|"Sha256" => ShaType::Sha256,
+                    "sha384"|"384"|"SHA384"|"Sha384" => ShaType::Sha384,
+                    "sha512"|"512"|"SHA512"|"Sha512" => ShaType::Sha512,
+                    "keccak224"|"K224"|"KECCAK224"|"Keccak224" => ShaType::Keccak224,
+                    "keccak256"|"K256"|"KECCAK256"|"Keccak256" => ShaType::Keccak256,
+                    "keccak384"|"K384"|"KECCAK384"|"Keccak384" => ShaType::Keccak384,
+                    "keccak512"|"K512"|"KECCAK512"|"Keccak512" => ShaType::Keccak512,
+                    _ => ShaType::Sha512
                 }
             },
-            None => Sha256::new()
+            None => ShaType::Sha256
+        };
+
+        let hashscanner_algorithm = match yaml[0]["hashscanner"]["algorithm"].as_str() {
+            Some(value) => {
+                match value {
+                    "sha224"|"224"|"SHA224"|"Sha224" => ShaType::Sha224,
+                    "sha256"|"256"|"SHA256"|"Sha256" => ShaType::Sha256,
+                    "sha384"|"384"|"SHA384"|"Sha384" => ShaType::Sha384,
+                    "sha512"|"512"|"SHA512"|"Sha512" => ShaType::Sha512,
+                    "keccak224"|"K224"|"KECCAK224"|"Keccak224" => ShaType::Keccak224,
+                    "keccak256"|"K256"|"KECCAK256"|"Keccak256" => ShaType::Keccak256,
+                    "keccak384"|"K384"|"KECCAK384"|"Keccak384" => ShaType::Keccak384,
+                    "keccak512"|"K512"|"KECCAK512"|"Keccak512" => ShaType::Keccak512,
+                    _ => ShaType::Sha256
+                }
+            },
+            None => ShaType::Sha256
         };
 
         // Manage null value on events->endpoint->insecure value
@@ -310,7 +327,7 @@ impl AppConfig {
             events_destination,
             events_max_file_checksum,
             events_max_file_size,
-            checksum_method,
+            checksum_algorithm,
             endpoint_type,
             endpoint_address,
             endpoint_user,
@@ -328,6 +345,7 @@ impl AppConfig {
             events_lock: Arc::new(Mutex::new(false)),
             log_lock: Arc::new(Mutex::new(false)),
             hashscanner_interval,
+            hashscanner_algorithm,
             engine
         }
     }
@@ -554,7 +572,7 @@ mod tests {
             events_destination: String::from(events_destination),
             events_max_file_checksum: 64,
             events_max_file_size: 128,
-            checksum_method: String::from("Partial"),
+            checksum_algorithm: ShaType::Sha512,
             //////////////////////////////////////////////////////Include checksum method tests
             endpoint_type: String::from("Elastic"),
             endpoint_address: String::from("test"),
@@ -573,6 +591,7 @@ mod tests {
             events_lock: Arc::new(Mutex::new(false)),
             log_lock: Arc::new(Mutex::new(false)),
             hashscanner_interval: 3600,
+            hashscanner_algorithm: ShaType::Sha3_256,
             engine: String::from("monitor")
         }
     }
@@ -604,6 +623,7 @@ mod tests {
         assert_eq!(cfg.insecure, cloned.insecure);
         //
         assert_eq!(cfg.hashscanner_interval, cloned.hashscanner_interval);
+        assert_eq!(cfg.hashscanner_algorithm, clone.hashscanner_algorithm);
         assert_eq!(cfg.engine, cloned.engine);
     }
 
@@ -634,6 +654,7 @@ mod tests {
         assert_eq!(cfg.insecure, false);
         //
         assert_eq!(cfg.hashscanner_interval, 3600);
+        assert_eq!(cfg.hashscanner_algorithm, ShaType::Sha3_256);
         assert_eq!(cfg.engine, String::from("monitor"));
     }
 
@@ -1026,6 +1047,7 @@ mod tests {
             assert_eq!(cfg.insecure, false);
             //
             assert_eq!(cfg.hashscanner_interval, 3600);
+            assert_eq!(cfg.hashscanner_hash, Sha256::new());
             assert_eq!(cfg.engine, String::from("monitor"));
         }
     }
@@ -1054,6 +1076,7 @@ mod tests {
         assert_eq!(cfg.insecure, false);
         //
         assert_eq!(cfg.hashscanner_interval, 3600);
+        assert_eq!(cfg.hashscanner_hash, Sha256::new());
         assert_eq!(cfg.engine, String::from("monitor"));
     }
 

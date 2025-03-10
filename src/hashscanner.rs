@@ -13,6 +13,7 @@ use std::collections::HashSet;
 use std::time::Duration;
 use std::thread;
 use tokio::runtime::Runtime;
+//use sha2::{Digest, Sha256, Sha512};
 
 pub fn scan_path(cfg: AppConfig, root: String) {
     let db = db::DB::new();
