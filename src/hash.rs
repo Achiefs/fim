@@ -59,8 +59,8 @@ pub fn get_checksum(filename: String, read_limit: usize, algorithm: ShaType) -> 
                 let mut reader = BufReader::with_capacity(READ_CAPACITY, file);
 
                 if size > limit {
-                    info!("File '{}' checksum skipped. File size is above limit.", filename);
-                    String::from("UNKNOWN")
+                    info!("File size is above limit. Getting file '{}' header/partial checksum.", filename);
+                    get_partial_checksum(filename, algorithm)
                 }else{
                     while length > 0 && data_read <= limit {
                         if iteration == 2 {
@@ -96,6 +96,60 @@ pub fn get_checksum(filename: String, read_limit: usize, algorithm: ShaType) -> 
         String::from("UNKNOWN")
     }
 }
+
+// ----------------------------------------------------------------------------
+
+/// Produce partial checksum of file, it read the first MB of the file
+/// This method is targeted for big files where you cannot get checksum in a reasonable time.
+pub fn get_partial_checksum(filename: String, algorithm: ShaType) -> String {
+    let limit: usize = 1024 * 1024; // 1MB
+    let mut hasher: Box<dyn DynDigest> = match algorithm {
+        ShaType::Sha224 => Box::new(Sha3_224::new()),
+        ShaType::Sha256 => Box::new(Sha3_256::new()),
+        ShaType::Sha384 => Box::new(Sha3_384::new()),
+        ShaType::Sha512 => Box::new(Sha3_512::new()),
+        ShaType::Keccak224 => Box::new(Keccak224::new()),
+        ShaType::Keccak256 => Box::new(Keccak256::new()),
+        ShaType::Keccak384 => Box::new(Keccak384::new()),
+        ShaType::Keccak512 => Box::new(Keccak512::new()),
+    };
+
+    if Path::new(&filename).is_file() {
+        debug!("Getting hash of file: {}", filename);
+        match File::open(filename.clone()){
+            Ok(file) => {
+                let metadata = file.metadata().unwrap();
+                let mut reader = BufReader::with_capacity(limit, file);
+
+                let length = {
+                    match reader.fill_buf(){
+                        Ok(buffer) =>{
+                            hasher.update(buffer);
+                            buffer.len()
+                        },
+                        Err(e) => {
+                            debug!("Cannot read file. Checksum set to 'UNKNOWN', error: {}", e);
+                            0
+                        }
+                    }
+                };
+                reader.consume(length);
+                let mut hash_data: Vec<u8> = Vec::new();
+                hash_data.push(metadata.len() as u8);
+                hasher.update(&hash_data);
+                encode(hasher.finalize())
+            },
+            Err(e) => {
+                debug!("Cannot open file to get checksum, error: {:?}", e);
+                String::from("UNKNOWN")
+            }
+        }
+    }else{
+        debug!("Cannot produce checksum of a removed file or directory.");
+        String::from("UNKNOWN")
+    }
+}
+
 
 // ----------------------------------------------------------------------------
 
