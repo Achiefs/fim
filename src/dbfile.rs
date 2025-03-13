@@ -4,10 +4,11 @@ use crate::utils;
 use crate::hash;
 use crate::appconfig::*;
 
-//use sha2::{Digest, Sha256};
 use std::fmt;
 use std::path::Path;
 use rusqlite;
+
+#[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
 
 pub struct DBFileError {

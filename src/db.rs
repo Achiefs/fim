@@ -18,6 +18,7 @@ pub struct DB {
 }
 
 impl DB {
+    /// Create a new db object
     pub fn new() -> DB {
         let mut config_folder = Path::new(&appconfig::get_config_path(utils::get_os()))
         .parent().unwrap().to_path_buf();
@@ -30,6 +31,7 @@ impl DB {
 
     // ------------------------------------------------------------------------
 
+    /// Open a handle to the db
     pub fn open(&self) -> Connection {
         match Connection::open(self.path.clone()) {
             Ok(database) => {
@@ -46,6 +48,7 @@ impl DB {
 
     // ------------------------------------------------------------------------
 
+    /// Close the db handle
     pub fn close(&self, connection: Connection) {
         match connection.close(){
             Ok(_) => debug!("DB connection closed successfully"),
@@ -55,16 +58,7 @@ impl DB {
 
     // ------------------------------------------------------------------------
 
-    pub fn exists(&self) -> bool {
-        let mut config_folder = Path::new(&appconfig::get_config_path(utils::get_os()))
-        .parent().unwrap().to_path_buf();
-        config_folder.push(DBNAME);
-
-        config_folder.exists()
-    }
-
-    // ------------------------------------------------------------------------
-
+    /// Check if current db is empty
     pub fn is_empty(&self) -> bool {
         let connection = self.open();
         let result = connection.query_row("SELECT * FROM files LIMIT 1", [], |_row| Ok(0));
@@ -84,6 +78,8 @@ impl DB {
 
     // ------------------------------------------------------------------------
 
+    /// Create the files table where store all files information
+    /// Defines files table schema
     pub fn create_table(&self) {
         let connection = self.open();
         let result = connection.execute(
@@ -105,6 +101,7 @@ impl DB {
 
     // ------------------------------------------------------------------------
 
+    /// Insert information of a given DBFile in db
     pub fn insert_file(&self, file: DBFile) {
         let connection = self.open();
         let permissions = match file.permissions {
@@ -124,6 +121,7 @@ impl DB {
 
     // ------------------------------------------------------------------------
 
+    /// Retrieve the DBFile object from db, using the path of file
     pub fn get_file_by_path(&self, path: String) -> Result<DBFile, DBFileError> {
         let connection = self.open();
         let result = connection.query_row(
@@ -158,27 +156,7 @@ impl DB {
 
     // ------------------------------------------------------------------------
 
-    pub fn get_file_by_id(&self, id: String) -> DBFile {
-        let connection = self.open();
-        let data = connection.query_row(
-            "SELECT * FROM files WHERE id = ?1 LIMIT 1",
-            [id],
-            |row| Ok(DBFile {
-                id: row.get(0).unwrap(),
-                timestamp: row.get(1).unwrap(),
-                hash: row.get(2).unwrap(),
-                path: row.get(3).unwrap(),
-                size: row.get(4).unwrap(),
-                permissions: row.get(5).unwrap()
-            })
-        ).unwrap();
-
-        self.close(connection);
-        data
-    }
-
-    // ------------------------------------------------------------------------
-
+    /// Retrieve a list of files that match the given path
     pub fn get_file_list(&self, path: String) -> Vec<DBFile> {
         let connection = self.open();
         let mut list = Vec::new();
@@ -207,6 +185,7 @@ impl DB {
 
     // ------------------------------------------------------------------------
 
+    /// Update db information of the given DBFile information
     pub fn update_file(&self, cfg: AppConfig, dbfile: DBFile) -> Option<DBFile>{
         let connection = self.open();
         let current_dbfile = DBFile::new(cfg, &dbfile.path, Some(dbfile.id));
@@ -234,6 +213,7 @@ impl DB {
 
     // ------------------------------------------------------------------------
 
+    /// Delete information inside db related to the given DBFile
     pub fn delete_file(&self, dbfile: DBFile) -> Result<u8, DBFileError>{
         let connection = self.open();
         let query = "DELETE FROM files WHERE id = ?1";
@@ -242,35 +222,13 @@ impl DB {
         let result = statement.execute(params![dbfile.id]);
         match result {
             Ok(_v) => {
-                debug!("File '{}', delete from database.", dbfile.path);
+                debug!("File '{}', deleted from database.", dbfile.path);
                 Ok(0)
             },
             Err(e) => {
                 error!("Cannot delete file '{}' information, Error: {:?}", dbfile.path, e);
                 Err(DBFileError::from(e))
             }
-        }
-    }
-
-    // ------------------------------------------------------------------------
-
-    pub fn print(&self) {
-        let connection = self.open();
-        let mut query = connection.prepare(
-            "SELECT * from files").unwrap();
-        let files = query.query_map([], |row|{
-            Ok(DBFile {
-                id: row.get(0).unwrap(),
-                timestamp: row.get(1).unwrap(),
-                hash: row.get(2).unwrap(),
-                path: row.get(3).unwrap(),
-                size: row.get(4).unwrap(),
-                permissions: row.get(5).unwrap(),
-            })
-        }).unwrap();
-
-        for file in files {
-            println!("{:?}", file.unwrap());
         }
     }
 }

@@ -591,7 +591,7 @@ mod tests {
             events_lock: Arc::new(Mutex::new(false)),
             log_lock: Arc::new(Mutex::new(false)),
             hashscanner_interval: 3600,
-            hashscanner_algorithm: ShaType::Sha3_256,
+            hashscanner_algorithm: ShaType::Sha256,
             engine: String::from("monitor")
         }
     }
@@ -623,7 +623,7 @@ mod tests {
         assert_eq!(cfg.insecure, cloned.insecure);
         //
         assert_eq!(cfg.hashscanner_interval, cloned.hashscanner_interval);
-        assert_eq!(cfg.hashscanner_algorithm, clone.hashscanner_algorithm);
+        assert_eq!(cfg.hashscanner_algorithm, cloned.hashscanner_algorithm);
         assert_eq!(cfg.engine, cloned.engine);
     }
 
@@ -654,7 +654,7 @@ mod tests {
         assert_eq!(cfg.insecure, false);
         //
         assert_eq!(cfg.hashscanner_interval, 3600);
-        assert_eq!(cfg.hashscanner_algorithm, ShaType::Sha3_256);
+        assert_eq!(cfg.hashscanner_algorithm, ShaType::Sha256);
         assert_eq!(cfg.engine, String::from("monitor"));
     }
 
@@ -1047,7 +1047,7 @@ mod tests {
             assert_eq!(cfg.insecure, false);
             //
             assert_eq!(cfg.hashscanner_interval, 3600);
-            assert_eq!(cfg.hashscanner_hash, Sha256::new());
+            assert_eq!(cfg.hashscanner_algorithm, ShaType::Sha256);
             assert_eq!(cfg.engine, String::from("monitor"));
         }
     }
@@ -1076,7 +1076,7 @@ mod tests {
         assert_eq!(cfg.insecure, false);
         //
         assert_eq!(cfg.hashscanner_interval, 3600);
-        assert_eq!(cfg.hashscanner_hash, Sha256::new());
+        assert_eq!(cfg.hashscanner_algorithm, ShaType::Sha256);
         assert_eq!(cfg.engine, String::from("monitor"));
     }
 
