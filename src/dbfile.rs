@@ -8,6 +8,7 @@ use crate::appconfig::*;
 use std::fmt;
 use std::path::Path;
 use rusqlite;
+use std::os::unix::fs::PermissionsExt;
 
 pub struct DBFileError {
     kind: String,
@@ -19,7 +20,8 @@ pub struct DBFile {
     pub timestamp: String,
     pub hash: String,
     pub path: String,
-    pub size: u64
+    pub size: u64,
+    pub permissions: Option<u32>
 }
 
 // ----------------------------------------------------------------------------
@@ -87,7 +89,8 @@ impl fmt::Display for DBFile {
 
 impl DBFile {
     pub fn new(cfg: AppConfig, path: &str, id: Option<String>) -> Self {
-        let size = Path::new(path).metadata().unwrap().len();
+        let metadata = Path::new(path).metadata().unwrap();
+        let size = metadata.clone().len();
         let hash = hash::get_checksum(
             String::from(path), 
             cfg.clone().events_max_file_checksum,
@@ -98,12 +101,18 @@ impl DBFile {
             None => utils::get_uuid()
         };
 
+        let permissions = match utils::get_os() {
+            "windows" => None, // Not implemented
+            _ => Some(format!("{:o}", metadata.permissions().mode()).parse::<u32>().unwrap())
+        };
+
         DBFile {
             id: target_id,
             timestamp: utils::get_current_time_millis(),
             hash,
             path: String::from(path),
-            size
+            size,
+            permissions
         }
     }
 
@@ -115,7 +124,8 @@ impl DBFile {
             timestamp: self.timestamp.clone(),
             hash: self.hash.clone(),
             path: self.path.clone(),
-            size: self.size
+            size: self.size,
+            permissions: self.permissions.clone()
         }
     }
 
@@ -128,4 +138,15 @@ impl DBFile {
             cfg.clone().hashscanner_algorithm
         )
     }
+
+    // ------------------------------------------------------------------------
+
+    pub fn get_file_permissions(&self) -> u32 {
+        let metadata = Path::new(&self.path).metadata().unwrap();
+        match utils::get_os() {
+            "windows" => 0, // Not implemented
+            _ => format!("{:o}", metadata.permissions().mode()).parse::<u32>().unwrap()
+        }
+    }
+
 }

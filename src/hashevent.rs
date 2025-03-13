@@ -129,11 +129,13 @@ impl HashEvent {
                     "previous_dbfile.hash": data.hash.clone(),
                     "previous_dbfile.path": data.path.clone(),
                     "previous_dbfile.size": data.size.clone(),
+                    "previous_dbfile.permissions": data.permissions.clone(),
                     "dbfile.id": self.dbfile.id.clone(),
                     "dbfile.timestamp": self.dbfile.timestamp.clone(),
                     "dbfile.hash": self.dbfile.hash.clone(),
                     "dbfile.path": self.dbfile.path.clone(),
                     "dbfile.size": self.dbfile.size.clone(),
+                    "dbfile.permissions": self.dbfile.permissions.clone(),
                     "operation": self.operation.clone(),
                 })
             },
@@ -143,6 +145,7 @@ impl HashEvent {
                 "dbfile.hash": self.dbfile.hash.clone(),
                 "dbfile.path": self.dbfile.path.clone(),
                 "dbfile.size": self.dbfile.size.clone(),
+                "dbfile.permissions": self.dbfile.permissions.clone(),
                 "operation": self.operation.clone(),
             })
         }

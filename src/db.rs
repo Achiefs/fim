@@ -92,7 +92,8 @@ impl DB {
                 timestamp TEXT NOT NULL,
                 hash TEXT NOT NULL,
                 path TEXT NOT NULL UNIQUE,
-                size INTEGER)",
+                size INTEGER,
+                permissions INTEGER)",
             (),
         );
         match result {
@@ -106,9 +107,13 @@ impl DB {
 
     pub fn insert_file(&self, file: DBFile) {
         let connection = self.open();
+        let permissions = match file.permissions {
+            Some(x) => x,
+            None => 0
+        };
         let result = connection.execute(
-            "INSERT INTO files (id, timestamp, hash, path, size) VALUES (?1, ?2, ?3, ?4, ?5)",
-            (file.id, file.timestamp, file.hash, file.path, file.size)
+            "INSERT INTO files (id, timestamp, hash, path, size, permissions) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            (file.id, file.timestamp, file.hash, file.path, file.size, permissions)
         );
         match result {
             Ok(_) => debug!("Inserted new file in DB"),
@@ -129,7 +134,8 @@ impl DB {
                 timestamp: row.get(1).unwrap(),
                 hash: row.get(2).unwrap(),
                 path: row.get(3).unwrap(),
-                size: row.get(4).unwrap()
+                size: row.get(4).unwrap(),
+                permissions: row.get(5).unwrap()
             })
         );
 
@@ -162,7 +168,8 @@ impl DB {
                 timestamp: row.get(1).unwrap(),
                 hash: row.get(2).unwrap(),
                 path: row.get(3).unwrap(),
-                size: row.get(4).unwrap()
+                size: row.get(4).unwrap(),
+                permissions: row.get(5).unwrap()
             })
         ).unwrap();
 
@@ -183,7 +190,8 @@ impl DB {
                 timestamp: row.get(1).unwrap(),
                 hash: row.get(2).unwrap(),
                 path: row.get(3).unwrap(),
-                size: row.get(4).unwrap()
+                size: row.get(4).unwrap(),
+                permissions: row.get(5).unwrap()
             })
         });
         match result {
@@ -203,13 +211,14 @@ impl DB {
         let connection = self.open();
         let current_dbfile = DBFile::new(cfg, &dbfile.path, Some(dbfile.id));
 
-        let query = "UPDATE files SET timestamp = ?1, hash = ?2, size = ?3 WHERE id = ?4";
+        let query = "UPDATE files SET timestamp = ?1, hash = ?2, size = ?3, permissions = ?4 WHERE id = ?5";
 
         let mut statement = connection.prepare(&query).unwrap();
         let result = statement.execute(params![
             current_dbfile.timestamp,
             current_dbfile.hash,
             current_dbfile.size,
+            current_dbfile.permissions,
             current_dbfile.id]);
         match result {
             Ok(_v) => {
@@ -256,6 +265,7 @@ impl DB {
                 hash: row.get(2).unwrap(),
                 path: row.get(3).unwrap(),
                 size: row.get(4).unwrap(),
+                permissions: row.get(5).unwrap(),
             })
         }).unwrap();
 

@@ -13,7 +13,6 @@ use std::collections::HashSet;
 use std::time::Duration;
 use std::thread;
 use tokio::runtime::Runtime;
-//use sha2::{Digest, Sha256, Sha512};
 
 pub fn scan_path(cfg: AppConfig, root: String) {
     let db = db::DB::new();
@@ -42,15 +41,30 @@ pub async fn check_path(cfg: AppConfig, root: String, first_scan: bool) {
             match result {
                 Ok(dbfile) => {
                     let hash = dbfile.get_file_hash(cfg.clone());
+                    let permissions = dbfile.get_file_permissions();
+                    let db_file_permissions = match dbfile.permissions {
+                        None => 0,
+                        Some(x) => x
+                    };
                     if dbfile.hash != hash {
-                        debug!("The file '{}', has changed.", path.display());
+                        debug!("The file '{}' checksum has changed.", path.display());
                         let current_dbfile = db.update_file(cfg.clone(), dbfile.clone());
                         match current_dbfile {
                             Some(data) => {
                                 let event = HashEvent::new(Some(dbfile), data, String::from(hashevent::WRITE));
                                 event.process(cfg.clone()).await;
                             },
-                            None => warn!("Could not update file information in database, file: '{}'", path.display())
+                            None => warn!("Could not update file checksum information in database, file: '{}'", path.display())
+                        }
+                    } else if db_file_permissions != permissions {
+                        debug!("The file '{}' permissions have changed.", path.display());
+                        let current_dbfile = db.update_file(cfg.clone(), dbfile.clone());
+                        match current_dbfile {
+                            Some(data) => {
+                                let event = HashEvent::new(Some(dbfile), data, String::from(hashevent::WRITE));
+                                event.process(cfg.clone()).await;
+                            },
+                            None => warn!("Could not update file permissions information in database, file: '{}'", path.display())
                         }
                     }
                 },
@@ -90,7 +104,8 @@ pub async fn update_db(cfg: AppConfig, root: String, first_scan: bool) {
             timestamp: file.timestamp.clone(),
             hash: file.hash.clone(),
             path: file.path.clone(),
-            size: file.size
+            size: file.size,
+            permissions: file.permissions.clone()
         };
         let result = db.delete_file(dbfile.clone());
         match result {
