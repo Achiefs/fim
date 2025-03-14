@@ -104,13 +104,9 @@ impl DB {
     /// Insert information of a given DBFile in db
     pub fn insert_file(&self, file: DBFile) {
         let connection = self.open();
-        let permissions = match file.permissions {
-            Some(x) => x,
-            None => 0
-        };
         let result = connection.execute(
             "INSERT INTO files (id, timestamp, hash, path, size, permissions) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            (file.id, file.timestamp, file.hash, file.path, file.size, permissions)
+            (file.id, file.timestamp, file.hash, file.path, file.size, file.permissions)
         );
         match result {
             Ok(_) => debug!("Inserted new file in DB"),

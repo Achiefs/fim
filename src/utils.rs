@@ -289,6 +289,18 @@ pub fn get_fs_list(root: String) -> Vec<String> {
 
 // ----------------------------------------------------------------------------
 
+pub fn get_unix_permissions(file: &str) -> u32 {
+    #[cfg(target_family = "windows")]
+    return 0;
+
+    #[cfg(target_family = "unix")]
+    use std::os::unix::fs::PermissionsExt;
+    let metadata = Path::new(file).metadata().unwrap();
+    format!("{:o}", metadata.permissions().mode()).parse::<u32>().unwrap()
+}
+
+// ----------------------------------------------------------------------------
+
 #[cfg(test)]
 mod tests {
     use super::*;

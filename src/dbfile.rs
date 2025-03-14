@@ -8,9 +8,6 @@ use std::fmt;
 use std::path::Path;
 use rusqlite;
 
-#[cfg(target_family = "unix")]
-use std::os::unix::fs::PermissionsExt;
-
 pub struct DBFileError {
     kind: String,
     message: String
@@ -22,7 +19,7 @@ pub struct DBFile {
     pub hash: String,
     pub path: String,
     pub size: u64,
-    pub permissions: Option<u32>
+    pub permissions: u32
 }
 
 // ----------------------------------------------------------------------------
@@ -91,6 +88,7 @@ impl fmt::Display for DBFile {
 impl DBFile {
     pub fn new(cfg: AppConfig, path: &str, id: Option<String>) -> Self {
         let metadata = Path::new(path).metadata().unwrap();
+        let permissions = utils::get_unix_permissions(path);
         let size = metadata.clone().len();
         let hash = hash::get_checksum(
             String::from(path), 
@@ -100,12 +98,6 @@ impl DBFile {
         let target_id = match id {
             Some(data) => data,
             None => utils::get_uuid()
-        };
-
-        let permissions = if cfg!(target_os = "windows") {
-            None // Not implemented
-        } else {
-            Some(format!("{:o}", metadata.permissions().mode()).parse::<u32>().unwrap())
         };
 
         DBFile {
@@ -140,16 +132,7 @@ impl DBFile {
             cfg.clone().hashscanner_algorithm
         )
     }
-
-    // ------------------------------------------------------------------------
-
-    pub fn get_file_permissions(&self) -> u32 {
-        let metadata = Path::new(&self.path).metadata().unwrap();
-        if cfg!(target_os = "windows") {
-            0 // Not implemented
-        } else {
-            format!("{:o}", metadata.permissions().mode()).parse::<u32>().unwrap()
-        }
-    }
-
 }
+
+#[cfg(test)]
+mod test;

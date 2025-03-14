@@ -41,11 +41,7 @@ pub async fn check_path(cfg: AppConfig, root: String, first_scan: bool) {
             match result {
                 Ok(dbfile) => {
                     let hash = dbfile.get_file_hash(cfg.clone());
-                    let permissions = dbfile.get_file_permissions();
-                    let db_file_permissions = match dbfile.permissions {
-                        None => 0,
-                        Some(x) => x
-                    };
+                    let permissions = utils::get_unix_permissions(&dbfile.path);
                     if dbfile.hash != hash {
                         debug!("The file '{}' checksum has changed.", path.display());
                         let current_dbfile = db.update_file(cfg.clone(), dbfile.clone());
@@ -56,7 +52,7 @@ pub async fn check_path(cfg: AppConfig, root: String, first_scan: bool) {
                             },
                             None => warn!("Could not update file checksum information in database, file: '{}'", path.display())
                         }
-                    } else if db_file_permissions != permissions {
+                    } else if dbfile.permissions != permissions {
                         debug!("The file '{}' permissions have changed.", path.display());
                         let current_dbfile = db.update_file(cfg.clone(), dbfile.clone());
                         match current_dbfile {
