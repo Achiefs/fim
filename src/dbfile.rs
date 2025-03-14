@@ -102,9 +102,10 @@ impl DBFile {
             None => utils::get_uuid()
         };
 
-        let permissions = match utils::get_os() {
-            "windows" => None, // Not implemented
-            _ => Some(format!("{:o}", metadata.permissions().mode()).parse::<u32>().unwrap())
+        let permissions = if cfg!(target_os = "windows") {
+            None // Not implemented
+        } else {
+            Some(format!("{:o}", metadata.permissions().mode()).parse::<u32>().unwrap())
         };
 
         DBFile {
@@ -144,9 +145,10 @@ impl DBFile {
 
     pub fn get_file_permissions(&self) -> u32 {
         let metadata = Path::new(&self.path).metadata().unwrap();
-        match utils::get_os() {
-            "windows" => 0, // Not implemented
-            _ => format!("{:o}", metadata.permissions().mode()).parse::<u32>().unwrap()
+        if cfg!(target_os = "windows") {
+            0 // Not implemented
+        } else {
+            format!("{:o}", metadata.permissions().mode()).parse::<u32>().unwrap()
         }
     }
 
