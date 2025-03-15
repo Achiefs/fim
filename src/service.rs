@@ -9,7 +9,7 @@ use tokio::runtime::Runtime;
 use crate::monitor;
 use crate::rotator;
 use crate::init::init;
-use crate hashscanner;
+use crate::hashscanner;
 
 use log::{error, info};
 use std::{
