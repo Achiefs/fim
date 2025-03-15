@@ -101,7 +101,7 @@ pub async fn update_db(cfg: AppConfig, root: String, first_scan: bool) {
             hash: file.hash.clone(),
             path: file.path.clone(),
             size: file.size,
-            permissions: file.permissions.clone()
+            permissions: file.permissions
         };
         let result = db.delete_file(dbfile.clone());
         match result {

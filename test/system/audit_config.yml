@@ -19,6 +19,8 @@ monitor:
   - path: /etc
     labels: ["etc", "linux"]
 
+hashscanner:
+  enabled: false
 
 # App procedure and errors logging
 log:

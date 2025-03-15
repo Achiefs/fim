@@ -135,8 +135,7 @@ pub fn get_partial_checksum(filename: String, algorithm: ShaType) -> String {
                     }
                 };
                 reader.consume(length);
-                let mut hash_data: Vec<u8> = Vec::new();
-                hash_data.push(metadata.len() as u8);
+                let hash_data: Vec<u8> = vec![metadata.len() as u8];
                 hasher.update(&hash_data);
                 encode(hasher.finalize())
             },

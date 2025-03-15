@@ -185,10 +185,9 @@ impl DB {
     pub fn update_file(&self, cfg: AppConfig, dbfile: DBFile) -> Option<DBFile>{
         let connection = self.open();
         let current_dbfile = DBFile::new(cfg, &dbfile.path, Some(dbfile.id));
-
         let query = "UPDATE files SET timestamp = ?1, hash = ?2, size = ?3, permissions = ?4 WHERE id = ?5";
 
-        let mut statement = connection.prepare(&query).unwrap();
+        let mut statement = connection.prepare(query).unwrap();
         let result = statement.execute(params![
             current_dbfile.timestamp,
             current_dbfile.hash,
@@ -212,9 +211,7 @@ impl DB {
     /// Delete information inside db related to the given DBFile
     pub fn delete_file(&self, dbfile: DBFile) -> Result<u8, DBFileError>{
         let connection = self.open();
-        let query = "DELETE FROM files WHERE id = ?1";
-
-        let mut statement = connection.prepare(&query).unwrap();
+        let mut statement = connection.prepare("DELETE FROM files WHERE id = ?1").unwrap();
         let result = statement.execute(params![dbfile.id]);
         match result {
             Ok(_v) => {

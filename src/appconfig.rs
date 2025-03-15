@@ -50,6 +50,7 @@ pub struct AppConfig {
     pub insecure: bool,
     pub events_lock: Arc<Mutex<bool>>,
     pub log_lock: Arc<Mutex<bool>>,
+    pub hashscanner_enabled: bool,
     pub hashscanner_interval: usize,
     pub hashscanner_algorithm: ShaType,
     pub engine: String
@@ -82,7 +83,8 @@ impl AppConfig {
             insecure: self.insecure,
             events_lock: self.events_lock.clone(),
             log_lock: self.log_lock.clone(),
-            hashscanner_interval: self.hashscanner_interval.clone(),
+            hashscanner_enabled: self.hashscanner_enabled,
+            hashscanner_interval: self.hashscanner_interval,
             hashscanner_algorithm: self.hashscanner_algorithm.clone(),
             engine: self.engine.clone()
         }
@@ -320,6 +322,8 @@ impl AppConfig {
             None => 3600 // One hour
         };
 
+        let hashscanner_enabled = yaml[0]["hashscanner"]["enabled"].as_bool().unwrap_or(true);
+
         AppConfig {
             version: String::from(VERSION),
             path: cfg,
@@ -344,6 +348,7 @@ impl AppConfig {
             insecure,
             events_lock: Arc::new(Mutex::new(false)),
             log_lock: Arc::new(Mutex::new(false)),
+            hashscanner_enabled,
             hashscanner_interval,
             hashscanner_algorithm,
             engine
@@ -590,6 +595,7 @@ mod tests {
             insecure: true,
             events_lock: Arc::new(Mutex::new(false)),
             log_lock: Arc::new(Mutex::new(false)),
+            hashscanner_enabled: true,
             hashscanner_interval: 3600,
             hashscanner_algorithm: ShaType::Sha256,
             engine: String::from("monitor")
@@ -622,6 +628,7 @@ mod tests {
         assert_eq!(cfg.system, cloned.system);
         assert_eq!(cfg.insecure, cloned.insecure);
         //
+        assert_eq!(cfg.hashscanner_enabled, cloned.hashscanner_enabled);
         assert_eq!(cfg.hashscanner_interval, cloned.hashscanner_interval);
         assert_eq!(cfg.hashscanner_algorithm, cloned.hashscanner_algorithm);
         assert_eq!(cfg.engine, cloned.engine);
@@ -653,6 +660,7 @@ mod tests {
         assert_eq!(cfg.system, String::from("windows"));
         assert_eq!(cfg.insecure, false);
         //
+        assert_eq!(cfg.hashscanner_enabled, true);
         assert_eq!(cfg.hashscanner_interval, 3600);
         assert_eq!(cfg.hashscanner_algorithm, ShaType::Sha256);
         assert_eq!(cfg.engine, String::from("monitor"));
@@ -1046,6 +1054,7 @@ mod tests {
             assert_eq!(cfg.system, String::from("linux"));
             assert_eq!(cfg.insecure, false);
             //
+            assert_eq!(cfg.hashscanner_enabled, true);
             assert_eq!(cfg.hashscanner_interval, 3600);
             assert_eq!(cfg.hashscanner_algorithm, ShaType::Sha256);
             assert_eq!(cfg.engine, String::from("monitor"));
@@ -1075,6 +1084,7 @@ mod tests {
         assert_eq!(cfg.system, String::from("macos"));
         assert_eq!(cfg.insecure, false);
         //
+        assert_eq!(cfg.hashscanner_enabled, true);
         assert_eq!(cfg.hashscanner_interval, 3600);
         assert_eq!(cfg.hashscanner_algorithm, ShaType::Sha256);
         assert_eq!(cfg.engine, String::from("monitor"));

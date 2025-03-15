@@ -57,10 +57,15 @@ async fn main() {
         Ok(_v) => info!("FIM rotator thread started."),
         Err(e) => error!("Could not start FIM rotator thread, error: {}", e)
     };
-    match thread::Builder::new()
-        .name("FIM_HashScanner".to_string()).spawn(|| hashscanner::scan(hashscanner_cfg)){
-        Ok(_v) => info!("FIM HashScanner thread started."),
-        Err(e) => error!("Could not start FIM HashScanner thread, error: {}", e)
+
+    if cfg.hashscanner_enabled {
+        match thread::Builder::new()
+            .name("FIM_HashScanner".to_string()).spawn(|| hashscanner::scan(hashscanner_cfg)){
+            Ok(_v) => info!("FIM HashScanner thread started."),
+            Err(e) => error!("Could not start FIM HashScanner thread, error: {}", e)
+        };
+    } else {
+        info!("FIM HashScanner thread disabled, not running.")
     };
     monitor::monitor(tx, rx, cfg, ruleset).await;
 }
@@ -86,12 +91,16 @@ async fn main() -> windows_service::Result<()> {
                         Ok(_v) => info!("FIM rotator thread started."),
                         Err(e) => error!("Could not start FIM rotator thread, error: {}", e)
                     };
-                match thread::Builder::new()
-                    .name("FIM_HashScanner".to_string())
-                    .spawn(|| hashscanner::scan(hashscanner_cfg)){
-                        Ok(_v) => info!("FIM HashScanner thread started."),
-                        Err(e) => error!("Could not start FIM HashScanner thread, error: {}", e)
-                    };
+                if cfg.hashscanner_enabled {
+                    match thread::Builder::new()
+                        .name("FIM_HashScanner".to_string())
+                        .spawn(|| hashscanner::scan(hashscanner_cfg)){
+                            Ok(_v) => info!("FIM HashScanner thread started."),
+                            Err(e) => error!("Could not start FIM HashScanner thread, error: {}", e)
+                        };
+                } else {
+                    info!("FIM HashScanner thread disabled, not running.")
+                };
                 monitor::monitor(tx, rx, cfg, ruleset).await;
                 Ok(())
             },

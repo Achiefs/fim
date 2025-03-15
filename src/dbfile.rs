@@ -6,7 +6,6 @@ use crate::appconfig::*;
 
 use std::fmt;
 use std::path::Path;
-use rusqlite;
 
 pub struct DBFileError {
     kind: String,
@@ -71,6 +70,7 @@ impl fmt::Debug for DBFile {
         .field(&self.hash)
         .field(&self.path)
         .field(&self.size)
+        .field(&self.permissions)
         .finish()
     }
 }
@@ -79,7 +79,13 @@ impl fmt::Debug for DBFile {
 
 impl fmt::Display for DBFile {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Oh no, something bad went down")
+        write!(f, "DBFile(ID: {}, TIMESTAMP: {}, HASH: {}, PATH: {}, SIZE: {}, PERMISSIONS: {})",
+            self.id,
+            self.timestamp,
+            self.hash,
+            self.path,
+            self.size,
+            self.permissions)
     }
 }
 
@@ -119,7 +125,7 @@ impl DBFile {
             hash: self.hash.clone(),
             path: self.path.clone(),
             size: self.size,
-            permissions: self.permissions.clone()
+            permissions: self.permissions
         }
     }
 
