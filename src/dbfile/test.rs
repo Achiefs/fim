@@ -68,7 +68,7 @@ fn test_fmt_debug() {
         \"LICENSE\", 35149, 100644)"
     } else {
         "(\"FIXED_ID\", \"FIXED_TIMESTAMP\", \
-        \"edb0016d9f8bafb54540da34f05a8d510de8114488f23916276bdead05509a53\", \
+        \"209ba691a607610997f45be93529e6f582c1316a50a85af3ff257457a85d8f94\", \
         \"LICENSE\", 35823, 0)"
     };
     assert_eq!(out, expected);
@@ -91,7 +91,7 @@ fn test_fmt() {
         PATH: LICENSE, SIZE: 35149, PERMISSIONS: 100644)"
     } else {
         "DBFile(ID: FIXED_ID, TIMESTAMP: FIXED_TIMESTAMP, \
-        HASH: edb0016d9f8bafb54540da34f05a8d510de8114488f23916276bdead05509a53, \
+        HASH: 209ba691a607610997f45be93529e6f582c1316a50a85af3ff257457a85d8f94, \
         PATH: LICENSE, SIZE: 35823, PERMISSIONS: 0)"
     };
     assert_eq!(out, expected);

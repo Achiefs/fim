@@ -1,5 +1,22 @@
 use super::*;
 
+// ----------------------------------------------------------------------------
+
+fn remove_db() {
+    use std::fs::remove_file;
+    let tdb = DB::new();
+
+    if Path::new(&tdb.clone().path).exists() {
+        match remove_file(tdb.clone().path){
+            Ok(_v) => (),
+            Err(e) => println!("Error deleting db, {}", e)
+        };
+    };
+}
+
+
+// ----------------------------------------------------------------------------
+
 #[test]
 /// Check new instance creation, the instance should match the expected DB path.
 fn test_new() {
@@ -36,10 +53,9 @@ fn test_close() {
 #[test]
 /// Check DB emptiness, it should be empty on first check and not empty in second
 fn test_is_empty() {
-    use std::fs::remove_file;
     let tdb = DB::new();
     
-    remove_file(tdb.clone().path).unwrap();
+    remove_db();
     assert_eq!(tdb.is_empty(), true);
     tdb.create_table();
     tdb.insert_file(DBFile{
@@ -58,10 +74,10 @@ fn test_is_empty() {
 #[test]
 /// Check DB table creation, pragma query should obtain first row of schema (id)
 fn test_create_table() {
-    use std::fs::remove_file;
     let tdb = DB::new();
     
-    remove_file(tdb.clone().path).unwrap();
+
+    remove_db();
     tdb.create_table();
 
     let connection = tdb.open();
@@ -86,10 +102,9 @@ fn test_create_table() {
 #[test]
 /// 
 fn test_insert_file() {
-    use std::fs::remove_file;
     let tdb = DB::new();
     
-    remove_file(tdb.clone().path).unwrap();
+    remove_db();
     tdb.create_table();
     tdb.insert_file(DBFile{
         id: String::from("ID"),
