@@ -10,12 +10,17 @@ use rusqlite::Error::QueryReturnedNoRows;
 use std::path::Path;
 use log::*;
 
-
 pub const DBNAME: &str = "fim.db";
 
+#[derive(Clone)]
 pub struct DB {
     path: String
 }
+
+#[cfg(test)]
+mod test;
+
+// ----------------------------------------------------------------------------
 
 impl DB {
     /// Create a new db object
@@ -78,7 +83,7 @@ impl DB {
 
     // ------------------------------------------------------------------------
 
-    /// Create the files table where store all files information
+    /// Create the `files` table where store all files information
     /// Defines files table schema
     pub fn create_table(&self) {
         let connection = self.open();

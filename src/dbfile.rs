@@ -21,6 +21,9 @@ pub struct DBFile {
     pub permissions: u32
 }
 
+#[cfg(test)]
+mod test;
+
 // ----------------------------------------------------------------------------
 
 impl DBFileError {
@@ -139,6 +142,3 @@ impl DBFile {
         )
     }
 }
-
-#[cfg(test)]
-mod test;

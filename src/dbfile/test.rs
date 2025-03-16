@@ -10,7 +10,11 @@ fn test_new() {
     assert_eq!(dbfile_no_id.timestamp.len(), 13);
     assert_eq!(dbfile_no_id.hash, dbfile_no_id.get_file_hash(cfg));
     assert_eq!(dbfile_no_id.path, "LICENSE");
-    assert_eq!(dbfile_no_id.size, 35149);
+    if cfg!(target_family = "unix") {
+        assert_eq!(dbfile_no_id.size, 35149);
+    } else {
+        assert_eq!(dbfile_no_id.size, 35823);
+    };
     assert_eq!(dbfile_no_id.permissions, utils::get_unix_permissions(&dbfile_no_id.path));
 
     assert_eq!(dbfile.id, String::from("0"));
@@ -58,9 +62,15 @@ fn test_fmt_debug() {
     dbfile.timestamp = String::from("FIXED_TIMESTAMP");
 
     let out = format!("{:?}", dbfile);
-    let expected = "(\"FIXED_ID\", \"FIXED_TIMESTAMP\", \
+    let expected = if cfg!(target_family = "unix") {
+        "(\"FIXED_ID\", \"FIXED_TIMESTAMP\", \
         \"edb0016d9f8bafb54540da34f05a8d510de8114488f23916276bdead05509a53\", \
-        \"LICENSE\", 35149, 100644)";
+        \"LICENSE\", 35149, 100644)"
+    } else {
+        "(\"FIXED_ID\", \"FIXED_TIMESTAMP\", \
+        \"edb0016d9f8bafb54540da34f05a8d510de8114488f23916276bdead05509a53\", \
+        \"LICENSE\", 35823, 0)"
+    };
     assert_eq!(out, expected);
 }
 
@@ -75,9 +85,15 @@ fn test_fmt() {
     dbfile.timestamp = String::from("FIXED_TIMESTAMP");
 
     let out = format!("{}", dbfile);
-    let expected = "DBFile(ID: FIXED_ID, TIMESTAMP: FIXED_TIMESTAMP, \
+    let expected = if cfg!(target_family = "unix") {
+        "DBFile(ID: FIXED_ID, TIMESTAMP: FIXED_TIMESTAMP, \
         HASH: edb0016d9f8bafb54540da34f05a8d510de8114488f23916276bdead05509a53, \
-        PATH: LICENSE, SIZE: 35149, PERMISSIONS: 100644)";
+        PATH: LICENSE, SIZE: 35149, PERMISSIONS: 100644)"
+    } else {
+        "DBFile(ID: FIXED_ID, TIMESTAMP: FIXED_TIMESTAMP, \
+        HASH: edb0016d9f8bafb54540da34f05a8d510de8114488f23916276bdead05509a53, \
+        PATH: LICENSE, SIZE: 35823, PERMISSIONS: 0)"
+    };
     assert_eq!(out, expected);
 }
 
