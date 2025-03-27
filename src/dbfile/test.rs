@@ -1,5 +1,7 @@
 use super::*;
 
+// ----------------------------------------------------------------------------
+
 #[test]
 /// Check new instance attributes
 fn test_new() {

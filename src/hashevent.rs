@@ -22,6 +22,9 @@ pub struct HashEvent {
     operation: String,
 }
 
+#[cfg(test)]
+mod test;
+
 impl HashEvent {
     pub fn new(previous_dbfile: Option<DBFile>, dbfile: DBFile, operation: String) -> Self {
         HashEvent {
