@@ -14,7 +14,7 @@ pub const DBNAME: &str = "fim.db";
 
 #[derive(Clone)]
 pub struct DB {
-    path: String
+    pub path: String
 }
 
 #[cfg(test)]

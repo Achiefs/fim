@@ -14,6 +14,11 @@ use std::time::Duration;
 use std::thread;
 use tokio::runtime::Runtime;
 
+#[cfg(test)]
+mod test;
+
+// ----------------------------------------------------------------------------
+
 pub fn scan_path(cfg: AppConfig, root: String) {
     let db = db::DB::new();
     for res in WalkDir::new(root) {
