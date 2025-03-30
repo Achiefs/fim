@@ -224,14 +224,28 @@ fn test_get_current_time_millis() {
 
 // ------------------------------------------------------------------------
 
+#[cfg(target_os = "linux")]
 #[test]
 /// Check file list completion, it should return a list of 3 elements
 fn test_get_fs_list() {
     let list = get_fs_list(String::from("test/stress"));
     println!("{:?}", list);
     assert_eq!(list[0], String::from("test/stress"));
-    assert_eq!(list[1], String::from("test/stress/stress.sh"));
-    assert_eq!(list[2], String::from("test/stress/monitor.sh"));
+    assert_eq!(list[1], String::from("test/stress/monitor.sh"));
+    assert_eq!(list[2], String::from("test/stress/stress.sh"));
+}
+
+// ------------------------------------------------------------------------
+
+#[cfg(target_os = "windows")]
+#[test]
+/// Check file list completion, it should return a list of 3 elements
+fn test_get_fs_list_windows() {
+    let list = get_fs_list(String::from("test\\stress"));
+    println!("{:?}", list);
+    assert_eq!(list[0], String::from("test\\stress"));
+    assert_eq!(list[1], String::from("test\\stress\\monitor.sh"));
+    assert_eq!(list[2], String::from("test\\stress\\stress.sh"));
 }
 
 // ------------------------------------------------------------------------

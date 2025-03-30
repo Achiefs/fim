@@ -1271,7 +1271,7 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_path_in_audit() {
-        let cfg = AppConfig::new(&utils::get_os(), "test/unit/config/linux/audit_allowed.yml");
+        let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/linux/audit_allowed.yml"));
         assert!(cfg.path_in("/tmp", "", cfg.audit.clone()));
         assert!(cfg.path_in("/tmp/", "", cfg.audit.clone()));
         assert!(cfg.path_in("./", "/tmp", cfg.audit.clone()));
@@ -1299,7 +1299,7 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_get_index_audit() {
-        let cfg = AppConfig::new(&utils::get_os(), "test/unit/config/linux/audit_allowed.yml");
+        let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/linux/audit_allowed.yml"));
         assert_eq!(cfg.get_index("/tmp", "", cfg.audit.clone()), 0);
         assert_eq!(cfg.get_index("/test", "", cfg.audit.clone()), usize::MAX);
         assert_eq!(cfg.get_index("./", "/tmp", cfg.audit.clone()), 0);
@@ -1341,7 +1341,7 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn test_match_ignore_audit() {
-        let cfg = AppConfig::new(&utils::get_os(), None);
+        let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/linux/audit_exclude.yml"));
         assert!(cfg.match_ignore(0, "file.swp", cfg.audit.clone()));
         assert!(!cfg.match_ignore(0, "file.txt", cfg.audit.clone()));
     }
