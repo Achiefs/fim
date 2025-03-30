@@ -317,9 +317,9 @@ impl AppConfig {
         let hashscanner_interval = match yaml[0]["hashscanner"]["interval"].as_i64() {
             Some(value) => {
                 let interval = usize::try_from(value).unwrap();
-                if interval >= 5 { interval * 60 }else{ 300 } // Five minutes 
+                if interval >= 5 { interval * 60 }else{ 300 } // Minimum of five minutes 
             },
-            None => 3600 // One hour
+            None => 3600 // Default one hour
         };
 
         let hashscanner_enabled = yaml[0]["hashscanner"]["enabled"].as_bool().unwrap_or(true);
@@ -578,7 +578,6 @@ mod tests {
             events_max_file_checksum: 64,
             events_max_file_size: 128,
             checksum_algorithm: ShaType::Sha512,
-            //////////////////////////////////////////////////////Include checksum method tests
             endpoint_type: String::from("Elastic"),
             endpoint_address: String::from("test"),
             endpoint_user: String::from("test"),
@@ -627,7 +626,6 @@ mod tests {
         assert_eq!(cfg.log_max_file_size, cloned.log_max_file_size);
         assert_eq!(cfg.system, cloned.system);
         assert_eq!(cfg.insecure, cloned.insecure);
-        //
         assert_eq!(cfg.hashscanner_enabled, cloned.hashscanner_enabled);
         assert_eq!(cfg.hashscanner_interval, cloned.hashscanner_interval);
         assert_eq!(cfg.hashscanner_algorithm, cloned.hashscanner_algorithm);
@@ -659,7 +657,6 @@ mod tests {
         assert_eq!(cfg.log_max_file_size, 64);
         assert_eq!(cfg.system, String::from("windows"));
         assert_eq!(cfg.insecure, false);
-        //
         assert_eq!(cfg.hashscanner_enabled, true);
         assert_eq!(cfg.hashscanner_interval, 3600);
         assert_eq!(cfg.hashscanner_algorithm, ShaType::Sha256);
@@ -1053,7 +1050,6 @@ mod tests {
             assert_eq!(cfg.log_max_file_size, 64);
             assert_eq!(cfg.system, String::from("linux"));
             assert_eq!(cfg.insecure, false);
-            //
             assert_eq!(cfg.hashscanner_enabled, true);
             assert_eq!(cfg.hashscanner_interval, 3600);
             assert_eq!(cfg.hashscanner_algorithm, ShaType::Sha256);
@@ -1083,7 +1079,6 @@ mod tests {
         assert_eq!(cfg.log_max_file_size, 64);
         assert_eq!(cfg.system, String::from("macos"));
         assert_eq!(cfg.insecure, false);
-        //
         assert_eq!(cfg.hashscanner_enabled, true);
         assert_eq!(cfg.hashscanner_interval, 3600);
         assert_eq!(cfg.hashscanner_algorithm, ShaType::Sha256);
@@ -1261,42 +1256,54 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
+    #[cfg(target_os = "linux")]
     #[test]
-    fn test_path_in() {
+    fn test_path_in_monitor() {
         let cfg = AppConfig::new(&utils::get_os(), None);
-        if utils::get_os() == "linux" {
-            assert!(cfg.path_in("/bin/", "", cfg.monitor.clone()));
-            assert!(cfg.path_in("/bin", "", cfg.monitor.clone()));
-            assert!(cfg.path_in("/bin/test", "", cfg.monitor.clone()));
-            assert!(!cfg.path_in("/test", "", cfg.monitor.clone()));
-            // Add test of audit loaded config.
-            //assert!(cfg.path_in("/tmp", "", cfg.audit.clone()));
-            //assert!(cfg.path_in("/tmp/", "", cfg.audit.clone()));
-            //assert!(cfg.path_in("./", "/tmp", cfg.audit.clone()));
-            //assert!(cfg.path_in("./", "/tmp/", cfg.audit.clone()));
-            //assert!(!cfg.path_in("./", "/test", cfg.audit.clone()));
-            //assert!(cfg.path_in("./", "/tmp/test", cfg.audit.clone()));
-        }
+        assert!(cfg.path_in("/bin/", "", cfg.monitor.clone()));
+        assert!(cfg.path_in("/bin", "", cfg.monitor.clone()));
+        assert!(cfg.path_in("/bin/test", "", cfg.monitor.clone()));
+        assert!(!cfg.path_in("/test", "", cfg.monitor.clone()));
     }
 
     // ------------------------------------------------------------------------
 
+    #[cfg(target_os = "linux")]
     #[test]
-    fn test_get_index() {
+    fn test_path_in_audit() {
+        let cfg = AppConfig::new(&utils::get_os(), "test/unit/config/linux/audit_allowed.yml");
+        assert!(cfg.path_in("/tmp", "", cfg.audit.clone()));
+        assert!(cfg.path_in("/tmp/", "", cfg.audit.clone()));
+        assert!(cfg.path_in("./", "/tmp", cfg.audit.clone()));
+        assert!(cfg.path_in("./", "/tmp/", cfg.audit.clone()));
+        assert!(!cfg.path_in("./", "/test", cfg.audit.clone()));
+        assert!(cfg.path_in("./", "/tmp/test", cfg.audit.clone()));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_get_index_monitor() {
         let cfg = AppConfig::new(&utils::get_os(), None);
-        if utils::get_os() == "linux" {
-            assert_eq!(cfg.get_index("/bin/", "", cfg.monitor.clone()), 0);
-            assert_eq!(cfg.get_index("./", "/bin", cfg.monitor.clone()), 0);
-            assert_eq!(cfg.get_index("/usr/bin/", "", cfg.monitor.clone()), 1);
-            assert_eq!(cfg.get_index("/etc", "", cfg.monitor.clone()), 2);
-            assert_eq!(cfg.get_index("/test", "", cfg.monitor.clone()), usize::MAX);
-            assert_eq!(cfg.get_index("./", "/test", cfg.monitor.clone()), usize::MAX);
-            // Add test of audit loaded config.
-            //assert_eq!(cfg.get_index("/tmp", "", cfg.audit.clone()), 0);
-            //assert_eq!(cfg.get_index("/test", "", cfg.audit.clone()), usize::MAX);
-            //assert_eq!(cfg.get_index("./", "/tmp", cfg.audit.clone()), 0);
-            //assert_eq!(cfg.get_index("./", "/test", cfg.audit.clone()), usize::MAX);
-        }
+        assert_eq!(cfg.get_index("/bin/", "", cfg.monitor.clone()), 0);
+        assert_eq!(cfg.get_index("./", "/bin", cfg.monitor.clone()), 0);
+        assert_eq!(cfg.get_index("/usr/bin/", "", cfg.monitor.clone()), 1);
+        assert_eq!(cfg.get_index("/etc", "", cfg.monitor.clone()), 2);
+        assert_eq!(cfg.get_index("/test", "", cfg.monitor.clone()), usize::MAX);
+        assert_eq!(cfg.get_index("./", "/test", cfg.monitor.clone()), usize::MAX);
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_get_index_audit() {
+        let cfg = AppConfig::new(&utils::get_os(), "test/unit/config/linux/audit_allowed.yml");
+        assert_eq!(cfg.get_index("/tmp", "", cfg.audit.clone()), 0);
+        assert_eq!(cfg.get_index("/test", "", cfg.audit.clone()), usize::MAX);
+        assert_eq!(cfg.get_index("./", "/tmp", cfg.audit.clone()), 0);
+        assert_eq!(cfg.get_index("./", "/test", cfg.audit.clone()), usize::MAX);
     }
 
     // ------------------------------------------------------------------------
@@ -1321,13 +1328,22 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
+    #[cfg(target_os = "linux")]
     #[test]
-    fn test_match_ignore() {
+    fn test_match_ignore_monitor() {
         let cfg = AppConfig::new(&utils::get_os(), None);
-        if utils::get_os() == "linux" {
-            assert!(cfg.match_ignore(3, "file.swp", cfg.monitor.clone()));
-            assert!(!cfg.match_ignore(0, "file.txt", cfg.monitor.clone()));
-        }
+        assert!(cfg.match_ignore(3, "file.swp", cfg.monitor.clone()));
+        assert!(!cfg.match_ignore(0, "file.txt", cfg.monitor.clone()));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_match_ignore_audit() {
+        let cfg = AppConfig::new(&utils::get_os(), None);
+        assert!(cfg.match_ignore(0, "file.swp", cfg.audit.clone()));
+        assert!(!cfg.match_ignore(0, "file.txt", cfg.audit.clone()));
     }
 
     // ------------------------------------------------------------------------

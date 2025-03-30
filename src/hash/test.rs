@@ -131,6 +131,7 @@ fn test_get_checksum_over_limit() {
     let checksum = get_checksum(filename.clone(), 0, ShaType::Sha224);
     let partial_checksum = get_partial_checksum(filename.clone(), ShaType::Sha224);
     assert_eq!(partial_checksum, checksum);
+    remove_test_file(filename.clone());
 }
 
 // ------------------------------------------------------------------------

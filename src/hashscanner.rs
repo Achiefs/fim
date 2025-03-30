@@ -34,6 +34,10 @@ pub fn scan_path(cfg: AppConfig, root: String) {
 
 // ----------------------------------------------------------------------------
 
+/// This function iterate over the files on `root` directory
+/// If hash or permissions of a file change it should trigger a HashEvent
+/// Just in case the first scan after reboot or a hash change between scans
+/// It also updates the DBFile definition in the DB
 pub async fn check_path(cfg: AppConfig, root: String, first_scan: bool) {
     let db = db::DB::new();
     for res in WalkDir::new(root) {
@@ -90,6 +94,8 @@ pub async fn check_path(cfg: AppConfig, root: String, first_scan: bool) {
 
 // ----------------------------------------------------------------------------
 
+/// This function update the DB in case files were removed from given path
+/// In case changes were detected, it trigger hashEvents on first scan after reboot
 pub async fn update_db(cfg: AppConfig, root: String, first_scan: bool) {
     let db = db::DB::new();
 
