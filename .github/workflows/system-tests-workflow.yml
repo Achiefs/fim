@@ -57,7 +57,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Add cargo to the PATH
-        run: echo "$HOME/.cargo/bin/cargo" >> "$GITHUB_PATH"
+        run: echo "/home/okynos/.cargo/bin" >> "$GITHUB_PATH"
 
       - name: Build FIM
         run: cargo build --release
