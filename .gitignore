@@ -14,3 +14,4 @@ fim.db
 *.log
 Not_defined
 tmp/
+.DS_Store
