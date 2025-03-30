@@ -48,7 +48,7 @@ fn test_new() {
 #[serial]
 /// Check open of new DB changes, it should be 0
 fn test_open() {
-    let tdb = DB::new("tmp/fim.db");
+    let tdb = DB::new("fim.db");
     let connection = tdb.open();
 
     assert_eq!(connection.changes(), 0);
@@ -60,7 +60,7 @@ fn test_open() {
 #[serial]
 /// Check close of new DB, it should not panic
 fn test_close() {
-    let tdb = DB::new("tmp/fim.db");
+    let tdb = DB::new("fim.db");
     let connection = tdb.open();
     tdb.close(connection);
 }
@@ -71,7 +71,7 @@ fn test_close() {
 #[serial]
 /// Check DB emptiness, it should be empty on first check and not empty in second
 fn test_is_empty() {
-    let db_path = "tmp/fim.db";
+    let db_path = "fim.db";
     let tdb = DB::new(db_path);
     
     remove_db(db_path);
@@ -87,7 +87,7 @@ fn test_is_empty() {
 #[serial]
 /// Check DB table creation, pragma query should obtain first row of schema (id)
 fn test_create_table() {
-    let db_path = "tmp/fim.db";
+    let db_path = "fim.db";
     let tdb = DB::new(db_path);
     
     remove_db(db_path);
@@ -116,7 +116,7 @@ fn test_create_table() {
 #[serial]
 /// Check DB insertion, the data in DB should be the same as inserted object
 fn test_insert_file() {
-    let db_path = "tmp/fim.db";
+    let db_path = "fim.db";
     let tdb = DB::new(db_path);
     
     remove_db(db_path);
@@ -152,7 +152,7 @@ fn test_insert_file() {
 #[serial]
 /// Check dbfile retrieve from DB, the retrieved file should match fields with original
 fn test_get_file_by_path() {
-    let db_path = "tmp/fim.db";
+    let db_path = "fim.db";
     let tdb = DB::new(db_path);
     let original_dbfile = get_dbfile();
     
@@ -176,7 +176,7 @@ fn test_get_file_by_path() {
 /// Check list retrieve of same main path files.
 /// It should contains the list of files with matching attributes
 fn test_get_file_list() {
-    let db_path = "tmp/fim.db";
+    let db_path = "fim.db";
     let tdb = DB::new(db_path);
     let dbfile0 = DBFile{
         id: String::from("ID0"),
@@ -260,7 +260,7 @@ fn test_update_file() {
 #[serial]
 /// Check DBFile delete from DB, it should return QueryReturnedNoRows result on query
 fn test_delete_file() {
-    let db_path = "tmp/fim.db";
+    let db_path = "fim.db";
     let tdb = DB::new(db_path);
     let dbfile = get_dbfile();
 

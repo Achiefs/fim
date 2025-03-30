@@ -12,6 +12,10 @@ events:
 monitor:
   - path: /test
 
+# Database for files checksum storage
+hashscanner:
+  file: C:\ProgramData\fim\fim.db
+
 # App procedure and errors logging
 log:
   file: /test

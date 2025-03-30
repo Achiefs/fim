@@ -321,7 +321,7 @@ impl AppConfig {
             Some(value) => String::from(value),
             None => {
                 println!("[ERROR] hashscanner->file not found in config.yml.");
-                String::from("Not_defined")
+                panic!("hashscanner->file not found in config.yml.");
             }
         };
 
