@@ -44,7 +44,7 @@ pub fn init() -> (AppConfig, Ruleset) {
 
     let ruleset = Ruleset::new(utils::get_os(), None);
 
-    let db = db::DB::new();
+    let db = db::DB::new(&cfg.hashscanner_file);
     db.create_table();
     println!("[INFO] Database created.");
 

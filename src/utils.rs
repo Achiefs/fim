@@ -266,7 +266,10 @@ pub fn get_audit_rule_permissions(value: Option<&str>) -> String {
 // ----------------------------------------------------------------------------
 
 pub fn run_auditctl(args: &[&str]) {
-    match Command::new("/usr/sbin/auditctl")
+    let auditctl_path = if Path::new("/usr/sbin/auditctl").exists() { "/usr/sbin/auditctl"
+    } else { "/sbin/auditctl" };
+
+    match Command::new(auditctl_path)
     .args(args)
     .output()
     {

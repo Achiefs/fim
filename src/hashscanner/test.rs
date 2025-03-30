@@ -10,12 +10,11 @@ use crate::db::DB;
 
 // ----------------------------------------------------------------------------
 
-fn remove_db() {
+fn remove_db(path: &str) {
     use std::fs::remove_file;
-    let tdb = DB::new();
 
-    if Path::new(&tdb.clone().path).exists() {
-        match remove_file(tdb.clone().path){
+    if Path::new(path).exists() {
+        match remove_file(path){
             Ok(_v) => (),
             Err(e) => println!("Error deleting db, {}", e)
         };
@@ -29,8 +28,8 @@ fn remove_db() {
 #[cfg(target_family = "unix")]
 /// Check dir scan result, DB should contains a DBFile definition with the given filepath
 fn test_scan_path_unix() {
-    let tdb = DB::new();
     let cfg = AppConfig::new(&utils::get_os(), None);
+    let tdb = DB::new(&cfg.hashscanner_file);
     let scan_dir = String::from("./tmp/test_scan_path");
     let filepath = format!("{}/{}", scan_dir.clone(), "test_scan_path.txt");
     let _ = create_dir_all(scan_dir.clone());
@@ -40,7 +39,7 @@ fn test_scan_path_unix() {
         Err(e) => panic!("Could not create test file, error: '{}'", e)
     };
 
-    remove_db();
+    remove_db(&cfg.hashscanner_file);
     tdb.create_table();
     scan_path(cfg.clone(), scan_dir.clone());
 
@@ -58,8 +57,8 @@ fn test_scan_path_unix() {
 #[cfg(target_family = "unix")]
 /// Check that modify a file is reflected in DB, it should modify the size and hash of DBFile
 fn test_check_path() {
-    let tdb = DB::new();
     let cfg = AppConfig::new(&utils::get_os(), None);
+    let tdb = DB::new(&cfg.hashscanner_file);
     let scan_dir = String::from("./tmp/test_check_path");
     let filepath = format!("{}/{}", scan_dir.clone(), "test_check_path.txt");
     let _ = create_dir_all(scan_dir.clone());
@@ -69,7 +68,7 @@ fn test_check_path() {
         Err(e) => panic!("Could not create test file, error: '{}'", e)
     };
 
-    remove_db();
+    remove_db(&cfg.hashscanner_file);
     tdb.create_table();
     scan_path(cfg.clone(), scan_dir.clone());
     let _result = writeln!(_file, "{}", "This is an additional line.");
@@ -90,8 +89,8 @@ fn test_check_path() {
 #[should_panic(expected = "DBFileNotFoundError")]
 /// Check file deletion of filesystem and DB, it should panic with DBFileNotFoundError
 fn test_update_db() {
-    let tdb = DB::new();
     let cfg = AppConfig::new(&utils::get_os(), None);
+    let tdb = DB::new(&cfg.hashscanner_file);
     let scan_dir = String::from("./tmp/test_update_db");
     let filepath = format!("{}/{}", scan_dir.clone(), "test_update_db.txt");
     let filepath2 = format!("{}/{}", scan_dir.clone(), "test_update_db2.txt");
@@ -106,7 +105,7 @@ fn test_update_db() {
         Err(e) => panic!("Could not create test file, error: '{}'", e)
     };
 
-    remove_db();
+    remove_db(&cfg.hashscanner_file);
     tdb.create_table();
     scan_path(cfg.clone(), scan_dir.clone());
     fs::remove_file(filepath.clone()).unwrap();

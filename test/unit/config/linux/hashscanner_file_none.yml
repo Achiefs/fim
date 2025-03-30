@@ -2,27 +2,25 @@ node: "FIM"
 
 # Events configuration, where to store produced events
 events:
-  checksum_algorithm: "512"
   destination: file
   file: /var/lib/fim/events.json
 
-# Monitor files and folders.
+# Audit extended files and folders information
+audit:
+  - path: /tmp
+    labels: ["tmp", "linux"]
+    ignore: [".swp"]
+
+# Simple files and folders information
 monitor:
-#  - path: /Users/okynos/Documents/git/fim_test_short
-  - path: /tmp/
   - path: /bin/
   - path: /usr/bin/
-    labels: ["usr/bin", "macos"]
+    labels: ["usr/bin", "linux"]
   - path: /etc
-    labels: ["etc", "macos"]
-
-# Database for files checksum storage
-hashscanner:
-  file: /var/lib/fim/fim.db
+    labels: ["etc", "linux"]
 
 # App procedure and errors logging
 log:
   file: /var/log/fim/fim.log
   # Available levels [debug, info, error, warning]
-#  level: debug
   level: info

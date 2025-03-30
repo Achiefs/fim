@@ -1,14 +1,16 @@
 use super::*;
 use serial_test::serial;
+use std::path::Path;
+
+use crate::utils;
 
 // ----------------------------------------------------------------------------
 
-fn remove_db() {
+fn remove_db(path: &str) {
     use std::fs::remove_file;
-    let tdb = DB::new();
 
-    if Path::new(&tdb.clone().path).exists() {
-        match remove_file(tdb.clone().path){
+    if Path::new(path).exists() {
+        match remove_file(path){
             Ok(_v) => (),
             Err(e) => println!("Error deleting db, {}", e)
         };
@@ -34,11 +36,10 @@ fn get_dbfile() -> DBFile {
 #[serial]
 /// Check new instance creation, the instance should match the expected DB path.
 fn test_new() {
-    let new_db = DB::new();
-    let mut path = Path::new(&appconfig::get_config_path(utils::get_os())).parent().unwrap().to_path_buf();
-    path.push(super::DBNAME);
+    let cfg = AppConfig::new(&utils::get_os(), None);
+    let tdb = DB::new(&cfg.hashscanner_file);
 
-    assert_eq!(new_db.path, path.to_str().unwrap());
+    assert_eq!(tdb.path, cfg.hashscanner_file);
 }
 
 // ------------------------------------------------------------------------
@@ -47,7 +48,7 @@ fn test_new() {
 #[serial]
 /// Check open of new DB changes, it should be 0
 fn test_open() {
-    let tdb = DB::new();
+    let tdb = DB::new("tmp/fim.db");
     let connection = tdb.open();
 
     assert_eq!(connection.changes(), 0);
@@ -59,7 +60,7 @@ fn test_open() {
 #[serial]
 /// Check close of new DB, it should not panic
 fn test_close() {
-    let tdb = DB::new();
+    let tdb = DB::new("tmp/fim.db");
     let connection = tdb.open();
     tdb.close(connection);
 }
@@ -70,9 +71,10 @@ fn test_close() {
 #[serial]
 /// Check DB emptiness, it should be empty on first check and not empty in second
 fn test_is_empty() {
-    let tdb = DB::new();
+    let db_path = "tmp/fim.db";
+    let tdb = DB::new(db_path);
     
-    remove_db();
+    remove_db(db_path);
     assert_eq!(tdb.is_empty(), true);
     tdb.create_table();
     tdb.insert_file(get_dbfile());
@@ -85,9 +87,10 @@ fn test_is_empty() {
 #[serial]
 /// Check DB table creation, pragma query should obtain first row of schema (id)
 fn test_create_table() {
-    let tdb = DB::new();
+    let db_path = "tmp/fim.db";
+    let tdb = DB::new(db_path);
     
-    remove_db();
+    remove_db(db_path);
     tdb.create_table();
 
     let connection = tdb.open();
@@ -113,9 +116,10 @@ fn test_create_table() {
 #[serial]
 /// Check DB insertion, the data in DB should be the same as inserted object
 fn test_insert_file() {
-    let tdb = DB::new();
+    let db_path = "tmp/fim.db";
+    let tdb = DB::new(db_path);
     
-    remove_db();
+    remove_db(db_path);
     tdb.create_table();
     tdb.insert_file(get_dbfile());
 
@@ -148,10 +152,11 @@ fn test_insert_file() {
 #[serial]
 /// Check dbfile retrieve from DB, the retrieved file should match fields with original
 fn test_get_file_by_path() {
-    let tdb = DB::new();
+    let db_path = "tmp/fim.db";
+    let tdb = DB::new(db_path);
     let original_dbfile = get_dbfile();
     
-    remove_db();
+    remove_db(db_path);
     tdb.create_table();
     tdb.insert_file(original_dbfile.clone());
 
@@ -171,7 +176,8 @@ fn test_get_file_by_path() {
 /// Check list retrieve of same main path files.
 /// It should contains the list of files with matching attributes
 fn test_get_file_list() {
-    let tdb = DB::new();
+    let db_path = "tmp/fim.db";
+    let tdb = DB::new(db_path);
     let dbfile0 = DBFile{
         id: String::from("ID0"),
         timestamp: String::from("TIMESTAMP0"),
@@ -189,7 +195,7 @@ fn test_get_file_list() {
         permissions: 1
     };
     
-    remove_db();
+    remove_db(db_path);
     tdb.create_table();
     tdb.insert_file(dbfile0.clone());
     tdb.insert_file(dbfile1.clone());
@@ -219,7 +225,7 @@ fn test_get_file_list() {
 /// It should differ in calculated fields (timestamp, hash, size, permissions)
 fn test_update_file() {
     let cfg = AppConfig::new(&utils::get_os(), None);
-    let tdb = DB::new();
+    let tdb = DB::new(&cfg.hashscanner_file);
     let original_dbfile = get_dbfile();
     let new_dbfile = DBFile {
         id: String::from("ID"),
@@ -230,7 +236,7 @@ fn test_update_file() {
         permissions: 321,
     };
 
-    remove_db();
+    remove_db(&cfg.hashscanner_file);
     tdb.create_table();
     tdb.insert_file(original_dbfile.clone());
     let result = tdb.update_file(cfg, new_dbfile.clone());
@@ -254,10 +260,11 @@ fn test_update_file() {
 #[serial]
 /// Check DBFile delete from DB, it should return QueryReturnedNoRows result on query
 fn test_delete_file() {
-    let tdb = DB::new();
+    let db_path = "tmp/fim.db";
+    let tdb = DB::new(db_path);
     let dbfile = get_dbfile();
 
-    remove_db();
+    remove_db(db_path);
     tdb.create_table();
     tdb.insert_file(dbfile.clone());
     let delete_result = tdb.delete_file(dbfile.clone());

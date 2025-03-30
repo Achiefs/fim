@@ -50,6 +50,7 @@ pub struct AppConfig {
     pub insecure: bool,
     pub events_lock: Arc<Mutex<bool>>,
     pub log_lock: Arc<Mutex<bool>>,
+    pub hashscanner_file: String,
     pub hashscanner_enabled: bool,
     pub hashscanner_interval: usize,
     pub hashscanner_algorithm: ShaType,
@@ -83,6 +84,7 @@ impl AppConfig {
             insecure: self.insecure,
             events_lock: self.events_lock.clone(),
             log_lock: self.log_lock.clone(),
+            hashscanner_file: self.hashscanner_file.clone(),
             hashscanner_enabled: self.hashscanner_enabled,
             hashscanner_interval: self.hashscanner_interval,
             hashscanner_algorithm: self.hashscanner_algorithm.clone(),
@@ -314,6 +316,15 @@ impl AppConfig {
             None => 64
         };
 
+        // Manage null value on hashscanner->file value
+        let hashscanner_file = match yaml[0]["hashscanner"]["file"].as_str() {
+            Some(value) => String::from(value),
+            None => {
+                println!("[ERROR] hashscanner->file not found in config.yml.");
+                String::from("Not_defined")
+            }
+        };
+
         let hashscanner_interval = match yaml[0]["hashscanner"]["interval"].as_i64() {
             Some(value) => {
                 let interval = usize::try_from(value).unwrap();
@@ -348,6 +359,7 @@ impl AppConfig {
             insecure,
             events_lock: Arc::new(Mutex::new(false)),
             log_lock: Arc::new(Mutex::new(false)),
+            hashscanner_file,
             hashscanner_enabled,
             hashscanner_interval,
             hashscanner_algorithm,
@@ -594,6 +606,7 @@ mod tests {
             insecure: true,
             events_lock: Arc::new(Mutex::new(false)),
             log_lock: Arc::new(Mutex::new(false)),
+            hashscanner_file: String::from("test"),
             hashscanner_enabled: true,
             hashscanner_interval: 3600,
             hashscanner_algorithm: ShaType::Sha256,
@@ -626,6 +639,7 @@ mod tests {
         assert_eq!(cfg.log_max_file_size, cloned.log_max_file_size);
         assert_eq!(cfg.system, cloned.system);
         assert_eq!(cfg.insecure, cloned.insecure);
+        assert_eq!(cfg.hashscanner_file, cloned.hashscanner_file);
         assert_eq!(cfg.hashscanner_enabled, cloned.hashscanner_enabled);
         assert_eq!(cfg.hashscanner_interval, cloned.hashscanner_interval);
         assert_eq!(cfg.hashscanner_algorithm, cloned.hashscanner_algorithm);
@@ -657,6 +671,7 @@ mod tests {
         assert_eq!(cfg.log_max_file_size, 64);
         assert_eq!(cfg.system, String::from("windows"));
         assert_eq!(cfg.insecure, false);
+        assert_eq!(cfg.hashscanner_file, format!("{}:\\ProgramData\\fim\\fim.db", disk) );
         assert_eq!(cfg.hashscanner_enabled, true);
         assert_eq!(cfg.hashscanner_interval, 3600);
         assert_eq!(cfg.hashscanner_algorithm, ShaType::Sha256);
@@ -670,6 +685,15 @@ mod tests {
     fn test_new_config_windows_events_destination() {
         let cfg = AppConfig::new("windows", Some("test/unit/config/windows/events_destination_none.yml"));
         assert_eq!(cfg.events_destination, String::from("file"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    #[should_panic]
+    fn test_new_config_windows_hashscanner_file() {
+        AppConfig::new("windows", Some("test/unit/config/windows/hashscanner_file_none.yml"));
     }
 
     // ------------------------------------------------------------------------
@@ -841,6 +865,15 @@ mod tests {
     fn test_new_config_linux_events_destination() {
         let cfg = AppConfig::new("linux", Some("test/unit/config/linux/events_destination_none.yml"));
         assert_eq!(cfg.events_destination, String::from("file"));
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    #[should_panic]
+    fn test_new_config_linux_hashscanner_file() {
+        AppConfig::new("linux", Some("test/unit/config/linux/hashscanner_file_none.yml"));
     }
 
     // ------------------------------------------------------------------------
@@ -1050,6 +1083,7 @@ mod tests {
             assert_eq!(cfg.log_max_file_size, 64);
             assert_eq!(cfg.system, String::from("linux"));
             assert_eq!(cfg.insecure, false);
+            assert_eq!(cfg.hashscanner_file, String::from("/var/lib/fim/fim.db"));
             assert_eq!(cfg.hashscanner_enabled, true);
             assert_eq!(cfg.hashscanner_interval, 3600);
             assert_eq!(cfg.hashscanner_algorithm, ShaType::Sha256);
@@ -1079,6 +1113,7 @@ mod tests {
         assert_eq!(cfg.log_max_file_size, 64);
         assert_eq!(cfg.system, String::from("macos"));
         assert_eq!(cfg.insecure, false);
+        assert_eq!(cfg.hashscanner_file, String::from("/var/lib/fim/fim.db"));
         assert_eq!(cfg.hashscanner_enabled, true);
         assert_eq!(cfg.hashscanner_interval, 3600);
         assert_eq!(cfg.hashscanner_algorithm, ShaType::Sha256);

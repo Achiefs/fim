@@ -1,16 +1,11 @@
 // Copyright (C) 2024, Achiefs.
 
-use crate::appconfig;
-use crate::utils;
 use crate::dbfile::*;
 use crate::appconfig::AppConfig;
 
 use rusqlite::{Connection, Error, params};
 use rusqlite::Error::QueryReturnedNoRows;
-use std::path::Path;
 use log::*;
-
-pub const DBNAME: &str = "fim.db";
 
 #[derive(Clone)]
 pub struct DB {
@@ -24,13 +19,9 @@ mod test;
 
 impl DB {
     /// Create a new db object
-    pub fn new() -> DB {
-        let mut config_folder = Path::new(&appconfig::get_config_path(utils::get_os()))
-        .parent().unwrap().to_path_buf();
-        config_folder.push(DBNAME);
-
+    pub fn new(path: &str) -> DB {
         DB {
-            path: String::from(config_folder.to_str().unwrap()),
+            path: String::from(path),
         }
     }
 
@@ -45,7 +36,7 @@ impl DB {
             }
             Err(e) => {
                 error!("Database cannot be opened, Err: [{}]", e);
-                info!("Please, check if {} is locked or in use.", DBNAME);
+                info!("Please, check if {} is locked or in use.", self.path);
                 panic!();
             }
         }

@@ -20,7 +20,7 @@ mod test;
 // ----------------------------------------------------------------------------
 
 pub fn scan_path(cfg: AppConfig, root: String) {
-    let db = db::DB::new();
+    let db = db::DB::new(&cfg.hashscanner_file);
     for res in WalkDir::new(root) {
         let entry = res.unwrap();
         let metadata = entry.metadata().unwrap();
@@ -39,7 +39,7 @@ pub fn scan_path(cfg: AppConfig, root: String) {
 /// Just in case the first scan after reboot or a hash change between scans
 /// It also updates the DBFile definition in the DB
 pub async fn check_path(cfg: AppConfig, root: String, first_scan: bool) {
-    let db = db::DB::new();
+    let db = db::DB::new(&cfg.hashscanner_file);
     for res in WalkDir::new(root) {
         let entry = res.unwrap();
         let metadata = entry.metadata().unwrap();
@@ -97,7 +97,7 @@ pub async fn check_path(cfg: AppConfig, root: String, first_scan: bool) {
 /// This function update the DB in case files were removed from given path
 /// In case changes were detected, it trigger hashEvents on first scan after reboot
 pub async fn update_db(cfg: AppConfig, root: String, first_scan: bool) {
-    let db = db::DB::new();
+    let db = db::DB::new(&cfg.hashscanner_file);
 
     let db_list = db.get_file_list(root.clone());
     let path_list = utils::get_fs_list(root);
@@ -133,7 +133,7 @@ pub async fn update_db(cfg: AppConfig, root: String, first_scan: bool) {
 
 #[cfg(not(tarpaulin_include))]
 pub fn scan(cfg: AppConfig) {
-    let db = db::DB::new();
+    let db = db::DB::new(&cfg.hashscanner_file);
     let rt = Runtime::new().unwrap();
     let interval = cfg.clone().hashscanner_interval;
     let mut first_scan = true;
