@@ -15,10 +15,19 @@ pub fn init() -> (AppConfig, Ruleset) {
     println!("[INFO] Reading config...");
     let cfg = AppConfig::new(utils::get_os(), None);
 
-    // Create folders to store logs based on config.yml
+    // Create folder to store events based on config.yml
     fs::create_dir_all(
-        Path::new( &cfg.clone().log_file
-        ).parent().unwrap().to_str().unwrap()
+        Path::new(&cfg.clone().events_file).parent().unwrap().to_str().unwrap()
+    ).unwrap();
+
+    // Create folder to store logs based on config.yml
+    fs::create_dir_all(
+        Path::new(&cfg.clone().log_file).parent().unwrap().to_str().unwrap()
+    ).unwrap();
+
+    // Create folder to store DB based on config.yml
+    fs::create_dir_all(
+        Path::new(&cfg.clone().hashscanner_file).parent().unwrap().to_str().unwrap()
     ).unwrap();
 
   // Modify the logger configuration
