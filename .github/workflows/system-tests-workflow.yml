@@ -78,7 +78,7 @@ jobs:
         run: sudo mkdir -p /var/log/fim/ && sudo touch /var/log/fim/fim.log && sudo chown -R okynos:okynos /var/log/fim
 
       - name: Start FIM process
-        run: sudo ./fim &
+        run: RUNNER_TRACKING_ID="" && sudo ./fim & # Avoid Github runner to kill the process
 
       - name: Check FIM running
         run: sleep 5 && ps a | grep fim | grep -v grep
