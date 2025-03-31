@@ -60,7 +60,19 @@
       "source": { "type": "keyword" },
       "parent_id": { "type": "keyword" },
       "message": { "type": "keyword" },
-      "rule": { "type": "keyword" }
+      "rule": { "type": "keyword" },
+      "dbfile.hash": { "type": "keyword" },
+      "dbfile.id": { "type": "keyword" },
+      "dbfile.path": { "type": "keyword" },
+      "dbfile.permissions": { "type": "keyword" },
+      "dbfile.size": { "type": "long" },
+      "dbfile.timestamp": { "type": "date" },
+      "previous_dbfile.hash": { "type": "keyword" },
+      "previous_dbfile.id": { "type": "keyword" },
+      "previous_dbfile.path": { "type": "keyword" },
+      "previous_dbfile.permissions": { "type": "keyword" },
+      "previous_dbfile.size": { "type": "long" },
+      "previous_dbfile.timestamp": { "type": "date" }
     }
   },
   "settings": {
@@ -126,7 +138,19 @@
           "source",
           "parent_id",
           "message",
-          "rule"
+          "rule",
+          "dbfile.hash",
+          "dbfile.id",
+          "dbfile.path",
+          "dbfile.permissions",
+          "dbfile.size",
+          "dbfile.timestamp",
+          "previous_dbfile.hash",
+          "previous_dbfile.id",
+          "previous_dbfile.path",
+          "previous_dbfile.permissions",
+          "previous_dbfile.size",
+          "previous_dbfile.timestamp"
         ]
       }
     }

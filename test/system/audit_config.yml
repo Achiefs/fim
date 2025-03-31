@@ -21,6 +21,7 @@ monitor:
 
 hashscanner:
   enabled: false
+  file: /var/lib/fim/fim.db
 
 # App procedure and errors logging
 log:
