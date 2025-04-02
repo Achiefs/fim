@@ -26,15 +26,22 @@ jobs:
       - run: echo "Job's status is ${{ job.status }}."
 
   Pkg-build-ubuntu16:
-    runs-on: [self-hosted, ubuntu18]
+    runs-on:
+      group: Default
     steps:
       - name: Check out code
         uses: actions/checkout@v2
       - name: Ubuntu 16.04 - Package build
-        run: sudo docker run --rm okynos/fim-builder:xenial ${{ github.ref_name }}
+        run: sudo docker run -v /tmp/${{ github.sha }}:/tmp/output --rm okynos/fim-builder:xenial ${{ github.ref_name }}
+      - name: Archive output package
+        uses: actions/upload-artifact@v4
+        with:
+          name: fim_${{ github.sha }}_amd64.deb
+          path: /tmp/${{ github.sha }}/fim*.deb
 
   Pkg-build-centos7:
-    runs-on: [self-hosted, ubuntu18]
+    runs-on:
+      group: Default
     steps:
       - name: Check out code
         uses: actions/checkout@v2

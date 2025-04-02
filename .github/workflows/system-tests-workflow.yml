@@ -1,5 +1,9 @@
 name: System tests
-on: [push]
+on:
+  workflow_run:
+    workflows: ["Pkg build"]
+    types:
+      - completed
 jobs:
   monitor-system-tests-unix:
     runs-on: ubuntu-20.04
@@ -48,42 +52,40 @@ jobs:
 
 
   audit-system-tests-ubuntu18:
-    runs-on: [self-hosted, ubuntu18]
+    runs-on:
+      group: Default
+      labels: ubuntu18
 
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
 
-      - name: Build FIM
-        run: cargo build --release
+      - name: Download pre-build FIM package
+        uses: actions/download-artifact@v4
+        with:
+          name: fim_${{ github.sha }}_amd64.deb
+      
+      - name: Installing FIM package
+        run: sudo dpkg --install ./fim*.deb
 
-      - name: Change configuration
-        run: sed -i 's|/tmp|/tmp/test|g' config/linux/config.yml
-
-      - name: Copy FIM binary to main folder
-        run: cp ./target/release/fim ./
+      - name: Copy configuration
+        run: cp -f test/system/audit_config.yml /etc/fim/config.yml
 
       - name: Create required directories
         run: mkdir -p /tmp/test
 
-      - name: Create events file and folder
-        run: sudo mkdir -p /var/lib/fim/ && sudo touch /var/lib/fim/events.json && sudo chown -R okynos:okynos /var/lib/fim
-
-      - name: Create log file and folder
-        run: sudo mkdir -p /var/log/fim/ && sudo touch /var/log/fim/fim.log && sudo chown -R okynos:okynos /var/log/fim
-
       - name: Start FIM process
-        run: sudo ./fim &
+        run: sudo systemctl start fim
 
       - name: Check FIM running
-        run: sleep 5 && ps a | grep fim | grep -v grep
+        run: sudo systemctl status fim | grep running
 
       - name: Launch test suite
         run: sudo python3 -m pytest test/system/audit.py -v
 
       - name: Print config file
         if: always()
-        run: cat ${{ github.workspace }}/config/linux/config.yml || true
+        run: cat /etc/fim/config.yml || true
 
       - name: Print log file
         if: always()
@@ -91,7 +93,11 @@ jobs:
 
       - name: Stop FIM process
         if: always()
-        run: sudo pkill fim || true
+        run: sudo systemctl stop fim
+
+      - name: Remove FIM package installation
+        if: always()
+        run: sudo dpkg --purge fim
 
       - name: Clean temporal folder
         if: always()
@@ -117,7 +123,8 @@ jobs:
 
 
   audit-system-tests-centos7:
-    runs-on: [self-hosted, centos7]
+    runs-on:
+      group: centos7
     env:
       repodir: ${{ github.workspace }}/${{ github.run_id }}
 
@@ -129,8 +136,8 @@ jobs:
         run: /home/okynos/.cargo/bin/cargo build --release
         working-directory: ${{ github.run_id }}
 
-      - name: Change configuration
-        run: sed -i 's|/tmp|/tmp/test|g' config/linux/config.yml
+      - name: Copy configuration
+        run: cp -f test/system/audit_config.yml config/linux/config.yml
         working-directory: ${{ github.run_id }}
 
       - name: Copy FIM binary to main folder
