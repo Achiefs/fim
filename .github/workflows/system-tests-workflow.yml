@@ -1,5 +1,9 @@
 name: System tests
-on: [push]
+on:
+  workflow_run:
+    workflows: ["Pkg build"]
+    types:
+      - completed
 jobs:
   monitor-system-tests-unix:
     runs-on: ubuntu-20.04
@@ -56,39 +60,32 @@ jobs:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
 
-      - name: Add cargo to the PATH
-        run: echo "/home/okynos/.cargo/bin" >> "$GITHUB_PATH"
-
-      - name: Build FIM
-        run: cargo build --release
+      - name: Download pre-build FIM package
+        uses: actions/download-artifact@v4
+        with:
+          name: fim_${{ github.sha }}_amd64.deb
+      
+      - name: Installing FIM package
+        run: sudo dpkg --install ./fim*.deb
 
       - name: Copy configuration
-        run: cp -f test/system/audit_config.yml config/linux/config.yml
-
-      - name: Copy FIM binary to main folder
-        run: cp ./target/release/fim ./
+        run: cp -f test/system/audit_config.yml /etc/fim/config.yml
 
       - name: Create required directories
         run: mkdir -p /tmp/test
 
-      - name: Create events file and folder
-        run: sudo mkdir -p /var/lib/fim/ && sudo touch /var/lib/fim/events.json && sudo chown -R okynos:okynos /var/lib/fim
-
-      - name: Create log file and folder
-        run: sudo mkdir -p /var/log/fim/ && sudo touch /var/log/fim/fim.log && sudo chown -R okynos:okynos /var/log/fim
-
       - name: Start FIM process
-        run: RUNNER_TRACKING_ID="" && (sudo nohup ./fim &) # Avoid Github runner to kill the process
+        run: sudo systemctl start fim
 
       - name: Check FIM running
-        run: sleep 5 && ps a | grep fim | grep -v grep
+        run: sudo systemctl status fim | grep running
 
       - name: Launch test suite
         run: sudo python3 -m pytest test/system/audit.py -v
 
       - name: Print config file
         if: always()
-        run: cat ${{ github.workspace }}/config/linux/config.yml || true
+        run: cat /etc/fim/config.yml || true
 
       - name: Print log file
         if: always()
@@ -96,7 +93,11 @@ jobs:
 
       - name: Stop FIM process
         if: always()
-        run: sudo pkill fim || true
+        run: sudo systemctl stop fim
+
+      - name: Remove FIM package installation
+        if: always()
+        run: sudo dpkg --purge fim
 
       - name: Clean temporal folder
         if: always()
