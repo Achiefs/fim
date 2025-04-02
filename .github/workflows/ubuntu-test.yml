@@ -16,6 +16,7 @@ jobs:
         with:
           name: fim_${{ github.sha }}_amd64.deb
           path: /tmp/${{ github.sha }}/fim*.deb
+          retention-days: 5
   
   Audit_tests:
     needs: Package_build
@@ -44,8 +45,8 @@ jobs:
       - name: Restart Audit daemon
         run: sudo systemctl start auditd
         
-      - name: Start FIM process
-        run: sudo systemctl start fim
+      - name: Restart FIM process to load new configuration
+        run: sudo systemctl restart fim
 
       - name: Check FIM running
         run: sudo systemctl status fim | grep running
