@@ -32,7 +32,12 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
       - name: Ubuntu 16.04 - Package build
-        run: sudo docker run --rm okynos/fim-builder:xenial ${{ github.ref_name }}
+        run: sudo docker run -v /tmp/$GITHUB_SHA:/tmp/output --rm okynos/fim-builder:xenial ${{ github.ref_name }}
+      - name: Archive output package
+        uses: actions/upload-artifact@v4
+        with:
+          name: fim_$GITHUB_SHA_amd64.deb
+          path: /tmp/$GITHUB_SHA/fim*.deb
 
   Pkg-build-centos7:
     runs-on:
