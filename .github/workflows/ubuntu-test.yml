@@ -41,6 +41,9 @@ jobs:
       - name: Create required directories
         run: mkdir -p /tmp/test
 
+      - name: Restart Audit daemon
+        run: sudo systemctl start auditd
+        
       - name: Start FIM process
         run: sudo systemctl start fim
 
