@@ -18,6 +18,7 @@ jobs:
           path: /tmp/${{ github.sha }}/fim*.deb
   
   Audit_tests:
+    needs: Package_build
     runs-on:
       group: Default
       labels: ubuntu18
@@ -35,7 +36,7 @@ jobs:
         run: sudo dpkg --install ./fim*.deb
 
       - name: Copy configuration
-        run: cp -f test/system/audit_config.yml /etc/fim/config.yml
+        run: sudo cp -f test/system/audit_config.yml /etc/fim/config.yml
 
       - name: Create required directories
         run: mkdir -p /tmp/test
