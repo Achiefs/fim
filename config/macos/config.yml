@@ -2,13 +2,11 @@ node: "FIM"
 
 # Events configuration, where to store produced events
 events:
-  checksum_algorithm: "512"
   destination: file
   file: /var/lib/fim/events.json
 
 # Monitor files and folders.
 monitor:
-#  - path: /Users/okynos/Documents/git/fim_test_short
   - path: /tmp/
   - path: /bin/
   - path: /usr/bin/
@@ -24,5 +22,4 @@ hashscanner:
 log:
   file: /var/log/fim/fim.log
   # Available levels [debug, info, error, warning]
-#  level: debug
   level: info
