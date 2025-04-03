@@ -1,5 +1,9 @@
 name: System tests
-on: [push]
+on:
+  workflow_run:
+    workflows: ["Pkg build"]
+    types:
+      - completed
 jobs:
   monitor-system-tests-unix:
     runs-on: ubuntu-20.04
