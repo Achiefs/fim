@@ -3,6 +3,7 @@
 use crate::ruleset::Ruleset;
 use crate::appconfig::*;
 use crate::utils;
+use crate::db;
 
 
 pub fn init() -> (AppConfig, Ruleset) {
@@ -10,15 +11,24 @@ pub fn init() -> (AppConfig, Ruleset) {
   use simplelog::{ WriteLogger, ConfigBuilder, format_description };
   use std::fs;
 
-  println!("[INFO] Achiefs File Integrity Monitoring software starting!");
-  println!("[INFO] Reading config...");
-  let cfg = AppConfig::new(utils::get_os(), None);
+    println!("[INFO] Achiefs File Integrity Monitoring software starting!");
+    println!("[INFO] Reading config...");
+    let cfg = AppConfig::new(utils::get_os(), None);
 
-  // Create folders to store logs based on config.yml
-  fs::create_dir_all(
-      Path::new( &cfg.clone().log_file
-      ).parent().unwrap().to_str().unwrap()
-  ).unwrap();
+    // Create folder to store events based on config.yml
+    fs::create_dir_all(
+        Path::new(&cfg.clone().events_file).parent().unwrap().to_str().unwrap()
+    ).unwrap();
+
+    // Create folder to store logs based on config.yml
+    fs::create_dir_all(
+        Path::new(&cfg.clone().log_file).parent().unwrap().to_str().unwrap()
+    ).unwrap();
+
+    // Create folder to store DB based on config.yml
+    fs::create_dir_all(
+        Path::new(&cfg.clone().hashscanner_file).parent().unwrap().to_str().unwrap()
+    ).unwrap();
 
   // Modify the logger configuration
   let log_config = ConfigBuilder::new()
@@ -37,12 +47,17 @@ pub fn init() -> (AppConfig, Ruleset) {
           .expect("Unable to open log file")
   ).unwrap();
 
-  println!("[INFO] Configuration successfully read, forwarding output to log file.");
-  println!("[INFO] Log file: '{}'", cfg.clone().log_file);
-  println!("[INFO] Log level: '{}'", cfg.clone().log_level);
+    println!("[INFO] Configuration successfully read, forwarding output to log file.");
+    println!("[INFO] Log file: '{}'", cfg.clone().log_file);
+    println!("[INFO] Log level: '{}'", cfg.clone().log_level);
 
-  let ruleset = Ruleset::new(utils::get_os(), None);  
+    let ruleset = Ruleset::new(utils::get_os(), None);
 
-  log_panics::init();
-  (cfg, ruleset)
+    let db = db::DB::new(&cfg.hashscanner_file);
+    db.create_table();
+    println!("[INFO] Database created.");
+
+    println!("[INFO] Any error from this point will be logged in the log file.");
+    log_panics::init();
+    (cfg, ruleset)
 }

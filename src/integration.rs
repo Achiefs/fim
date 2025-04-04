@@ -143,7 +143,7 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    #[cfg(any(target_os = "linux", target_os = "darwin"))]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     pub fn create_dummy_event_unix(path: &str, operation: &str) -> MonitorEvent {
         MonitorEvent{
             id: "Test_id".to_string(),
@@ -230,7 +230,7 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    #[cfg(any(target_os = "linux", target_os = "darwin"))]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     #[test]
     fn test_get_event_integration_unix() {
         let os = utils::get_os();
@@ -288,7 +288,7 @@ mod tests {
 
     // ------------------------------------------------------------------------
 
-    #[cfg(any(target_os = "linux", target_os = "darwin"))]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     #[test]
     fn test_launch_unix(){
         let integration = Integration {

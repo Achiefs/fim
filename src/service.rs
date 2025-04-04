@@ -9,6 +9,7 @@ use tokio::runtime::Runtime;
 use crate::monitor;
 use crate::rotator;
 use crate::init::init;
+use crate::hashscanner;
 
 use log::{error, info};
 use std::{
@@ -102,11 +103,23 @@ pub fn run_service() -> Result<()> {
 
     let (cfg, ruleset) = init();
     let rotator_cfg = cfg.clone();
+    let hashscanner_cfg = cfg.clone();
 
     match thread::Builder::new()
         .name("FIM_Rotator".to_string()).spawn(|| rotator::rotator(rotator_cfg)){
         Ok(_v) => info!("FIM rotator thread started."),
         Err(e) => error!("Could not start FIM rotator thread, error: {}", e)
+    };
+
+    if cfg.hashscanner_enabled {
+        match thread::Builder::new()
+        .name("FIM_HashScanner".to_string())
+        .spawn(|| hashscanner::scan(hashscanner_cfg)){
+            Ok(_v) => info!("FIM HashScanner thread started."),
+            Err(e) => error!("Could not start FIM HashScanner thread, error: {}", e)
+        };
+    } else {
+        info!("FIM HashScanner thread disabled, not running.")
     };
 
     let rt = Runtime::new().unwrap();

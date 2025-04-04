@@ -1,0 +1,26 @@
+node: "FIM"
+
+# Events configuration, where to store produced events
+events:
+  destination: file
+  file: /var/lib/fim/events.json
+
+# Audit extended files and folders information
+audit:
+  - path: /tmp
+    labels: ["tmp", "linux"]
+    ignore: [".swp"]
+
+# Simple files and folders information
+monitor:
+  - path: /bin/
+  - path: /usr/bin/
+    labels: ["usr/bin", "linux"]
+  - path: /etc
+    labels: ["etc", "linux"]
+
+# App procedure and errors logging
+log:
+  file: /var/log/fim/fim.log
+  # Available levels [debug, info, error, warning]
+  level: info

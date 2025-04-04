@@ -144,7 +144,7 @@ mod tests {
     #[test]
     fn test_read_log() {
         if utils::get_os() == "linux" {
-            let cfg = AppConfig::new("linux", None);
+            let cfg = AppConfig::new("linux", Some("test/system/audit_config.yml"));
             let (event, position) = read_log(String::from("test/unit/audit.log"),
                 cfg, 0, 0);
 
@@ -192,7 +192,7 @@ mod tests {
             assert_eq!(event.paths[1]["cap_fe"], "0");
             assert_eq!(event.paths[1]["cap_fver"], "0");
             assert_eq!(event.paths[1]["cap_frootid"], "0");
-            assert_eq!(event.cwd, "/tmp");
+            assert_eq!(event.cwd, "/tmp/test");
             assert_eq!(event.syscall, "257");
             assert_eq!(event.ppid, "161880");
             assert_eq!(event.comm, "sed");
@@ -218,7 +218,7 @@ mod tests {
             assert_eq!(event.egid, "0");
             assert_eq!(event.fsgid, "0");
             assert_eq!(event.exe, "/usr/bin/sed");
-            assert_eq!(position, 845);
+            assert_eq!(position, 850);
         }
     }
 

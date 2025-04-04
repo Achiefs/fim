@@ -19,10 +19,15 @@ use std::process::Command;
 use log::{warn, debug, error};
 // To manage maps
 use std::collections::HashMap;
+use std::time::{SystemTime, UNIX_EPOCH};
+use walkdir::WalkDir;
+
+#[cfg(test)]
+mod test;
 
 // ----------------------------------------------------------------------------
 
-// Function to pop last char of a given String
+/// Function to pop last char of a given String
 pub fn pop(string: &str) -> &str {
     let mut chars = string.chars();
     chars.next_back();
@@ -196,6 +201,8 @@ pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
 
 // ----------------------------------------------------------------------------
 
+#[cfg(not(tarpaulin_include))]
+/// Get the current workdir for FIM, it returns a String with complete path.
 pub fn get_current_dir() -> String {
     String::from(env::current_dir().unwrap_or_else(|_| PathBuf::from(".")).to_str()
         .unwrap_or("."))
@@ -259,7 +266,10 @@ pub fn get_audit_rule_permissions(value: Option<&str>) -> String {
 // ----------------------------------------------------------------------------
 
 pub fn run_auditctl(args: &[&str]) {
-    match Command::new("/usr/sbin/auditctl")
+    let auditctl_path = if Path::new("/usr/sbin/auditctl").exists() { "/usr/sbin/auditctl"
+    } else { "/sbin/auditctl" };
+
+    match Command::new(auditctl_path)
     .args(args)
     .output()
     {
@@ -270,191 +280,35 @@ pub fn run_auditctl(args: &[&str]) {
 
 // ----------------------------------------------------------------------------
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_pop() {
-        assert_eq!(pop("test-"), "test");
-        assert_eq!(pop("dir/"), "dir");
-        assert_eq!(pop("dir@"), "dir");
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    fn test_get_hostname() {
-        // We will need to manage a better test
-        assert_eq!(get_hostname(), gethostname::gethostname().into_string().unwrap());
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    fn test_get_uuid() {
-        // 9bd52d8c-e162-4f4d-ab35-32206d6d1445
-        let uuid = get_uuid();
-        let uuid_vec: Vec<&str> = uuid.split("-").collect();
-        assert_eq!(uuid.len(), 36);
-        assert_eq!(uuid_vec.len(), 5);
-        assert_eq!(uuid_vec[0].len(), 8);
-        assert_eq!(uuid_vec[1].len(), 4);
-        assert_eq!(uuid_vec[2].len(), 4);
-        assert_eq!(uuid_vec[3].len(), 4);
-        assert_eq!(uuid_vec[4].len(), 12);
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    fn test_get_pid() {
-        assert_eq!(get_pid(), process::id());
-        assert!(get_pid() > 0);
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    fn test_get_os() {
-        assert_eq!(get_os(), env::consts::OS.to_string());
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    fn test_read_file() {
-        assert_eq!(read_file("pkg/deb/debian/compat"), "10");
-        assert_ne!(read_file("LICENSE"), "10");
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    #[ignore]
-    fn test_get_machine_id() {
-        if get_os() == "linux" {
-            assert_eq!(get_machine_id().len(), 33);
-        }
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    fn test_get_filename_path() {
-        if get_os() == "windows"{
-            assert_eq!(get_filename_path("C:\\test\\file.txt"), "file.txt");
-            assert_ne!(get_filename_path("C:\\test\\file.txt"), "none");
-        }else{
-            assert_eq!(get_filename_path("/test/file.txt"), "file.txt");
-            assert_ne!(get_filename_path("/test/file.txt"), "none");
-            assert_eq!(get_filename_path("/test/"), "test");
-        }
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    fn test_get_filename_path_empty() {
-        assert_eq!(get_filename_path("/"), "/");
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    fn test_clean_path() {
-        assert_eq!(clean_path("/test/"), "/test");
-        assert_eq!(clean_path("/test"), "/test");
-        assert_eq!(clean_path("C:\\test\\"), "C:\\test");
-        assert_eq!(clean_path("C:\\test"), "C:\\test");
-        assert_eq!(clean_path("/"), "");
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    fn test_get_file_end() {
-        assert_ne!(get_file_end("LICENSE", 0), 100);
-        // CRLF matter
-        if get_os() == "windows"{
-            assert_eq!(get_file_end("LICENSE", 0), 35823);
-        }else{
-            assert_eq!(get_file_end("LICENSE", 0), 35149);
-        }
-
-        assert_eq!(get_file_end("NotFound", 0), 0);
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    fn test_open_file() {
-        open_file("LICENSE", 0);
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    #[should_panic]
-    fn test_open_file_panic() {
-        open_file("NotFound", 0);
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    #[ignore]
-    fn test_check_auditd() {
-        if get_os() == "linux" {
-            assert!(check_auditd());
-        }
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    fn test_match_path() {
-        if get_os() == "linux" {
-            assert!(match_path("/", "/"));
-            assert!(match_path("/test", "/test"));
-            assert!(match_path("/test/", "/test"));
-            assert!(match_path("/test/tmp", "/test"));
-            assert!(!match_path("/tmp/test", "/test"));
-            assert!(!match_path("/tmp", "/test"));
-        }
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn test_get_audit_rule_permissions() {
-        use crate::appconfig::*;
-        let cfg = AppConfig::new(&get_os(), Some("test/unit/config/linux/audit_rule.yml"));
-        assert_eq!(get_audit_rule_permissions(cfg.audit[0]["rule"].as_str()), "rwax");
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn test_run_auditctl() {
-        use crate::appconfig::*;
-        let cfg = AppConfig::new(&get_os(), Some("test/unit/config/linux/audit_rule.yml"));
-        let path = cfg.audit[0]["path"].as_str().unwrap();
-        let rule = cfg.audit[0]["rule"].as_str().unwrap();
-        run_auditctl(&["-w", path, "-k", "fim", "-p", rule]);
-
-        match Command::new("/usr/sbin/auditctl")
-        .args(["-l", "-k", "fim"])
-        .output()
-        {
-            Ok(data) => assert_eq!(String::from_utf8(data.stdout).unwrap(), "-w /tmp -p rwxa -k fim\n"),
-            Err(e) => {
-                println!("{:?}", e);
-                assert!(true)
-            }
-        };
-    }
-
+pub fn get_current_time_millis() -> String {
+    format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH)
+        .expect("Time went backwards").as_millis())
 }
+
+// ----------------------------------------------------------------------------
+
+pub fn get_fs_list(root: String) -> Vec<String> {
+    let mut list = Vec::new();
+    for result in WalkDir::new(root) {
+        list.push(String::from(result.unwrap().path().to_str().unwrap()))
+    }
+    list
+}
+
+// ----------------------------------------------------------------------------
+
+#[cfg(target_family = "unix")]
+pub fn get_unix_permissions(file: &str) -> u32 {
+    use std::os::unix::fs::PermissionsExt;
+    let metadata = Path::new(file).metadata().unwrap();
+    format!("{:o}", metadata.permissions().mode()).parse::<u32>().unwrap()
+}
+
+// ----------------------------------------------------------------------------
+
+#[cfg(target_family = "windows")]
+pub fn get_unix_permissions(_v: &str) -> u32 {
+    return 0
+}
+
+// ----------------------------------------------------------------------------

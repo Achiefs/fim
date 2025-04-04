@@ -9,8 +9,6 @@ use std::sync::mpsc;
 use log::{info, error, debug, warn};
 // To manage paths
 use std::path::Path;
-// To manage date and time
-use std::time::{SystemTime, UNIX_EPOCH};
 use time::OffsetDateTime;
 // To use intersperse()
 use itertools::Itertools;
@@ -206,7 +204,7 @@ pub async fn monitor(
 
                     let current_date = OffsetDateTime::now_utc();
                     let index_name = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
-                    let current_timestamp = format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis());
+                    let current_timestamp = utils::get_current_time_millis();
                     let kind: notify::EventKind = event.kind;
                     let path = event.paths[0].clone();
 
@@ -284,7 +282,7 @@ pub async fn monitor(
                                     labels,
                                     operation: event::get_operation(kind),
                                     detailed_operation: event::get_detailed_operation(kind),
-                                    checksum: hash::get_checksum( String::from(path.to_str().unwrap()), cfg.clone().events_max_file_checksum ),
+                                    checksum: hash::get_checksum( String::from(path.to_str().unwrap()), cfg.clone().events_max_file_checksum, cfg.clone().checksum_algorithm),
                                     fpid: utils::get_pid(),
                                     system: cfg.clone().system
                                 };

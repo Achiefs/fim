@@ -1,0 +1,19 @@
+node: "FIM"
+
+# Events configuration, where to store produced events
+events:
+  destination: file
+  file: C:\ProgramData\fim\events.json
+
+# Monitor folder or files.
+monitor:
+  - path: C:\Program Files\
+    labels: ["Program Files", "windows"]
+  - path: C:\Users\
+    labels: ["Users", "windows"]
+
+# App procedure and errors logging
+log:
+  file: C:\ProgramData\fim\fim.log
+  # Available levels [debug, info, error, warning]
+  level: info

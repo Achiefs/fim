@@ -27,7 +27,9 @@ jobs:
 
 
   Build-install-ubuntu:
-    runs-on: [self-hosted, ubuntu18]
+    runs-on:
+      group: Default
+      labels: ubuntu18
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
@@ -52,7 +54,8 @@ jobs:
 
 
   Build-install-centos:
-    runs-on: [self-hosted, centos7]
+    runs-on:
+      group: centos7
     env:
       repodir: ${{ github.workspace }}/${{ github.run_id }}
     steps:

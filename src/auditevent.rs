@@ -143,9 +143,10 @@ impl Event {
             path: utils::clean_path(&event_path),
             file: utils::get_filename_path(path["name"].clone().as_str()),
             size: utils::get_file_size(path["name"].clone().as_str()),
-            checksum: hash::get_checksum(format!("{}/{}",
-                parent["name"].clone(), path["name"].clone()),
-                cfg.events_max_file_checksum),
+            checksum: hash::get_checksum(
+                format!("{}/{}", parent["name"].clone(), path["name"].clone()),
+                cfg.events_max_file_checksum,
+                cfg.checksum_algorithm),
             fpid: utils::get_pid(),
             system: String::from(utils::get_os()),
 

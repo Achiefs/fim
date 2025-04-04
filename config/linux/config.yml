@@ -5,11 +5,13 @@ events:
   destination: file
   file: /var/lib/fim/events.json
 
-# Audit extended files and folders information
-audit:
-  - path: /tmp
-    labels: ["tmp", "linux"]
-    ignore: [".swp"]
+# Audit extended files and folders information.
+# Only Available on Linux with Audit installed.
+# Please check that Audit daemon is installed on your system before enable it.
+#audit:
+#  - path: /tmp
+#    labels: ["tmp", "linux"]
+#    ignore: [".swp"]
 
 # Simple files and folders information
 monitor:
@@ -18,6 +20,13 @@ monitor:
     labels: ["usr/bin", "linux"]
   - path: /etc
     labels: ["etc", "linux"]
+  - path: /tmp
+    labels: ["tmp", "linux"]
+    ignore: [".swp"]
+
+# Database for files checksum storage
+hashscanner:
+  file: /var/lib/fim/fim.db
 
 # App procedure and errors logging
 log:

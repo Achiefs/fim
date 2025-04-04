@@ -5,6 +5,10 @@ events:
   destination: file
   file: /var/lib/fim/events.json
 
+# Database for files checksum storage
+hashscanner:
+  file: /var/lib/fim/fim.db
+
 # App procedure and errors logging
 log:
   file: /var/log/fim/fim.log
