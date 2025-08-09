@@ -1,8 +1,8 @@
 name: Pkg build
 on: [push]
 jobs:
-  Pkg-build-ubuntu20:
-    runs-on: ubuntu-20.04
+  Pkg-build-ubuntu:
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
@@ -16,7 +16,7 @@ jobs:
       - run: echo "Job's status is ${{ job.status }}."
 
   Pkg-build-windows:
-    runs-on: windows-2022
+    runs-on: windows-latest
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2

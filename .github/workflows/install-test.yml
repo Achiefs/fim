@@ -2,7 +2,7 @@ name: Install test
 on: [push]
 jobs:
   Build-install-windows:
-    runs-on: windows-2022
+    runs-on: windows-latest
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
