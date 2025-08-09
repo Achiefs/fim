@@ -333,11 +333,12 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to write the received events to file
-    pub fn log(&self, file: &str){
+    pub fn log(&self, cfg: AppConfig){
+        let file = cfg.events_lock.lock().unwrap();
         let mut events_file = OpenOptions::new()
             .create(true)
             .append(true)
-            .open(file)
+            .open(file.as_str())
             .expect("(auditevent::log) Unable to open events log file.");
 
             match writeln!(events_file, "{}", self.format_json()) {
@@ -402,13 +403,13 @@ impl Event {
     pub async fn process(&self, destination: &str, index_name: String, cfg: AppConfig, ruleset: Ruleset){
         match destination {
             appconfig::BOTH_MODE => {
-                self.log(&cfg.get_events_file());
+                self.log(cfg.clone());
                 self.send(index_name, cfg.clone()).await;
             },
             appconfig::NETWORK_MODE => {
                 self.send(index_name, cfg.clone()).await;
             },
-            _ => self.log(&cfg.get_events_file())
+            _ => self.log(cfg.clone())
         }
         let filepath = PathBuf::from(self.path.clone());
         ruleset.match_rule(cfg, filepath.join(self.file.clone()), self.id.clone()).await;

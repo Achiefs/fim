@@ -66,11 +66,12 @@ impl Event for RuleEvent {
     // ------------------------------------------------------------------------
 
     // Function to write the received events to file
-    fn log(&self, file: String) {
+    fn log(&self, cfg: AppConfig) {
+        let file = cfg.events_lock.lock().unwrap();
         let mut events_file = OpenOptions::new()
             .create(true)
             .append(true)
-            .open(file)
+            .open(file.as_str())
             .expect("(log) Unable to open events log file.");
 
         match writeln!(events_file, "{}", self.format_json() ) {
@@ -157,13 +158,13 @@ impl Event for RuleEvent {
     async fn process(&self, cfg: AppConfig, _ruleset: Ruleset) {
         match cfg.get_events_destination().as_str() {
             appconfig::BOTH_MODE => {
-                self.log(cfg.get_events_file());
+                self.log(cfg.clone());
                 self.send(cfg).await;
             },
             appconfig::NETWORK_MODE => {
                 self.send(cfg).await;
             },
-            _ => self.log(cfg.get_events_file())
+            _ => self.log(cfg.clone())
         }
     }
 

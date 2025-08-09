@@ -156,7 +156,7 @@ pub fn check_auditd() -> bool {
 pub fn match_path(raw_path: &str, compare_path: &str) -> bool {
     let max_pops = 128;
     let mut pops = 0;
-    let pattern = if get_os() == "linux" { "/" }else{ "\\" };
+    let pattern = if get_os() == "windows" { "\\" } else { "/" };
     let compare_path_clean = &clean_path(compare_path);
     let raw_path_clean = &clean_path(raw_path);
 

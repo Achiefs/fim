@@ -1,12 +1,12 @@
 // Copyright (C) 2023, Achiefs.
 
-use std::fs::{metadata, File, copy, read_to_string, remove_file, create_dir};
-use std::io::Write;
+use std::fs::{metadata, File, copy, remove_file, create_dir};
 use std::path::Path;
 use std::time::Duration;
 use std::thread;
 use log::{debug, error, info};
 use std::sync::Mutex;
+use std::sync::Arc;
 
 use crate::appconfig::*;
 use crate::utils;
@@ -95,52 +95,30 @@ fn get_iteration(filepath: &str) -> u32{
 
 // ----------------------------------------------------------------------------
 
-fn rotate_file(filepath: &str, iteration: u32, lock: Mutex<bool>){
+fn rotate_file(iteration: u32, lock: Arc<Mutex<String>>){
+    let filepath = lock.lock().unwrap();
     info!("Rotating {} file...", filepath);
-    *lock.lock().unwrap() = true;
-
+    
     thread::sleep(Duration::new(15, 0));
-    let path = Path::new(filepath);
+    let path = Path::new(filepath.as_str());
     let mut parent_path = path.parent().unwrap().to_path_buf();
     parent_path.push(Path::new(path.file_name().unwrap()));
 
     let file_rotated = format!("{}.{}",
         parent_path.to_str().unwrap(), iteration);
     
-    match copy(filepath, file_rotated.clone()){
+    match copy(filepath.as_str(), file_rotated.clone()){
         Ok(_v) => {
             debug!("File copied successfully.");
-            match File::create(filepath){
-                Ok(truncated_file) => {
-                    debug!("File truncated successfully.");
-                    let tmp_file = format!("{}.tmp", filepath);
-                    let tmp_path = Path::new(&tmp_file);
-                    if tmp_path.exists(){
-                        let data = match read_to_string(tmp_file.clone()){
-                            Ok(read_data) => read_data,
-                            Err(_e) => {
-                                debug!("No temporal data to copy.");
-                                String::new()
-                            }
-                        };
-                        match write!(&truncated_file, "{}", data){
-                            Ok(_v) => debug!("Temporal file data written into destination file."),
-                            Err(e) => error!("Cannot write temporal data to destination file skipping, error: {}", e)
-                        };
-                        match remove_file(tmp_file){
-                            Ok(_v) => debug!("Temporal file removed successfully."),
-                            Err(e) => info!("Cannot remove temporal file skipping, message: {}", e)
-                        };
-                    }
-                },
+            match File::create(filepath.as_str()){
+                Ok(_) => debug!("File truncated successfully."),
                 Err(e) => error!("Error truncating file, retrying on next iteration, error: {}", e)
             };
         },
         Err(e) => error!("File cannot be copied, retrying on next iteration, error: {}", e)
     };
 
-    *lock.lock().unwrap() = false;
-    info!("File {} rotated.", filepath);
+    info!("File {} rotated.", &filepath);
     info!("Compressing rotated file {}", file_rotated);
     #[cfg(windows)]
     if utils::get_os() == "windows" {
@@ -198,9 +176,8 @@ pub fn rotator(cfg: AppConfig){
             }
 
             rotate_file(
-                cfg.clone().events_file.as_str(),
                 get_iteration(parent_path.to_str().unwrap()), 
-                cfg.clone().get_mutex(cfg.clone().events_lock));
+                cfg.clone().events_lock);
         }
 
         if log_size >= cfg.log_max_file_size * 1000000 {
@@ -216,13 +193,13 @@ pub fn rotator(cfg: AppConfig){
             }
 
             rotate_file(
-                cfg.clone().log_file.as_str(),
                 get_iteration(parent_path.to_str().unwrap()), 
-                cfg.clone().get_mutex(cfg.clone().log_lock));
+                cfg.clone().log_lock);
         }
 
         debug!("Sleeping rotator thread for 30 minutes");
-        thread::sleep(Duration::from_secs(1800));
+        //thread::sleep(Duration::from_secs(1800));
+        thread::sleep(Duration::from_secs(60));
     }
 }
 

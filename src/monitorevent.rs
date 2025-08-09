@@ -80,17 +80,18 @@ impl Event for MonitorEvent {
   // ------------------------------------------------------------------------
 
   // Function to write the received events to file
-  fn log(&self, file: String) {
-      let mut events_file = OpenOptions::new()
-          .create(true)
-          .append(true)
-          .open(file)
-          .expect("(log) Unable to open events log file.");
+  fn log(&self, cfg: AppConfig) {
+    let file = cfg.events_lock.lock().unwrap();
+    let mut events_file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(file.as_str())
+        .expect("(log) Unable to open events log file.");
 
-      match writeln!(events_file, "{}", self.format_json() ) {
-          Ok(_d) => debug!("Event log written"),
-          Err(e) => error!("Event could not be written, Err: [{}]", e)
-      }
+    match writeln!(events_file, "{}", self.format_json() ) {
+        Ok(_d) => debug!("Event log written"),
+        Err(e) => error!("Event could not be written, Err: [{}]", e)
+    }
   }
 
   // ------------------------------------------------------------------------
@@ -218,13 +219,13 @@ impl fmt::Debug for MonitorEvent {
 pub async fn route(event: &MonitorEvent, cfg: AppConfig) {
   match cfg.get_events_destination().as_str() {
       appconfig::BOTH_MODE => {
-          event.log(cfg.get_events_file());
+          event.log(cfg.clone());
           event.send(cfg).await;
       },
       appconfig::NETWORK_MODE => {
           event.send(cfg).await;
       },
-      _ => event.log(cfg.get_events_file())
+      _ => event.log(cfg.clone())
   }
 }
 

@@ -1,7 +1,7 @@
 // Copyright (C) 2021, Achiefs.
 
 // Global constants definitions
-pub const VERSION: &str = "0.6.0";
+pub const VERSION: &str = "0.6.1";
 pub const NETWORK_MODE: &str = "NETWORK";
 pub const FILE_MODE: &str = "FILE";
 pub const BOTH_MODE: &str = "BOTH";
@@ -17,7 +17,6 @@ use std::io::{Read, Write};
 use std::path::Path;
 use simplelog::LevelFilter;
 use std::sync::{Arc, Mutex};
-use log::error;
 
 use crate::utils;
 use crate::integration::Integration;
@@ -48,8 +47,8 @@ pub struct AppConfig {
     pub log_max_file_size: usize,
     pub system: String,
     pub insecure: bool,
-    pub events_lock: Arc<Mutex<bool>>,
-    pub log_lock: Arc<Mutex<bool>>,
+    pub events_lock: Arc<Mutex<String>>,
+    pub log_lock: Arc<Mutex<String>>,
     pub hashscanner_file: String,
     pub hashscanner_enabled: bool,
     pub hashscanner_interval: usize,
@@ -348,17 +347,17 @@ impl AppConfig {
             endpoint_user,
             endpoint_pass,
             endpoint_token,
-            events_file,
+            events_file: events_file.clone(),
             monitor,
             audit,
             node,
-            log_file,
+            log_file: log_file.clone(),
             log_level,
             log_max_file_size,
             system: String::from(system),
             insecure,
-            events_lock: Arc::new(Mutex::new(false)),
-            log_lock: Arc::new(Mutex::new(false)),
+            events_lock: Arc::new(Mutex::new(events_file)),
+            log_lock: Arc::new(Mutex::new(log_file)),
             hashscanner_file,
             hashscanner_enabled,
             hashscanner_interval,
@@ -484,46 +483,6 @@ impl AppConfig {
         );
         integrations
     }
-
-    // ------------------------------------------------------------------------
-
-    pub fn get_lock_value(&self, lock: &Arc<Mutex<bool>>) -> bool {
-        match Arc::into_inner(lock.into()) {
-            None => {
-                error!("Cannot retrieve events lock Arc value.");
-                false
-            },
-            Some(mutex) => match mutex.lock() {
-                Ok(guard) => *guard,
-                Err(e) => {
-                    error!("Cannot retrieve events lock Mutex value, err: {}.", e);
-                    false
-                }
-            }
-        }
-    }
-
-    // ------------------------------------------------------------------------
-
-    pub fn get_events_file(&self) -> String {
-        match self.get_lock_value(&self.events_lock) {
-            false => self.events_file.clone(),
-            true => format!("{}.tmp", self.events_file.clone())
-        }
-    }
-
-    // ------------------------------------------------------------------------
-
-    pub fn get_mutex(&self, lock: Arc<Mutex<bool>>) -> Mutex<bool> {
-        match Arc::into_inner(lock.clone()) {
-            None => {
-                error!("Could not retrieve Mutex '{:?}'.", lock.clone());
-                Mutex::new(false)
-            },
-            Some(mutex) => mutex
-        }
-    }
-
 }
 
 // ----------------------------------------------------------------------------
