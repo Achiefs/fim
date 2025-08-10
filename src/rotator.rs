@@ -16,6 +16,7 @@ use crate::utils;
 // Compress given file into zip.
 #[cfg(windows)]
 fn compress_zip_file(filepath: &str) -> Result<String, String> {
+    use std::io::Write;
     use zip::write::SimpleFileOptions;
     use std::io::{BufReader, BufRead};
     let filename = Path::new(filepath).file_name().unwrap().to_str().unwrap();

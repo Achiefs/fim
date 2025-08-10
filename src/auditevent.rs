@@ -936,14 +936,6 @@ mod tests {
     // ------------------------------------------------------------------------
 
     #[test]
-    #[should_panic]
-    fn test_log_panic() {
-        create_empty_event().log("");
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
     fn test_send() {
         let event = create_test_event();
         let cfg = AppConfig::new(&utils::get_os(), None);

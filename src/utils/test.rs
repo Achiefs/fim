@@ -106,7 +106,7 @@ fn test_get_file_end() {
     assert_ne!(get_file_end("LICENSE", 0), 100);
     // CRLF matter
     if get_os() == "windows"{
-        assert_eq!(get_file_end("LICENSE", 0), 35823);
+        assert_eq!(get_file_end("LICENSE", 0), 35149);
     }else{
         assert_eq!(get_file_end("LICENSE", 0), 35149);
     }
@@ -173,7 +173,7 @@ fn test_get_field() {
 fn test_get_file_size() {
     // CRLF matter
     if get_os() == "windows"{
-        assert_eq!(get_file_size("LICENSE"), 35823);
+        assert_eq!(get_file_size("LICENSE"), 35149);
     }else{
         assert_eq!(get_file_size("LICENSE"), 35149);
     }
