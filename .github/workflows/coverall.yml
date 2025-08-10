@@ -10,17 +10,22 @@ jobs:
       - name: Install Rust (Stable)
         run:
           curl https://sh.rustup.rs -sSf | sh -s -- -y
+      - name: Install cargo-tarpaulin
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-tarpaulin@0.32.8
+
       - name: Create config folder
         run: sudo mkdir -p /etc/fim/ && sudo chown -R runner:runner /etc/fim
       - name: Create events file and folder
         run: sudo mkdir -p /var/lib/fim/ && sudo touch /var/lib/fim/events.json && sudo chown -R runner:runner /var/lib/fim
       - name: Create log file and folder
         run: sudo mkdir -p /var/log/fim/ && sudo touch /var/log/fim/fim.log && sudo chown -R runner:runner /var/log/fim
+
       - name: Run cargo-tarpaulin
-        uses: actions-rs/tarpaulin@v0.1
-        with:
-          version: 0.32.8
-          args: '--all-features --out Lcov --exclude-files src/main.rs src/monitor.rs src/init.rs'
+        run: |
+          rustup run stable cargo tarpaulin --all-features --out Lcov --exclude-files src/main.rs src/monitor.rs src/init.rs
+
       - name: upload to Coveralls
         uses: coverallsapp/github-action@master
         with:
