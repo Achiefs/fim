@@ -903,9 +903,10 @@ mod tests {
 
     #[test]
     fn test_log() {
-        let filename = "test_log.json";
+        let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_log_auditevent.yml"));
+        let filename = "test_auditevent.json";
         let event = create_test_event();
-        event.log(filename);
+        event.log(cfg.clone());
 
         let expected = "{\"a0\":\"A0\",\"a1\":\"A1\",\"a2\":\"A2\",\"a3\":\"A3\",\
             \"arch\":\"ARCH\",\"auid\":\"AUID\",\"cap_fe\":\"CAP_FE\",\

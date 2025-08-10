@@ -267,12 +267,12 @@ mod tests {
 
         copy(license_path, copy_path).unwrap();
 
-        let lock = Mutex::new(false);
+        let lock = Arc::new(Mutex::new(String::from(copy_path)));
         let iteration = 0;
         let extension = if utils::get_os() == "windows" { "zip"
         }else{ "tar.gz" };
         let compressed_file = format!("{}.{}.{}", copy_path, iteration, extension);
-        rotate_file(copy_path, iteration, lock);
+        rotate_file(iteration, lock);
         assert_eq!(metadata(copy_path).unwrap().len(), 0);
         assert_ne!(metadata(compressed_file.clone()).unwrap().len(), 0);
         remove_file(copy_path).unwrap();

@@ -474,10 +474,11 @@ mod tests {
 
     #[test]
     fn test_log() {
-        let filename = String::from("test_event.json");
+        let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_log.yml"));
+        let filename = String::from("test_log.json");
         let evt = create_test_event();
 
-        evt.log(filename.clone());
+        evt.log(cfg.clone());
         let contents = fs::read_to_string(filename.clone());
         let expected = "{\"checksum\":\"UNKNOWN\",\"detailed_operation\":\"CREATE_FILE\",\
             \"file\":\"\",\"file_size\":0,\"fpid\":0,\

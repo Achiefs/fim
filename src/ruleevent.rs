@@ -290,10 +290,11 @@ mod tests {
 
     #[test]
     fn test_log() {
+        let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_log_ruleevent.yml"));
         let filename = String::from("test_ruleevent.json");
         let evt = create_test_event();
 
-        evt.log(filename.clone());
+        evt.log(cfg.clone());
         let contents = fs::read_to_string(filename.clone());
         let expected = "{\"fpid\":0,\"hostname\":\"Hostname\",\"id\":0,\"message\":\"This is a message\",\
         \"parent_id\":\"0000\",\"rule\":\"\\\\.php$\",\"system\":\"test\",\"timestamp\":\"Timestamp\",\"version\":\"x.x.x\"}\n";
