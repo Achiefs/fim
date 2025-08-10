@@ -1,20 +1,6 @@
 name: Pkg build
 on: [push]
 jobs:
-  Pkg-build-ubuntu:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Check out repository code, branch='${{ github.ref }}'
-        uses: actions/checkout@v2
-      - name: Change sources.list repositories to archive Ubuntu
-        run: sudo sed -i "s|http://azure.archive.ubuntu.com|http://archive.ubuntu.com|g" /etc/apt/sources.list
-      - name: Install required dependencies
-        run: sudo apt update -y && sudo apt install -y curl devscripts equivs tar gcc
-      - name: Ubuntu latest - Package build
-        run: sudo ./builder.sh
-        working-directory: ./pkg/deb
-      - run: echo "Job's status is ${{ job.status }}."
-
   Pkg-build-windows:
     runs-on: windows-latest
     steps:
