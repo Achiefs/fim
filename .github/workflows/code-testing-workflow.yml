@@ -2,7 +2,7 @@ name: Code testing
 on: [push]
 jobs:
   Compilation-test-linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
@@ -11,7 +11,7 @@ jobs:
       - run: echo "Job's status is ${{ job.status }}."
 
   Compilation-test-windows:
-    runs-on: windows-2019
+    runs-on: windows-latest
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
@@ -29,7 +29,7 @@ jobs:
       - run: echo "Job's status is ${{ job.status }}."
 
   Unit-tests-linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
@@ -44,7 +44,7 @@ jobs:
       - run: echo "Job's status is ${{ job.status }}."
 
   Unit-tests-windows:
-    runs-on: windows-2019
+    runs-on: windows-latest
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2

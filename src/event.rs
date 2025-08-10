@@ -7,7 +7,7 @@ use notify::event::*;
 pub trait Event {
     fn format_json(&self) -> String;
     fn clone(&self) -> Self;
-    fn log(&self, file: String);
+    fn log(&self, cfg: AppConfig);
     async fn send(&self, cfg: AppConfig);
     async fn process(&self, cfg: AppConfig, _ruleset: Ruleset);
     fn get_string(&self, field: String) -> String;

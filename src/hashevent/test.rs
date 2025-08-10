@@ -62,11 +62,11 @@ fn test_new() {
 #[test]
 /// Check the hashEvent JSON log write, it should match with expected one
 fn test_log() {
+    let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_log_hashevent.yml"));
     let filename = String::from("test_hashevent.json");
-
     let event = create_test_event();
 
-    event.log(filename.clone());
+    event.log(cfg.clone());
     let contents = fs::read_to_string(filename.clone());
     let expected = "{\"dbfile.hash\":\"HASHC\",\"dbfile.id\":\"CURRENT\",\
         \"dbfile.path\":\"PATHC\",\"dbfile.permissions\":1,\"dbfile.size\":1234,\

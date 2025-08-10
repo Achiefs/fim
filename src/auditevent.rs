@@ -333,11 +333,12 @@ impl Event {
     // ------------------------------------------------------------------------
 
     // Function to write the received events to file
-    pub fn log(&self, file: &str){
+    pub fn log(&self, cfg: AppConfig){
+        let file = cfg.events_lock.lock().unwrap();
         let mut events_file = OpenOptions::new()
             .create(true)
             .append(true)
-            .open(file)
+            .open(file.as_str())
             .expect("(auditevent::log) Unable to open events log file.");
 
             match writeln!(events_file, "{}", self.format_json()) {
@@ -402,13 +403,13 @@ impl Event {
     pub async fn process(&self, destination: &str, index_name: String, cfg: AppConfig, ruleset: Ruleset){
         match destination {
             appconfig::BOTH_MODE => {
-                self.log(&cfg.get_events_file());
+                self.log(cfg.clone());
                 self.send(index_name, cfg.clone()).await;
             },
             appconfig::NETWORK_MODE => {
                 self.send(index_name, cfg.clone()).await;
             },
-            _ => self.log(&cfg.get_events_file())
+            _ => self.log(cfg.clone())
         }
         let filepath = PathBuf::from(self.path.clone());
         ruleset.match_rule(cfg, filepath.join(self.file.clone()), self.id.clone()).await;
@@ -902,9 +903,10 @@ mod tests {
 
     #[test]
     fn test_log() {
-        let filename = "test_log.json";
+        let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_log_auditevent.yml"));
+        let filename = "test_auditevent.json";
         let event = create_test_event();
-        event.log(filename);
+        event.log(cfg.clone());
 
         let expected = "{\"a0\":\"A0\",\"a1\":\"A1\",\"a2\":\"A2\",\"a3\":\"A3\",\
             \"arch\":\"ARCH\",\"auid\":\"AUID\",\"cap_fe\":\"CAP_FE\",\
@@ -929,14 +931,6 @@ mod tests {
         assert_eq!(log, expected);
 
         remove_test_file(filename);
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    #[should_panic]
-    fn test_log_panic() {
-        create_empty_event().log("");
     }
 
     // ------------------------------------------------------------------------

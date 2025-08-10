@@ -2,10 +2,12 @@ name: Dependency analysis
 on: [push]
 jobs:
   Audit-test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
+      - name: Install Audit package
+        run: cargo install cargo-audit
       - name: Launch cargo test
         run: cargo audit
       - run: echo "Job's status is ${{ job.status }}."
