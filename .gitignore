@@ -10,3 +10,8 @@ Cargo.lock
 fim.log
 events.log
 events.json
+fim.db
+*.log
+Not_defined
+tmp/
+.DS_Store

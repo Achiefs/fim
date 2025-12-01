@@ -13,6 +13,10 @@ monitor:
     labels: ["Users", "windows"]
     allowed: [".txt", ".rs"]
 
+# Database for files checksum storage
+hashscanner:
+  file: C:\ProgramData\fim\fim.db
+
 # App procedure and errors logging
 log:
   file: C:\ProgramData\fim\fim.log

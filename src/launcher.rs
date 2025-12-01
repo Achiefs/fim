@@ -25,8 +25,11 @@ pub fn check_integrations(event: MonitorEvent, cfg: AppConfig) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
+
     use crate::monitorevent::MonitorEvent;
+    use crate::appconfig::AppConfig;
+
+    use std::path::PathBuf;
     use notify::event::*;
 
     // ------------------------------------------------------------------------
@@ -58,7 +61,6 @@ mod tests {
         let event = create_test_event();
         let cfg = AppConfig::new("windows", Some("test/unit/config/windows/monitor_integration.yml"));
         check_integrations(event, cfg);
-        
     }
 
     // ------------------------------------------------------------------------
@@ -68,6 +70,16 @@ mod tests {
     fn test_check_integrations_linux() {
         let event = create_test_event();
         let cfg = AppConfig::new("linux", Some("test/unit/config/linux/monitor_integration.yml"));
+        check_integrations(event, cfg);
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn test_check_integrations_linux() {
+        let event = create_test_event();
+        let cfg = AppConfig::new("macos", Some("test/unit/config/macos/monitor_integration.yml"));
         check_integrations(event, cfg);
     }
 

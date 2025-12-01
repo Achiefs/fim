@@ -1,22 +1,8 @@
 name: Pkg build
 on: [push]
 jobs:
-  Pkg-build-ubuntu20:
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Check out repository code, branch='${{ github.ref }}'
-        uses: actions/checkout@v2
-      - name: Change sources.list repositories to archive Ubuntu
-        run: sudo sed -i "s|http://azure.archive.ubuntu.com|http://archive.ubuntu.com|g" /etc/apt/sources.list
-      - name: Install required dependencies
-        run: sudo apt update -y && sudo apt install -y curl devscripts equivs tar gcc
-      - name: Ubuntu 20.04 - Package build
-        run: sudo ./builder.sh
-        working-directory: ./pkg/deb
-      - run: echo "Job's status is ${{ job.status }}."
-
   Pkg-build-windows:
-    runs-on: windows-2022
+    runs-on: windows-latest
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
@@ -25,16 +11,9 @@ jobs:
         working-directory: ./pkg/msi
       - run: echo "Job's status is ${{ job.status }}."
 
-  Pkg-build-ubuntu16:
-    runs-on: [self-hosted, ubuntu18]
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-      - name: Ubuntu 16.04 - Package build
-        run: sudo docker run --rm okynos/fim-builder:xenial ${{ github.ref_name }}
-
   Pkg-build-centos7:
-    runs-on: [self-hosted, ubuntu18]
+    runs-on:
+      group: Default
     steps:
       - name: Check out code
         uses: actions/checkout@v2

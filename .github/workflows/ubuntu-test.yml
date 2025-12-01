@@ -1,0 +1,93 @@
+name: Ubuntu tests
+on: [push]
+jobs:
+  Package_build:
+    runs-on:
+      group: Default
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Ubuntu 16.04 - Package build
+        run: sudo docker run -v /tmp/${{ github.sha }}:/tmp/output --rm okynos/fim-builder:xenial ${{ github.ref_name }}
+
+      - name: Archive output package
+        uses: actions/upload-artifact@v4
+        with:
+          name: fim_${{ github.sha }}_amd64.deb
+          path: /tmp/${{ github.sha }}/fim*.deb
+          retention-days: 5
+  
+  Audit_tests:
+    needs: Package_build
+    runs-on:
+      group: Default
+      labels: ubuntu18
+
+    steps:
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+
+      - name: Download pre-build FIM package
+        uses: actions/download-artifact@v4
+        with:
+          name: fim_${{ github.sha }}_amd64.deb
+      
+      - name: Installing FIM package
+        run: sudo dpkg --install ./fim*.deb
+
+      - name: Copy configuration
+        run: sudo cp -f test/system/audit_config.yml /etc/fim/config.yml
+
+      - name: Create required directories
+        run: mkdir -p /tmp/test
+
+      - name: Restart Audit daemon
+        run: sudo systemctl start auditd
+        
+      - name: Restart FIM process to load new configuration
+        run: sudo systemctl restart fim
+
+      - name: Check FIM running
+        run: sudo systemctl status fim | grep running
+
+      - name: Launch test suite
+        run: sudo python3 -m pytest test/system/audit.py -v
+
+      - name: Print config file
+        if: always()
+        run: cat /etc/fim/config.yml || true
+
+      - name: Print log file
+        if: always()
+        run: cat /var/log/fim/fim.log || true
+
+      - name: Stop FIM process
+        if: always()
+        run: sudo systemctl stop fim
+
+      - name: Remove FIM package installation
+        if: always()
+        run: sudo dpkg --purge fim
+
+      - name: Clean temporal folder
+        if: always()
+        run: sudo rm -rf /tmp/test
+
+      - name: Clean log folder
+        if: always()
+        run: sudo rm -rf /var/log/fim/
+
+      - name: Clean lib folder
+        if: always()
+        run: sudo rm -rf /var/lib/fim/
+
+      - name: Clean workspace
+        if: always()
+        run: sudo rm -rf ${{ github.workspace }}/test/system/__pycache__/ ${{ github.workspace }}/test/system/.pytest_cache ${{ github.workspace }}/.pytest_cache
+
+      - name: Clean test output
+        if: always()
+        run: sudo rm -rf ${{ github.workspace }}/test_*
+
+      - run: echo "Job's status is ${{ job.status }}."

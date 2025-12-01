@@ -14,6 +14,10 @@ monitor:
   - path: /etc
     labels: ["etc", "macos"]
 
+# Database for files checksum storage
+hashscanner:
+  file: /var/lib/fim/fim.db
+
 # App procedure and errors logging
 log:
   file: /var/log/fim/fim.log
