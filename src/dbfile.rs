@@ -6,12 +6,14 @@ use crate::appconfig::*;
 
 use std::fmt;
 use std::path::Path;
+use serde::Serialize;
 
 pub struct DBFileError {
     kind: String,
     message: String
 }
 
+#[derive(Clone, Serialize)]
 pub struct DBFile {
     pub id: String,
     pub timestamp: String,
@@ -116,19 +118,6 @@ impl DBFile {
             path: String::from(path),
             size,
             permissions
-        }
-    }
-
-    // ------------------------------------------------------------------------
-
-    pub fn clone(&self) -> Self {
-        DBFile {
-            id: self.id.clone(),
-            timestamp: self.timestamp.clone(),
-            hash: self.hash.clone(),
-            path: self.path.clone(),
-            size: self.size,
-            permissions: self.permissions
         }
     }
 

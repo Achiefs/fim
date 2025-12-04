@@ -8,8 +8,7 @@ use log::{debug, warn};
 use std::process::Command;
 
 // Single event data management
-use crate::event::Event;
-use crate::monitorevent::MonitorEvent;
+use crate::events::MonitorEvent;
 use crate::utils;
 
 // ----------------------------------------------------------------------------
@@ -26,18 +25,6 @@ pub struct Integration {
 // ----------------------------------------------------------------------------
 
 impl Integration {
-
-    pub fn clone(&self) -> Self {
-        Integration {
-            name: self.name.clone(),
-            condition: self.condition.clone(),
-            binary: self.binary.clone(),
-            script: self.script.clone(),
-            parameters: self.parameters.clone()
-        }
-    }
-
-    // ------------------------------------------------------------------------
 
     pub fn new(name: String, condition: Vec<String>, binary: String, script: String, parameters: String) -> Self {
         Integration {
@@ -79,7 +66,7 @@ pub fn get_event_integration(event: MonitorEvent, integrations: Vec<Integration>
             _ => false
         }
     );
-    option.map(|int| int.clone())
+    option.cloned()
 }
 
 // ----------------------------------------------------------------------------
@@ -105,7 +92,7 @@ mod tests {
     use notify::event::*;
     use crate::appconfig::*;
     use std::path::PathBuf;
-    use crate::monitorevent::MonitorEvent;
+    use crate::events::MonitorEvent;
 
     // ------------------------------------------------------------------------
 
@@ -283,7 +270,7 @@ mod tests {
             parameters: String::from("")
         };
 
-        integration.launch(create_dummy_event_windows("tmp", "C").format_json());
+        integration.launch(create_dummy_event_windows("tmp", "C").to_json());
     }
 
     // ------------------------------------------------------------------------
@@ -299,7 +286,7 @@ mod tests {
             parameters: String::from("")
         };
 
-        integration.launch(create_dummy_event_unix("etc", "C").format_json());
+        integration.launch(create_dummy_event_unix("etc", "C").to_json());
     }
 
 }

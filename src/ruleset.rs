@@ -18,9 +18,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::utils;
 use crate::appconfig;
 use crate::appconfig::*;
-use crate::event;
-use event::Event;
-use crate::ruleevent::RuleEvent;
+use crate::events::Event;
+use crate::events::RuleEvent;
 
 // ----------------------------------------------------------------------------
 
@@ -30,12 +29,6 @@ pub struct Ruleset {
 }
 
 impl Ruleset {
-
-    pub fn clone(&self) -> Self {
-        Ruleset {
-            rules: self.rules.clone()
-        }
-    }
 
     pub fn new(system: &str, path: Option<&str>) -> Self {
         println!("[INFO] Reading ruleset...");
@@ -133,7 +126,7 @@ impl Ruleset {
             if expression.is_match(filename){
                 debug!("Rule with ID: '{}', match event path: '{}'.", id, path);
                 // Send rule event
-                let event = RuleEvent {
+                let event = Event::Rule(RuleEvent {
                     id,
                     rule,
                     timestamp: format!("{:?}", SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis()),
@@ -144,8 +137,8 @@ impl Ruleset {
                     system: cfg.clone().system,
                     message: self.rules.get(&id).unwrap().get("message").unwrap().clone(),
                     parent_id: ruleid
-                };
-                event.process(cfg, self.clone()).await;
+                });
+                event.get_rule_event().process(cfg).await;
                 (true, id)
             } else { (false, usize::MAX) }
         } else { (false, usize::MAX) }

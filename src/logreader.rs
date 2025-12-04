@@ -13,7 +13,8 @@ use std::collections::HashMap;
 use log::{debug, error};
 
 // Single event data management
-use crate::auditevent::Event;
+use crate::events::Event;
+use crate::events::AuditEvent;
 // To manage common functions
 use crate::utils;
 // To get configuration constants
@@ -26,7 +27,7 @@ type SHashMap = HashMap<String, String>;
 
 // Read file to extract last data until the Audit ID changes
 pub fn read_log(file: String, cfg: AppConfig, position: u64, itx: u64) -> (Event, u64) {
-    let mut event: Event = Event::new();
+    let mut event: Event = Event::Audit(Box::new(AuditEvent::new()));
     let mut current_position = position;
     let log = utils::open_file(&file, 0);
     let mut buff = BufReader::new(log);
@@ -83,7 +84,7 @@ pub fn read_log(file: String, cfg: AppConfig, position: u64, itx: u64) -> (Event
                 cfg.path_in(p["name"].as_str(), cwd_path, audit_vec.clone()) ||
                 cfg.path_in(cwd_path, "", audit_vec.clone())
             }) {
-                event = Event::from(syscall, cwd, proctitle, paths, cfg.clone());
+                event = AuditEvent::from(syscall, cwd, proctitle, paths, cfg.clone());
             }
         }else if data.iter().any(|line| {
             line["type"] == "SYSCALL" ||
@@ -147,77 +148,78 @@ mod tests {
             let cfg = AppConfig::new("linux", Some("test/system/audit_config.yml"));
             let (event, position) = read_log(String::from("test/unit/audit.log"),
                 cfg, 0, 0);
+            let audit_event = event.get_audit_event();
 
-            assert_eq!(event.id.len(), 36);
-            assert_eq!(event.path, ".");
-            assert_eq!(event.operation, "CREATE");
-            assert_eq!(event.file, "sedTsutP7");
-            assert_eq!(event.timestamp, "1659026449689");
-            assert_eq!(event.proctitle, "736564002D6900737C68656C6C6F7C4849217C670066696C6531302E747874");
-            assert_eq!(event.cap_fver, "0");
-            assert_eq!(event.inode, "1972630");
-            assert_eq!(event.cap_fp, "0");
-            assert_eq!(event.cap_fe, "0");
-            assert_eq!(event.item, "1");
-            assert_eq!(event.cap_fi, "0");
-            assert_eq!(event.dev, "08:02");
-            assert_eq!(event.mode, "0100000");
-            assert_eq!(event.cap_frootid, "0");
-            assert_eq!(event.ouid, "0");
-            assert_eq!(event.paths[0]["item"], "0");
-            assert_eq!(event.paths[0]["name"], "./");
-            assert_eq!(event.paths[0]["inode"], "1966138");
-            assert_eq!(event.paths[0]["dev"], "08:02");
-            assert_eq!(event.paths[0]["mode"], "040755");
-            assert_eq!(event.paths[0]["ouid"], "1000");
-            assert_eq!(event.paths[0]["ogid"], "0");
-            assert_eq!(event.paths[0]["rdev"], "00:00");
-            assert_eq!(event.paths[0]["nametype"], "PARENT");
-            assert_eq!(event.paths[0]["cap_fp"], "0");
-            assert_eq!(event.paths[0]["cap_fi"], "0");
-            assert_eq!(event.paths[0]["cap_fe"], "0");
-            assert_eq!(event.paths[0]["cap_fver"], "0");
-            assert_eq!(event.paths[0]["cap_frootid"], "0");
-            assert_eq!(event.paths[1]["item"], "1");
-            assert_eq!(event.paths[1]["name"], "./sedTsutP7");
-            assert_eq!(event.paths[1]["inode"], "1972630");
-            assert_eq!(event.paths[1]["dev"], "08:02");
-            assert_eq!(event.paths[1]["mode"], "0100000");
-            assert_eq!(event.paths[1]["ouid"], "0");
-            assert_eq!(event.paths[1]["ogid"], "0");
-            assert_eq!(event.paths[1]["rdev"], "00:00");
-            assert_eq!(event.paths[1]["nametype"], "CREATE");
-            assert_eq!(event.paths[1]["cap_fp"], "0");
-            assert_eq!(event.paths[1]["cap_fi"], "0");
-            assert_eq!(event.paths[1]["cap_fe"], "0");
-            assert_eq!(event.paths[1]["cap_fver"], "0");
-            assert_eq!(event.paths[1]["cap_frootid"], "0");
-            assert_eq!(event.cwd, "/tmp/test");
-            assert_eq!(event.syscall, "257");
-            assert_eq!(event.ppid, "161880");
-            assert_eq!(event.comm, "sed");
-            assert_eq!(event.fsuid, "0");
-            assert_eq!(event.pid, "161937");
-            assert_eq!(event.a0, "ffffff9c");
-            assert_eq!(event.a1, "556150ee3c00");
-            assert_eq!(event.a2, "c2");
-            assert_eq!(event.a3, "180");
-            assert_eq!(event.arch, "c000003e");
-            assert_eq!(event.auid, "1000");
-            assert_eq!(event.items, "2");
-            assert_eq!(event.gid, "0");
-            assert_eq!(event.euid, "0");
-            assert_eq!(event.sgid, "0");
-            assert_eq!(event.uid, "0");
-            assert_eq!(event.tty, "pts0");
-            assert_eq!(event.success, "yes");
-            assert_eq!(event.exit, "4");
-            assert_eq!(event.ses, "807");
-            assert_eq!(event.key, "fim");
-            assert_eq!(event.suid, "0");
-            assert_eq!(event.egid, "0");
-            assert_eq!(event.fsgid, "0");
-            assert_eq!(event.exe, "/usr/bin/sed");
+            assert_eq!(audit_event.id.len(), 36);
+            assert_eq!(audit_event.path, ".");
+            assert_eq!(audit_event.operation, "CREATE");
+            assert_eq!(audit_event.file, "sedTsutP7");
+            assert_eq!(audit_event.timestamp, "1659026449689");
+            assert_eq!(audit_event.proctitle, "736564002D6900737C68656C6C6F7C4849217C670066696C6531302E747874");
+            assert_eq!(audit_event.cap_fver, "0");
+            assert_eq!(audit_event.inode, "1972630");
+            assert_eq!(audit_event.cap_fp, "0");
+            assert_eq!(audit_event.cap_fe, "0");
+            assert_eq!(audit_event.item, "1");
+            assert_eq!(audit_event.cap_fi, "0");
+            assert_eq!(audit_event.dev, "08:02");
+            assert_eq!(audit_event.mode, "0100000");
+            assert_eq!(audit_event.cap_frootid, "0");
+            assert_eq!(audit_event.ouid, "0");
+            assert_eq!(audit_event.paths[0]["item"], "0");
+            assert_eq!(audit_event.paths[0]["name"], "./");
+            assert_eq!(audit_event.paths[0]["inode"], "1966138");
+            assert_eq!(audit_event.paths[0]["dev"], "08:02");
+            assert_eq!(audit_event.paths[0]["mode"], "040755");
+            assert_eq!(audit_event.paths[0]["ouid"], "1000");
+            assert_eq!(audit_event.paths[0]["ogid"], "0");
+            assert_eq!(audit_event.paths[0]["rdev"], "00:00");
+            assert_eq!(audit_event.paths[0]["nametype"], "PARENT");
+            assert_eq!(audit_event.paths[0]["cap_fp"], "0");
+            assert_eq!(audit_event.paths[0]["cap_fi"], "0");
+            assert_eq!(audit_event.paths[0]["cap_fe"], "0");
+            assert_eq!(audit_event.paths[0]["cap_fver"], "0");
+            assert_eq!(audit_event.paths[0]["cap_frootid"], "0");
+            assert_eq!(audit_event.paths[1]["item"], "1");
+            assert_eq!(audit_event.paths[1]["name"], "./sedTsutP7");
+            assert_eq!(audit_event.paths[1]["inode"], "1972630");
+            assert_eq!(audit_event.paths[1]["dev"], "08:02");
+            assert_eq!(audit_event.paths[1]["mode"], "0100000");
+            assert_eq!(audit_event.paths[1]["ouid"], "0");
+            assert_eq!(audit_event.paths[1]["ogid"], "0");
+            assert_eq!(audit_event.paths[1]["rdev"], "00:00");
+            assert_eq!(audit_event.paths[1]["nametype"], "CREATE");
+            assert_eq!(audit_event.paths[1]["cap_fp"], "0");
+            assert_eq!(audit_event.paths[1]["cap_fi"], "0");
+            assert_eq!(audit_event.paths[1]["cap_fe"], "0");
+            assert_eq!(audit_event.paths[1]["cap_fver"], "0");
+            assert_eq!(audit_event.paths[1]["cap_frootid"], "0");
+            assert_eq!(audit_event.cwd, "/tmp/test");
+            assert_eq!(audit_event.syscall, "257");
+            assert_eq!(audit_event.ppid, "161880");
+            assert_eq!(audit_event.comm, "sed");
+            assert_eq!(audit_event.fsuid, "0");
+            assert_eq!(audit_event.pid, "161937");
+            assert_eq!(audit_event.a0, "ffffff9c");
+            assert_eq!(audit_event.a1, "556150ee3c00");
+            assert_eq!(audit_event.a2, "c2");
+            assert_eq!(audit_event.a3, "180");
+            assert_eq!(audit_event.arch, "c000003e");
+            assert_eq!(audit_event.auid, "1000");
+            assert_eq!(audit_event.items, "2");
+            assert_eq!(audit_event.gid, "0");
+            assert_eq!(audit_event.euid, "0");
+            assert_eq!(audit_event.sgid, "0");
+            assert_eq!(audit_event.uid, "0");
+            assert_eq!(audit_event.tty, "pts0");
+            assert_eq!(audit_event.success, "yes");
+            assert_eq!(audit_event.exit, "4");
+            assert_eq!(audit_event.ses, "807");
+            assert_eq!(audit_event.key, "fim");
+            assert_eq!(audit_event.suid, "0");
+            assert_eq!(audit_event.egid, "0");
+            assert_eq!(audit_event.fsgid, "0");
+            assert_eq!(audit_event.exe, "/usr/bin/sed");
             assert_eq!(position, 850);
         }
     }

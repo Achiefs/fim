@@ -26,8 +26,6 @@ use crate::hash::ShaType;
 
 #[derive(Clone)]
 pub struct AppConfig {
-    pub version: String,
-    pub path: String,
     pub events_watcher: String,
     pub events_destination: String,
     pub events_max_file_checksum: usize,
@@ -57,39 +55,6 @@ pub struct AppConfig {
 }
 
 impl AppConfig {
-
-    pub fn clone(&self) -> Self {
-        AppConfig {
-            version: self.version.clone(),
-            path: self.path.clone(),
-            events_watcher: self.events_watcher.clone(),
-            events_destination: self.events_destination.clone(),
-            events_max_file_checksum: self.events_max_file_checksum,
-            events_max_file_size: self.events_max_file_size,
-            checksum_algorithm: self.checksum_algorithm.clone(),
-            endpoint_type: self.endpoint_type.clone(),
-            endpoint_address: self.endpoint_address.clone(),
-            endpoint_user: self.endpoint_user.clone(),
-            endpoint_pass: self.endpoint_pass.clone(),
-            endpoint_token: self.endpoint_token.clone(),
-            events_file: self.events_file.clone(),
-            monitor: self.monitor.clone(),
-            audit: self.audit.clone(),
-            node: self.node.clone(),
-            log_file: self.log_file.clone(),
-            log_level: self.log_level.clone(),
-            log_max_file_size: self.log_max_file_size,
-            system: self.system.clone(),
-            insecure: self.insecure,
-            events_lock: self.events_lock.clone(),
-            log_lock: self.log_lock.clone(),
-            hashscanner_file: self.hashscanner_file.clone(),
-            hashscanner_enabled: self.hashscanner_enabled,
-            hashscanner_interval: self.hashscanner_interval,
-            hashscanner_algorithm: self.hashscanner_algorithm.clone(),
-            engine: self.engine.clone()
-        }
-    }
 
     pub fn new(system: &str, config_path: Option<&str>) -> Self {
         println!("[INFO] System detected '{}'", system);
@@ -335,8 +300,6 @@ impl AppConfig {
         let hashscanner_enabled = yaml[0]["hashscanner"]["enabled"].as_bool().unwrap_or(true);
 
         AppConfig {
-            version: String::from(VERSION),
-            path: cfg,
             events_watcher,
             events_destination,
             events_max_file_checksum,
@@ -542,8 +505,6 @@ mod tests {
 
     pub fn create_test_config(filter: &str, events_destination: &str) -> AppConfig {
         AppConfig {
-            version: String::from(VERSION),
-            path: String::from("test"),
             events_watcher: String::from("Recommended"),
             events_destination: String::from(events_destination),
             events_max_file_checksum: 64,
@@ -579,8 +540,6 @@ mod tests {
     fn test_clone() {
         let cfg = create_test_config("info", "");
         let cloned = cfg.clone();
-        assert_eq!(cfg.version, cloned.version);
-        assert_eq!(cfg.path, cloned.path);
         assert_eq!(cfg.events_destination, cloned.events_destination);
         assert_eq!(cfg.events_max_file_checksum, cloned.events_max_file_checksum);
         assert_eq!(cfg.events_max_file_size, cloned.events_max_file_size);
@@ -614,7 +573,6 @@ mod tests {
         let disk = dir.get(0..1).unwrap();
         let cfg = AppConfig::new("windows", None);
 
-        assert_eq!(cfg.version, String::from(VERSION));
         assert_eq!(cfg.events_destination, String::from("file"));
         assert_eq!(cfg.endpoint_address, String::from("Not_defined"));
         assert_eq!(cfg.endpoint_type, String::from("Not_defined"));
@@ -1026,7 +984,6 @@ mod tests {
     fn test_new_config_linux() {
         if utils::get_os() == "linux" {
             let cfg = AppConfig::new("linux", None);
-            assert_eq!(cfg.version, String::from(VERSION));
             assert_eq!(cfg.events_destination, String::from("file"));
             assert_eq!(cfg.endpoint_type, String::from("Not_defined"));
             assert_eq!(cfg.endpoint_address, String::from("Not_defined"));
@@ -1056,7 +1013,6 @@ mod tests {
     #[test]
     fn test_new_config_macos() {
         let cfg = AppConfig::new("macos", None);
-        assert_eq!(cfg.version, String::from(VERSION));
         assert_eq!(cfg.events_destination, String::from("file"));
         assert_eq!(cfg.endpoint_type, String::from("Not_defined"));
         assert_eq!(cfg.endpoint_address, String::from("Not_defined"));

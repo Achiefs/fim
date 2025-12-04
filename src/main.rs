@@ -8,29 +8,13 @@ use std::thread;
 use log::{error, info};
 use crate::init::init;
 
-// Utils functions
 mod utils;
-// Hashing functions
 mod hash;
-// Configuration load functions
 mod appconfig;
-// Ruleset load functions
 mod ruleset;
-// Index management functions
 mod index;
-// Single event data management
-mod event;
-mod monitorevent;
-mod ruleevent;
-// File reading continuously
 mod logreader;
-mod auditevent;
-// Manage Windows service
-#[cfg(target_os = "windows")]
-mod service;
-// Manage monitor methods
 mod monitor;
-// Manage integrations
 mod integration;
 mod launcher;
 mod multiwatcher;
@@ -39,7 +23,9 @@ mod init;
 mod db;
 mod dbfile;
 mod hashscanner;
-mod hashevent;
+mod events;
+#[cfg(target_os = "windows")]
+mod service;
 
 // ----------------------------------------------------------------------------
 

@@ -9,7 +9,6 @@ use std::sync::mpsc;
 use log::{info, error, debug, warn};
 // To manage paths
 use std::path::Path;
-use time::OffsetDateTime;
 // To use intersperse()
 use itertools::Itertools;
 // Event handling
@@ -25,9 +24,9 @@ use crate::appconfig::*;
 // Index management functions
 use crate::index;
 // Event data management
-use crate::event;
-use event::Event;
-use crate::monitorevent::MonitorEvent;
+use crate::events;
+use crate::events::Event;
+use crate::events::MonitorEvent;
 use crate::ruleset::*;
 // File reading continuously
 use crate::logreader;
@@ -201,9 +200,6 @@ pub async fn monitor(
 
                     let event_path = Path::new(plain_path);
                     let event_filename = event_path.file_name().unwrap();
-
-                    let current_date = OffsetDateTime::now_utc();
-                    let index_name = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
                     let current_timestamp = utils::get_current_time_millis();
                     let kind: notify::EventKind = event.kind;
                     let path = event.paths[0].clone();
@@ -218,7 +214,7 @@ pub async fn monitor(
                         // Getting events from audit.log
                         let mut events = Vec::new();
                         let (log_event, position) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), cfg.clone(), last_position, 0);
-                        if log_event.id != "0" { events.push(log_event); };
+                        if log_event.get_audit_event().id != "0" { events.push(log_event); };
                         let mut ctr = 0;
                         last_position = position;
                         while last_position < utils::get_file_end(logreader::AUDIT_LOG_PATH, 0) {
@@ -226,7 +222,7 @@ pub async fn monitor(
                             let original_position = last_position;
                             ctr += 1;
                             let (evt, pos) = logreader::read_log(String::from(logreader::AUDIT_LOG_PATH), cfg.clone(), last_position, ctr);
-                            if evt.id != "0" {
+                            if evt.get_audit_event().id != "0" {
                                 events.push(evt);
                                 ctr = 0;
                             };
@@ -238,18 +234,18 @@ pub async fn monitor(
                         debug!("Events read from audit log, position: {}", last_position);
 
                         for audit_event in events {
-                            if ! audit_event.is_empty() {
+                            if ! audit_event.get_audit_event().is_empty() {
                                 // Getting the position of event in config (match ignore and labels)
-                                let index = cfg.get_index(audit_event.clone().path.as_str(),
-                                    audit_event.clone().cwd.as_str(),
+                                let index = cfg.get_index(audit_event.get_audit_event().path.as_str(),
+                                    audit_event.get_audit_event().cwd.as_str(),
                                     cfg.clone().audit.to_vec());
 
                                 if index != usize::MAX {
                                     // If event contains ignored string ignore event
-                                    if ! cfg.match_ignore(index, audit_event.clone().file.as_str(), cfg.clone().audit)  &&
-                                        ! cfg.match_exclude(index, audit_event.clone().path.as_str(), cfg.clone().audit) &&
-                                        cfg.match_allowed(index, audit_event.clone().file.as_str(), cfg.clone().audit) {
-                                        audit_event.process(destination.clone().as_str(), index_name.clone(), cfg.clone(), ruleset.clone()).await;
+                                    if ! cfg.match_ignore(index, audit_event.get_audit_event().file.as_str(), cfg.clone().audit)  &&
+                                        ! cfg.match_exclude(index, audit_event.get_audit_event().path.as_str(), cfg.clone().audit) &&
+                                        cfg.match_allowed(index, audit_event.get_audit_event().file.as_str(), cfg.clone().audit) {
+                                        audit_event.process(cfg.clone(), ruleset.clone()).await;
                                     }else{
                                         debug!("Event ignored/excluded not stored in alerts");
                                     }
@@ -270,7 +266,7 @@ pub async fn monitor(
                             if ! cfg.match_ignore(index, event_filename.to_str().unwrap(), cfg.clone().monitor) &&
                                 ! cfg.match_exclude(index, parent, cfg.clone().monitor) &&
                                 cfg.match_allowed(index, event_filename.to_str().unwrap(), cfg.clone().monitor) {
-                                let event = MonitorEvent {
+                                let event = Event::Monitor(MonitorEvent {
                                     id: utils::get_uuid(),
                                     timestamp: current_timestamp,
                                     hostname: utils::get_hostname(),
@@ -280,12 +276,12 @@ pub async fn monitor(
                                     path: path.clone(),
                                     size: utils::get_file_size(path.clone().to_str().unwrap()),
                                     labels,
-                                    operation: event::get_operation(kind),
-                                    detailed_operation: event::get_detailed_operation(kind),
+                                    operation: events::get_operation(kind),
+                                    detailed_operation: events::get_detailed_operation(kind),
                                     checksum: hash::get_checksum( String::from(path.to_str().unwrap()), cfg.clone().events_max_file_checksum, cfg.clone().checksum_algorithm),
                                     fpid: utils::get_pid(),
                                     system: cfg.clone().system
-                                };
+                                });
 
                                 debug!("Event processed: {:?}", event);
                                 event.process(cfg.clone(), ruleset.clone()).await;

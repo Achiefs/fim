@@ -3,8 +3,10 @@
 use crate::db;
 use crate::dbfile::*;
 use crate::appconfig::AppConfig;
-use crate::hashevent;
-use crate::hashevent::HashEvent;
+use crate::events::Event;
+use crate::events::HashEvent;
+use crate::events::hashevent::{WRITE, REMOVE, CREATE};
+use crate::ruleset::Ruleset;
 use crate::utils;
 
 use walkdir::WalkDir;
@@ -56,8 +58,8 @@ pub async fn check_path(cfg: AppConfig, root: String, first_scan: bool) {
                         let current_dbfile = db.update_file(cfg.clone(), dbfile.clone());
                         match current_dbfile {
                             Some(data) => {
-                                let event = HashEvent::new(Some(dbfile), data, String::from(hashevent::WRITE));
-                                event.process(cfg.clone()).await;
+                                let event = Event::Hash(HashEvent::new(Some(dbfile), data, String::from(WRITE)));
+                                event.process(cfg.clone(), Ruleset::new(utils::get_os(), None)).await;
                             },
                             None => warn!("Could not update file checksum information in database, file: '{}'", path.display())
                         }
@@ -66,8 +68,8 @@ pub async fn check_path(cfg: AppConfig, root: String, first_scan: bool) {
                         let current_dbfile = db.update_file(cfg.clone(), dbfile.clone());
                         match current_dbfile {
                             Some(data) => {
-                                let event = HashEvent::new(Some(dbfile), data, String::from(hashevent::WRITE));
-                                event.process(cfg.clone()).await;
+                                let event = Event::Hash(HashEvent::new(Some(dbfile), data, String::from(WRITE)));
+                                event.process(cfg.clone(), Ruleset::new(utils::get_os(), None)).await;
                             },
                             None => warn!("Could not update file permissions information in database, file: '{}'", path.display())
                         }
@@ -80,8 +82,8 @@ pub async fn check_path(cfg: AppConfig, root: String, first_scan: bool) {
                         db.insert_file(dbfile.clone());
                         // Only trigger new file event in case it is a first scan else monitor will notify.
                         if first_scan {
-                            let event = HashEvent::new(None, dbfile, String::from(hashevent::CREATE));
-                            event.process(cfg.clone()).await;
+                            let event = Event::Hash(HashEvent::new(None, dbfile, String::from(CREATE)));
+                            event.process(cfg.clone(), Ruleset::new(utils::get_os(), None)).await;
                         }
                     } else {
                         error!("Could not get file '{}' information from database, Error: {:?}", path.display(), e)
@@ -119,8 +121,8 @@ pub async fn update_db(cfg: AppConfig, root: String, first_scan: bool) {
             Ok(_v) => {
                 // Only trigger delete file event in case it is a first scan else monitor will notify.
                 if first_scan {
-                    let event = HashEvent::new(None, dbfile, String::from(hashevent::REMOVE));
-                    event.process(cfg.clone()).await;
+                    let event = Event::Hash(HashEvent::new(None, dbfile, String::from(REMOVE)));
+                    event.process(cfg.clone(), Ruleset::new(utils::get_os(), None)).await;
                 }
                 debug!("File {} deleted from databse", file.path)
             },

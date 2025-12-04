@@ -1,0 +1,143 @@
+// Copyright (C) 2024, Achiefs.
+
+#[cfg(test)]
+mod tests;
+
+use crate::appconfig;
+use crate::appconfig::*;
+
+use log::*;
+use serde::Serialize;
+use serde_json::json;
+use std::path::PathBuf;
+use reqwest::Client;
+use std::fs::OpenOptions;
+use std::time::Duration;
+use std::io::Write;
+
+#[derive(Clone, Serialize, Debug)]
+pub struct RuleEvent {
+    pub id: usize,
+    pub rule: String,
+    pub timestamp: String,
+    pub hostname: String,
+    pub version: String,
+    pub path: PathBuf,
+    pub fpid: u32,
+    pub system: String,
+    pub message: String,
+    pub parent_id: String
+}
+
+// ----------------------------------------------------------------------------
+
+impl RuleEvent {
+
+    // Get formatted string with all required data
+    pub fn to_json(&self) -> String { serde_json::to_string(self).unwrap() }
+
+    // ------------------------------------------------------------------------
+
+    // Function to write the received events to file
+    pub fn log(&self, cfg: AppConfig) {
+        let file = cfg.events_lock.lock().unwrap();
+        let mut events_file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(file.as_str())
+            .expect("(log) Unable to open events log file.");
+
+        match writeln!(events_file, "{}", self.to_json() ) {
+            Ok(_d) => debug!("Event log written"),
+            Err(e) => error!("Event could not be written, Err: [{}]", e)
+        }
+    }
+
+    // ------------------------------------------------------------------------
+
+    // Function to send events through network
+    async fn send(&self, cfg: AppConfig) {
+        use time::OffsetDateTime;
+        let current_date = OffsetDateTime::now_utc();
+        let index = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
+        
+        // Splunk endpoint integration
+        if cfg.endpoint_type == "Splunk" {
+            let data = json!({
+                "source": "FIM_RULESET",
+                "sourcetype": "_json",
+                "event": json!({
+                    "rule": self.rule.clone(),
+                    "timestamp": self.timestamp.clone(),
+                    "hostname": self.hostname.clone(),
+                    "fpid": self.fpid.clone(),
+                    "version": self.version.clone(),
+                    "system": self.system.clone(),
+                    "message": self.message.clone(),
+                    "parent_id": self.parent_id.clone()
+                }),
+                "index": "fim_events"
+            });
+            debug!("Sending received event to Splunk integration, event: {}", data);
+            let request_url = format!("{}/services/collector/event", cfg.endpoint_address);
+            let client = Client::builder()
+                .danger_accept_invalid_certs(cfg.insecure)
+                .timeout(Duration::from_secs(30))
+                .build().unwrap();
+            match client
+                .post(request_url)
+                .header("Authorization", format!("Splunk {}", cfg.endpoint_token))
+                .json(&data)
+                .send()
+                .await {
+                    Ok(response) => debug!("Response received: {:?}",
+                        response.text().await.unwrap()),
+                    Err(e) => debug!("Error on request: {:?}", e)
+            }
+        // Elastic endpoint integration
+        } else {
+            let data = json!({
+                "rule": self.rule.clone(),
+                "timestamp": self.timestamp.clone(),
+                "hostname": self.hostname.clone(),
+                "fpid": self.fpid.clone(),
+                "version": self.version.clone(),
+                "system": self.system.clone(),
+                "message": self.message.clone(),
+                "parent_id": self.parent_id.clone()
+            });
+            let request_url = format!("{}/{}/_doc/{}", cfg.endpoint_address, index, self.id);
+            let client = Client::builder()
+                .danger_accept_invalid_certs(cfg.insecure)
+                .timeout(Duration::from_secs(30))
+                .build().unwrap();
+            match client
+                .post(request_url)
+                .basic_auth(cfg.endpoint_user, Some(cfg.endpoint_pass))
+                .json(&data)
+                .send()
+                .await {
+                    Ok(response) => debug!("Response received: {:?}",
+                        response.text().await.unwrap()),
+                    Err(e) => debug!("Error on request: {:?}", e)
+            }
+        }
+
+    }
+
+    // ------------------------------------------------------------------------
+
+    // Function to manage event destination
+    pub async fn process(&self, cfg: AppConfig) {
+        match cfg.get_events_destination().as_str() {
+            appconfig::BOTH_MODE => {
+                self.log(cfg.clone());
+                self.send(cfg).await;
+            },
+            appconfig::NETWORK_MODE => {
+                self.send(cfg).await;
+            },
+            _ => self.log(cfg.clone())
+        }
+    }
+}

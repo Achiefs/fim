@@ -68,12 +68,31 @@ fn test_log() {
 
     event.log(cfg.clone());
     let contents = fs::read_to_string(filename.clone());
-    let expected = "{\"dbfile.hash\":\"HASHC\",\"dbfile.id\":\"CURRENT\",\
+    let expected = "{\
+        \"previous_dbfile\":{\
+            \"id\":\"PREVIOUS\",\
+            \"timestamp\":\"TIMESTAMP\",\
+            \"hash\":\"HASH\",\
+            \"path\":\"PATH\",\
+            \"size\":123,\
+            \"permissions\":0\
+        },\
+        \"dbfile\":{\
+            \"id\":\"CURRENT\",\
+            \"timestamp\":\"TIMESTAMPC\",\
+            \"hash\":\"HASHC\",\
+            \"path\":\"PATHC\",\
+            \"size\":1234,\
+            \"permissions\":1\
+        },\
+        \"operation\":\"NEW\"\
+    }\n";
+    /*let expected = "{\"dbfile.hash\":\"HASHC\",\"dbfile.id\":\"CURRENT\",\
         \"dbfile.path\":\"PATHC\",\"dbfile.permissions\":1,\"dbfile.size\":1234,\
         \"dbfile.timestamp\":\"TIMESTAMPC\",\"operation\":\"NEW\",\
         \"previous_dbfile.hash\":\"HASH\",\"previous_dbfile.id\":\"PREVIOUS\",\
         \"previous_dbfile.path\":\"PATH\",\"previous_dbfile.permissions\":0,\
-        \"previous_dbfile.size\":123,\"previous_dbfile.timestamp\":\"TIMESTAMP\"}\n";
+        \"previous_dbfile.size\":123,\"previous_dbfile.timestamp\":\"TIMESTAMP\"}\n";*/
     assert_eq!(contents.unwrap(), expected);
     fs::remove_file(filename).unwrap();
 }
@@ -113,41 +132,32 @@ fn test_process() {
 
 #[test]
 /// Check JSON output format, it should match the expected output
-fn test_format_json() {
-    let expected = "{\"dbfile.hash\":\"HASHC\",\"dbfile.id\":\"CURRENT\",\
+fn test_to_json() {
+    let expected = "{\
+        \"previous_dbfile\":{\
+            \"id\":\"PREVIOUS\",\
+            \"timestamp\":\"TIMESTAMP\",\
+            \"hash\":\"HASH\",\
+            \"path\":\"PATH\",\
+            \"size\":123,\
+            \"permissions\":0\
+        },\
+        \"dbfile\":{\
+            \"id\":\"CURRENT\",\
+            \"timestamp\":\"TIMESTAMPC\",\
+            \"hash\":\"HASHC\",\
+            \"path\":\"PATHC\",\
+            \"size\":1234,\
+            \"permissions\":1\
+        },\
+        \"operation\":\"NEW\"\
+    }";
+
+    /*let expected = "{\"dbfile.hash\":\"HASHC\",\"dbfile.id\":\"CURRENT\",\
     \"dbfile.path\":\"PATHC\",\"dbfile.permissions\":1,\"dbfile.size\":1234,\
     \"dbfile.timestamp\":\"TIMESTAMPC\",\"operation\":\"NEW\",\
     \"previous_dbfile.hash\":\"HASH\",\"previous_dbfile.id\":\"PREVIOUS\",\
     \"previous_dbfile.path\":\"PATH\",\"previous_dbfile.permissions\":0,\
-    \"previous_dbfile.size\":123,\"previous_dbfile.timestamp\":\"TIMESTAMP\"}";
-    assert_eq!(create_test_event().format_json(), expected);
-}
-
-// ------------------------------------------------------------------------
-
-#[test]
-/// Check the JSON object generation, it should match the attributes of main object
-fn test_get_json() {
-    let event = create_test_event();
-    let json = event.get_json();
-
-    match event.previous_dbfile {
-        Some(data) => {
-            assert_eq!(data.id, json["previous_dbfile.id"]);
-            assert_eq!(data.timestamp, json["previous_dbfile.timestamp"]);
-            assert_eq!(data.hash, json["previous_dbfile.hash"]);
-            assert_eq!(data.path, json["previous_dbfile.path"]);
-            assert_eq!(data.size, json["previous_dbfile.size"]);
-            assert_eq!(data.permissions, json["previous_dbfile.permissions"]);
-        },
-        None => assert!(false)
-    }
-
-    assert_eq!(event.dbfile.id, json["dbfile.id"]);
-    assert_eq!(event.dbfile.timestamp, json["dbfile.timestamp"]);
-    assert_eq!(event.dbfile.hash, json["dbfile.hash"]);
-    assert_eq!(event.dbfile.path, json["dbfile.path"]);
-    assert_eq!(event.dbfile.size, json["dbfile.size"]);
-    assert_eq!(event.dbfile.permissions, json["dbfile.permissions"]);
-    assert_eq!(event.operation, json["operation"]);
+    \"previous_dbfile.size\":123,\"previous_dbfile.timestamp\":\"TIMESTAMP\"}";*/
+    assert_eq!(create_test_event().to_json(), expected);
 }
