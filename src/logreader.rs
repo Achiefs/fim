@@ -1,29 +1,20 @@
 // Copyright (C) 2022, Achiefs.
 
-// Global constants definitions
 pub const AUDIT_PATH: &str = "/var/log/audit";
 pub const AUDIT_LOG_PATH: &str = "/var/log/audit/audit.log";
 
-// To manage file reading
 use std::io::{BufReader, SeekFrom};
 use std::io::prelude::*;
-// To manage readed data into collection
 use std::collections::HashMap;
-// To log the program process
 use log::{debug, error};
 
-// Single event data management
 use crate::events::Event;
 use crate::events::AuditEvent;
-// To manage common functions
 use crate::utils;
-// To get configuration constants
 use crate::appconfig::*;
 
 // Defined type to simplify syntax
 type SHashMap = HashMap<String, String>;
-
-// ----------------------------------------------------------------------------
 
 // Read file to extract last data until the Audit ID changes
 pub fn read_log(file: String, cfg: AppConfig, position: u64, itx: u64) -> (Event, u64) {

@@ -3,7 +3,6 @@
 #[cfg(test)]
 mod tests;
 
-// Global constants definitions
 pub const REMOVE: &str = "REMOVE";
 pub const CREATE: &str = "CREATE";
 pub const WRITE: &str = "WRITE";

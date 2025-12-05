@@ -1,16 +1,11 @@
 // Copyright (C) 2021, Achiefs.
 
-// To use files IO operations.
 use tokio::fs::File;
 use tokio_util::codec::{BytesCodec, FramedRead};
-// To manage HTTP requests
 use reqwest::{Client, Body};
 use reqwest::header;
-// To log the program process
 use log::{info, debug, error};
-// To manage paths
 use std::path::Path;
-// Handle time intervals
 use std::time::Duration;
 use std::env;
 

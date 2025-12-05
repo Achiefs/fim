@@ -13,7 +13,7 @@ pub struct DBFileError {
     message: String
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Serialize, Debug)]
 pub struct DBFile {
     pub id: String,
     pub timestamp: String,
@@ -25,8 +25,6 @@ pub struct DBFile {
 
 #[cfg(test)]
 mod test;
-
-// ----------------------------------------------------------------------------
 
 impl DBFileError {
     pub fn not_found_error() -> Self {
@@ -61,21 +59,6 @@ impl fmt::Debug for DBFileError {
         f.debug_tuple("")
         .field(&self.kind)
         .field(&self.message)
-        .finish()
-    }
-}
-
-// ----------------------------------------------------------------------------
-
-impl fmt::Debug for DBFile {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result{
-        f.debug_tuple("")
-        .field(&self.id)
-        .field(&self.timestamp)
-        .field(&self.hash)
-        .field(&self.path)
-        .field(&self.size)
-        .field(&self.permissions)
         .finish()
     }
 }

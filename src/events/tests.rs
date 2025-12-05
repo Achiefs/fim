@@ -1,6 +1,6 @@
-use super::*;
+// Copyright (C) 2025, Achiefs.
 
-// ------------------------------------------------------------------------
+use super::*;
 
 #[test]
 fn test_get_operation(){

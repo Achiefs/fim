@@ -1,3 +1,5 @@
+// Copyright (C) 2025, Achiefs.
+
 #[cfg(test)]
 mod tests;
 

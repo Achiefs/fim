@@ -6,8 +6,6 @@ use std::process::Command;
 use crate::events::MonitorEvent;
 use crate::utils;
 
-// ----------------------------------------------------------------------------
-
 #[derive(Clone, Debug, Default)]
 pub struct Integration {
     pub name: String,
@@ -16,8 +14,6 @@ pub struct Integration {
     pub script: String,
     pub parameters: String
 }
-
-// ----------------------------------------------------------------------------
 
 impl Integration {
     pub fn launch(&self, event: String) {
@@ -51,7 +47,6 @@ pub fn get_event_integration(event: MonitorEvent, integrations: Vec<Integration>
 }
 
 // ----------------------------------------------------------------------------
-
 
 #[cfg(test)]
 mod tests {
