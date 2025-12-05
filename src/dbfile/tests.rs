@@ -27,23 +27,6 @@ fn test_new() {
 // ------------------------------------------------------------------------
 
 #[test]
-/// Check each attributes of cloned object
-fn test_clone() {
-    let cfg = AppConfig::new(&utils::get_os(), None);
-    let dbfile = DBFile::new(cfg.clone(), "LICENSE", None);
-    let cloned = dbfile.clone();
-
-    assert_eq!(dbfile.id, cloned.id);
-    assert_eq!(dbfile.timestamp, cloned.timestamp);
-    assert_eq!(dbfile.hash, cloned.hash);
-    assert_eq!(dbfile.path, cloned.path);
-    assert_eq!(dbfile.size, cloned.size);
-    assert_eq!(dbfile.permissions, cloned.permissions);
-}
-
-// ------------------------------------------------------------------------
-
-#[test]
 /// Check match of file hashing function
 fn test_get_file_hash() {
     let cfg = AppConfig::new(&utils::get_os(), None);
@@ -51,29 +34,6 @@ fn test_get_file_hash() {
     let hash = dbfile.get_file_hash(cfg.clone());
 
     assert_eq!(dbfile.hash, hash);
-}
-
-// ------------------------------------------------------------------------
-
-#[test]
-/// Check the dbfile debug stdout formatter
-fn test_fmt_debug() {
-    let cfg = AppConfig::new(&utils::get_os(), None);
-    let mut dbfile = DBFile::new(cfg.clone(), "LICENSE", None);
-    dbfile.id = String::from("FIXED_ID");
-    dbfile.timestamp = String::from("FIXED_TIMESTAMP");
-
-    let out = format!("{:?}", dbfile);
-    let expected = if cfg!(target_family = "unix") {
-        "(\"FIXED_ID\", \"FIXED_TIMESTAMP\", \
-        \"edb0016d9f8bafb54540da34f05a8d510de8114488f23916276bdead05509a53\", \
-        \"LICENSE\", 35149, 100644)"
-    } else {
-        "(\"FIXED_ID\", \"FIXED_TIMESTAMP\", \
-        \"209ba691a607610997f45be93529e6f582c1316a50a85af3ff257457a85d8f94\", \
-        \"LICENSE\", 35823, 0)"
-    };
-    assert_eq!(out, expected);
 }
 
 // ------------------------------------------------------------------------

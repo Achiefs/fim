@@ -1,5 +1,8 @@
 // Copyright (C) 2024, Achiefs.
 
+#[cfg(test)]
+mod tests;
+
 use crate::utils;
 use crate::hash;
 use crate::appconfig::*;
@@ -22,9 +25,6 @@ pub struct DBFile {
     pub size: u64,
     pub permissions: u32
 }
-
-#[cfg(test)]
-mod test;
 
 impl DBFileError {
     pub fn not_found_error() -> Self {
