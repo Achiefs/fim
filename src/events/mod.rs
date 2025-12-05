@@ -16,7 +16,7 @@ pub enum Event {
     Monitor(MonitorEvent),
     Rule(RuleEvent),
     Hash(HashEvent),
-    Audit(Box<AuditEvent>)
+    Audit(Box<AuditEvent>) // Boxed due to big struct size
 }
 
 impl Event {

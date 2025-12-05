@@ -1,5 +1,4 @@
 use super::*;
-use crate::auditevent::AuditEvent;
 use tokio_test::block_on;
 use std::fs;
 
@@ -219,7 +218,7 @@ fn test_from() {
             (String::from("msg"), String::from("audit(1659026449.689:6434)"))
         ]);
 
-        let event = Event::from(syscall.clone(), cwd.clone(), proctitle, paths.clone(), cfg.clone());
+        let event = AuditEvent::from(syscall.clone(), cwd.clone(), proctitle, paths.clone(), cfg.clone()).get_audit_event();
         assert_eq!(String::from("1659026449689"), event.timestamp);
         assert_eq!(utils::get_hostname(), event.hostname);
         assert_eq!(String::from("FIM"), event.node);
@@ -278,7 +277,7 @@ fn test_from() {
             (String::from("proctitle"), String::from("bash")),
             (String::from("msg"), String::from("audit(1659026449.689:6434)"))
         ]);
-        let event = AuditEvent::from(syscall, cwd, proctitle, paths.clone(), cfg.clone());
+        let event = AuditEvent::from(syscall, cwd, proctitle, paths.clone(), cfg.clone()).get_audit_event();
         assert_eq!(String::from("bash"), event.proctitle);
 
     }
@@ -364,61 +363,61 @@ fn test_is_empty() {
 fn test_to_json() {
     let json = create_test_event().to_json();
     let string = String::from("{\
+        \"id\":\"ID\",\
+        \"timestamp\":\"TIMESTAMP\",\
+        \"hostname\":\"HOSTNAME\",\
+        \"node\":\"NODE\",\
+        \"version\":\"VERSION\",\
+        \"path\":\"PATH\",\
+        \"file\":\"FILE\",\
+        \"size\":0,\
+        \"labels\":[],\
+        \"operation\":\"OPERATION\",\
+        \"checksum\":\"CHECKSUM\",\
+        \"fpid\":0,\
+        \"system\":\"SYSTEM\",\
+        \"command\":\"COMMAND\",\
+        \"ogid\":\"OGID\",\
+        \"rdev\":\"RDEV\",\
+        \"proctitle\":\"PROCTITLE\",\
+        \"cap_fver\":\"CAP_FVER\",\
+        \"inode\":\"INODE\",\
+        \"cap_fp\":\"CAP_FP\",\
+        \"cap_fe\":\"CAP_FE\",\
+        \"item\":\"ITEM\",\
+        \"cap_fi\":\"CAP_FI\",\
+        \"dev\":\"DEV\",\
+        \"mode\":\"MODE\",\
+        \"cap_frootid\":\"CAP_FROOTID\",\
+        \"ouid\":\"OUID\",\
+        \"paths\":[],\
+        \"cwd\":\"CWD\",\
+        \"syscall\":\"SYSCALL\",\
+        \"ppid\":\"PPID\",\
+        \"comm\":\"COMM\",\
+        \"fsuid\":\"FSUID\",\
+        \"pid\":\"PID\",\
         \"a0\":\"A0\",\
         \"a1\":\"A1\",\
-		\"a2\":\"A2\",\
+        \"a2\":\"A2\",\
         \"a3\":\"A3\",\
-		\"arch\":\"ARCH\",\
-		\"auid\":\"AUID\",\
-		\"cap_fe\":\"CAP_FE\",\
-        \"cap_fi\":\"CAP_FI\",\
-		\"cap_fp\":\"CAP_FP\",\
-		\"cap_frootid\":\"CAP_FROOTID\",\
-        \"cap_fver\":\"CAP_FVER\",\
-		\"checksum\":\"CHECKSUM\",\
-		\"comm\":\"COMM\",\
-        \"command\":\"COMMAND\",\
-		\"cwd\":\"CWD\",\
-		\"dev\":\"DEV\",\
-		\"egid\":\"EGID\",\
+        \"arch\":\"ARCH\",\
+        \"auid\":\"AUID\",\
+        \"items\":\"ITEMS\",\
+        \"gid\":\"GID\",\
         \"euid\":\"EUID\",\
-		\"exe\":\"EXE\",\
-		\"exit\":\"EXIT\",\
-		\"file\":\"FILE\",\
-        \"file_size\":0,\
-		\"fpid\":0,\
-		\"fsgid\":\"FSGID\",\
-		\"fsuid\":\"FSUID\",\
-		\"gid\":\"GID\",\
-        \"hostname\":\"HOSTNAME\",\
-		\"id\":\"ID\",\
-		\"inode\":\"INODE\",\
-        \"item\":\"ITEM\",\
-		\"items\":\"ITEMS\",\
-		\"key\":\"KEY\",\
-		\"labels\":[],\
-        \"mode\":\"MODE\",\
-		\"node\":\"NODE\",\
-		\"ogid\":\"OGID\",\
-        \"operation\":\"OPERATION\",\
-		\"ouid\":\"OUID\",\
-		\"path\":\"PATH\",\
-        \"paths\":[],\
-		\"pid\":\"PID\",\
-		\"ppid\":\"PPID\",\
-		\"proctitle\":\"PROCTITLE\",\
-        \"rdev\":\"RDEV\",\
-		\"ses\":\"SES\",\
-		\"sgid\":\"SGID\",\
-		\"source\":\"SOURCE\",\
-        \"success\":\"SUCCESS\",\
-		\"suid\":\"SUID\",\
-		\"syscall\":\"SYSCALL\",\
-        \"system\":\"SYSTEM\",\
-		\"timestamp\":\"TIMESTAMP\",\
-		\"tty\":\"TTY\",\
+        \"sgid\":\"SGID\",\
         \"uid\":\"UID\",\
-		\"version\":\"VERSION\"\
+        \"tty\":\"TTY\",\
+        \"success\":\"SUCCESS\",\
+        \"exit\":\"EXIT\",\
+        \"ses\":\"SES\",\
+        \"key\":\"KEY\",\
+        \"suid\":\"SUID\",\
+        \"egid\":\"EGID\",\
+        \"fsgid\":\"FSGID\",\
+        \"exe\":\"EXE\",\
+        \"source\":\"SOURCE\"\
     }");
     assert_eq!(json, string);
 }
@@ -433,61 +432,61 @@ fn test_log() {
     event.log(cfg.clone());
 
     let expected = "{\
-        \"a0\":\"A0\",\
-		\"a1\":\"A1\",\
-		\"a2\":\"A2\",\
-		\"a3\":\"A3\",\
-        \"arch\":\"ARCH\",\
-		\"auid\":\"AUID\",\
-		\"cap_fe\":\"CAP_FE\",\
-        \"cap_fi\":\"CAP_FI\",\
-		\"cap_fp\":\"CAP_FP\",\
-        \"cap_frootid\":\"CAP_FROOTID\",\
-		\"cap_fver\":\"CAP_FVER\",\
-        \"checksum\":\"CHECKSUM\",\
-		\"comm\":\"COMM\",\
-		\"command\":\"COMMAND\",\
-        \"cwd\":\"CWD\",\
-		\"dev\":\"DEV\",\
-		\"egid\":\"EGID\",\
-		\"euid\":\"EUID\",\
-        \"exe\":\"EXE\",\
-		\"exit\":\"EXIT\",\
-		\"file\":\"FILE\",\
-		\"file_size\":0,\
-		\"fpid\":0,\
-        \"fsgid\":\"FSGID\",\
-		\"fsuid\":\"FSUID\",\
-		\"gid\":\"GID\",\
-        \"hostname\":\"HOSTNAME\",\
-		\"id\":\"ID\",\
-		\"inode\":\"INODE\",\
-        \"item\":\"ITEM\",\
-		\"items\":\"ITEMS\",\
-		\"key\":\"KEY\",\
-		\"labels\":[],\
-        \"mode\":\"MODE\",\
-		\"node\":\"NODE\",\
-		\"ogid\":\"OGID\",\
-        \"operation\":\"OPERATION\",\
-		\"ouid\":\"OUID\",\
-		\"path\":\"PATH\",\
-        \"paths\":[],\
-		\"pid\":\"PID\",\
-		\"ppid\":\"PPID\",\
-        \"proctitle\":\"PROCTITLE\",\
-		\"rdev\":\"RDEV\",\
-		\"ses\":\"SES\",\
-        \"sgid\":\"SGID\",\
-		\"source\":\"SOURCE\",\
-		\"success\":\"SUCCESS\",\
-        \"suid\":\"SUID\",\
-		\"syscall\":\"SYSCALL\",\
-		\"system\":\"SYSTEM\",\
+        \"id\":\"ID\",\
         \"timestamp\":\"TIMESTAMP\",\
-		\"tty\":\"TTY\",\
-		\"uid\":\"UID\",\
-        \"version\":\"VERSION\"\
+        \"hostname\":\"HOSTNAME\",\
+        \"node\":\"NODE\",\
+        \"version\":\"VERSION\",\
+        \"path\":\"PATH\",\
+        \"file\":\"FILE\",\
+        \"size\":0,\
+        \"labels\":[],\
+        \"operation\":\"OPERATION\",\
+        \"checksum\":\"CHECKSUM\",\
+        \"fpid\":0,\
+        \"system\":\"SYSTEM\",\
+        \"command\":\"COMMAND\",\
+        \"ogid\":\"OGID\",\
+        \"rdev\":\"RDEV\",\
+        \"proctitle\":\"PROCTITLE\",\
+        \"cap_fver\":\"CAP_FVER\",\
+        \"inode\":\"INODE\",\
+        \"cap_fp\":\"CAP_FP\",\
+        \"cap_fe\":\"CAP_FE\",\
+        \"item\":\"ITEM\",\
+        \"cap_fi\":\"CAP_FI\",\
+        \"dev\":\"DEV\",\
+        \"mode\":\"MODE\",\
+        \"cap_frootid\":\"CAP_FROOTID\",\
+        \"ouid\":\"OUID\",\
+        \"paths\":[],\
+        \"cwd\":\"CWD\",\
+        \"syscall\":\"SYSCALL\",\
+        \"ppid\":\"PPID\",\
+        \"comm\":\"COMM\",\
+        \"fsuid\":\"FSUID\",\
+        \"pid\":\"PID\",\
+        \"a0\":\"A0\",\
+        \"a1\":\"A1\",\
+        \"a2\":\"A2\",\
+        \"a3\":\"A3\",\
+        \"arch\":\"ARCH\",\
+        \"auid\":\"AUID\",\
+        \"items\":\"ITEMS\",\
+        \"gid\":\"GID\",\
+        \"euid\":\"EUID\",\
+        \"sgid\":\"SGID\",\
+        \"uid\":\"UID\",\
+        \"tty\":\"TTY\",\
+        \"success\":\"SUCCESS\",\
+        \"exit\":\"EXIT\",\
+        \"ses\":\"SES\",\
+        \"key\":\"KEY\",\
+        \"suid\":\"SUID\",\
+        \"egid\":\"EGID\",\
+        \"fsgid\":\"FSGID\",\
+        \"exe\":\"EXE\",\
+        \"source\":\"SOURCE\"\
     }\n";
 
     let log = utils::read_file(filename);
@@ -502,7 +501,7 @@ fn test_log() {
 fn test_send() {
     let event = create_test_event();
     let cfg = AppConfig::new(&utils::get_os(), None);
-    block_on( event.send(String::from("test"), cfg) );
+    block_on( event.send(cfg) );
 }
 
 // ------------------------------------------------------------------------
@@ -511,7 +510,7 @@ fn test_send() {
 fn test_send_splunk() {
     let event = create_test_event();
     let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml"));
-    block_on( event.send(String::from("test"), cfg) );
+    block_on( event.send(cfg) );
 }
 
 // ------------------------------------------------------------------------
@@ -522,62 +521,7 @@ fn test_process() {
     let ruleset = Ruleset::new(&utils::get_os(), None);  
     let event = create_test_event();
 
-    block_on(event.process(appconfig::NETWORK_MODE, String::from("test"), cfg.clone(), ruleset.clone()));
-    block_on(event.process(appconfig::FILE_MODE, String::from("test2"), cfg.clone(), ruleset.clone()));
-    block_on(event.process(appconfig::BOTH_MODE, String::from("test3"), cfg.clone(), ruleset.clone()));
-}
-
-// ------------------------------------------------------------------------
-
-#[test]
-fn test_event_fmt(){
-    let out = format!("{:?}", create_test_event());
-    let expected = " { \
-        id: \"ID\", \
-        path: \"PATH\", \
-        operation: \"OPERATION\", \
-        file: \"FILE\", \
-        file_size: 0, \
-        timestamp: \"TIMESTAMP\", \
-        proctitle: \"PROCTITLE\", \
-        cap_fver: \"CAP_FVER\", \
-        inode: \"INODE\", \
-        cap_fp: \"CAP_FP\", \
-        cap_fe: \"CAP_FE\", \
-        item: \"ITEM\", \
-        cap_fi: \"CAP_FI\", \
-        dev: \"DEV\", \
-        mode: \"MODE\", \
-        cap_frootid: \"CAP_FROOTID\", \
-        ouid: \"OUID\", \
-        paths: [], \
-        cwd: \"CWD\", \
-        syscall: \"SYSCALL\", \
-        ppid: \"PPID\", \
-        comm: \"COMM\", \
-        fsuid: \"FSUID\", \
-        pid: \"PID\", \
-        a0: \"A0\", \
-        a1: \"A1\", \
-        a2: \"A2\", \
-        a3: \"A3\", \
-        arch: \"ARCH\", \
-        auid: \"AUID\", \
-        items: \"ITEMS\", \
-        gid: \"GID\", \
-        euid: \"EUID\", \
-        sgid: \"SGID\", \
-        uid: \"UID\", \
-        tty: \"TTY\", \
-        success: \"SUCCESS\", \
-        exit: \"EXIT\", \
-        ses: \"SES\", \
-        key: \"KEY\", \
-        suid: \"SUID\", \
-        egid: \"EGID\", \
-        fsgid: \"FSGID\", \
-        exe: \"EXE\" \
-    }";
-
-    assert_eq!(out, expected);
+    block_on(event.process(cfg.clone(), ruleset.clone()));
+    block_on(event.process(cfg.clone(), ruleset.clone()));
+    block_on(event.process(cfg.clone(), ruleset.clone()));
 }
