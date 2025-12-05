@@ -17,9 +17,7 @@ use std::thread;
 use tokio::runtime::Runtime;
 
 #[cfg(test)]
-mod test;
-
-// ----------------------------------------------------------------------------
+mod tests;
 
 pub fn scan_path(cfg: AppConfig, root: String) {
     let db = db::DB::new(&cfg.hashscanner_file);

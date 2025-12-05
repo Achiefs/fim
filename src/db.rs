@@ -13,9 +13,7 @@ pub struct DB {
 }
 
 #[cfg(test)]
-mod test;
-
-// ----------------------------------------------------------------------------
+mod tests;
 
 impl DB {
     /// Create a new db object

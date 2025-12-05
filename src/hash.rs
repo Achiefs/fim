@@ -1,29 +1,18 @@
 // Copyright (C) 2021, Achiefs.
 
-// Constants definitions
 const READ_CAPACITY: usize = 1024 * 1024 * 8; // Read file in chunks of 8MB
 
-// To get file checksums
 use hex::{encode, decode};
-//use sha3::{Digest, Sha3_256, Sha3_512, Sha3_224};
 use sha3::{Digest, digest::DynDigest,
     Sha3_224, Sha3_256, Sha3_384, Sha3_512,
     Keccak224, Keccak256, Keccak384, Keccak512};
-// To log the program process
 use log::*;
-// To manage hex to ascii conversion
 use std::str;
-// To manage files
 use std::fs::File;
 use std::path::Path;
-// To read file content
 use std::io::{BufRead, BufReader};
 
-// ----------------------------------------------------------------------------
-
-#[derive(Debug)]
-#[derive(PartialEq)]
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ShaType {
     Sha224,
     Sha256,
@@ -36,7 +25,7 @@ pub enum ShaType {
 }
 
 #[cfg(test)]
-mod test;
+mod tests;
 
 // To calculate file content hash
 pub fn get_checksum(filename: String, read_limit: usize, algorithm: ShaType) -> String {
