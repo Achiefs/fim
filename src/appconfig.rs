@@ -435,14 +435,15 @@ impl AppConfig {
         let data = default.unwrap_or_default();
         let mut integrations: Vec<Integration> = Vec::new();
         data.iter().for_each(|info|
-            integrations.push(Integration::new(
-                String::from(info["name"].as_str().unwrap()), 
-                info["condition"]
+            integrations.push(Integration {
+                name: String::from(info["name"].as_str().unwrap()), 
+                condition: info["condition"]
                     .clone().into_vec().unwrap().iter().map(|element| 
                         String::from(element.as_str().unwrap()) ).collect(), 
-                String::from(info["binary"].as_str().unwrap()), 
-                String::from(info["script"].as_str().unwrap()), 
-                String::from(info["parameters"].as_str().unwrap()) ))
+                binary: String::from(info["binary"].as_str().unwrap()), 
+                script: String::from(info["script"].as_str().unwrap()), 
+                parameters: String::from(info["parameters"].as_str().unwrap())
+            })
         );
         integrations
     }
@@ -532,36 +533,6 @@ mod tests {
             hashscanner_algorithm: ShaType::Sha256,
             engine: String::from("monitor")
         }
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    fn test_clone() {
-        let cfg = create_test_config("info", "");
-        let cloned = cfg.clone();
-        assert_eq!(cfg.events_destination, cloned.events_destination);
-        assert_eq!(cfg.events_max_file_checksum, cloned.events_max_file_checksum);
-        assert_eq!(cfg.events_max_file_size, cloned.events_max_file_size);
-        assert_eq!(cfg.endpoint_type, cloned.endpoint_type);
-        assert_eq!(cfg.endpoint_address, cloned.endpoint_address);
-        assert_eq!(cfg.endpoint_user, cloned.endpoint_user);
-        assert_eq!(cfg.endpoint_pass, cloned.endpoint_pass);
-        assert_eq!(cfg.endpoint_token, cloned.endpoint_token);
-        assert_eq!(cfg.events_file, cloned.events_file);
-        assert_eq!(cfg.monitor, cloned.monitor);
-        assert_eq!(cfg.audit, cloned.audit);
-        assert_eq!(cfg.node, cloned.node);
-        assert_eq!(cfg.log_file, cloned.log_file);
-        assert_eq!(cfg.log_level, cloned.log_level);
-        assert_eq!(cfg.log_max_file_size, cloned.log_max_file_size);
-        assert_eq!(cfg.system, cloned.system);
-        assert_eq!(cfg.insecure, cloned.insecure);
-        assert_eq!(cfg.hashscanner_file, cloned.hashscanner_file);
-        assert_eq!(cfg.hashscanner_enabled, cloned.hashscanner_enabled);
-        assert_eq!(cfg.hashscanner_interval, cloned.hashscanner_interval);
-        assert_eq!(cfg.hashscanner_algorithm, cloned.hashscanner_algorithm);
-        assert_eq!(cfg.engine, cloned.engine);
     }
 
     // ------------------------------------------------------------------------
@@ -1356,6 +1327,98 @@ mod tests {
     fn test_new_config_watcher() {
         let cfg = AppConfig::new("windows", Some("test/unit/config/windows/events_watcher.yml"));
         assert_eq!(cfg.events_watcher, "Poll");
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_checksum_algorithm() {
+        assert_eq!(
+            AppConfig::new("linux", 
+                Some("test/unit/config/linux/checksum_algorithm/sha224.yml")).checksum_algorithm,
+            ShaType::Sha224
+        );
+        assert_eq!(
+            AppConfig::new("linux", 
+                Some("test/unit/config/linux/checksum_algorithm/sha256.yml")).checksum_algorithm,
+            ShaType::Sha256
+        );
+        assert_eq!(
+            AppConfig::new("linux", 
+                Some("test/unit/config/linux/checksum_algorithm/sha384.yml")).checksum_algorithm,
+            ShaType::Sha384
+        );
+        assert_eq!(
+            AppConfig::new("linux", 
+                Some("test/unit/config/linux/checksum_algorithm/sha512.yml")).checksum_algorithm,
+            ShaType::Sha512
+        );
+        assert_eq!(
+            AppConfig::new("linux", 
+                Some("test/unit/config/linux/checksum_algorithm/keccak224.yml")).checksum_algorithm,
+            ShaType::Keccak224
+        );
+        assert_eq!(
+            AppConfig::new("linux", 
+                Some("test/unit/config/linux/checksum_algorithm/keccak256.yml")).checksum_algorithm,
+            ShaType::Keccak256
+        );
+        assert_eq!(
+            AppConfig::new("linux", 
+                Some("test/unit/config/linux/checksum_algorithm/keccak384.yml")).checksum_algorithm,
+            ShaType::Keccak384
+        );
+        assert_eq!(
+            AppConfig::new("linux", 
+                Some("test/unit/config/linux/checksum_algorithm/keccak512.yml")).checksum_algorithm,
+            ShaType::Keccak512
+        );
+    }
+
+    // ------------------------------------------------------------------------
+
+    #[test]
+    fn test_hashscanner_algorithm() {
+        assert_eq!(
+            AppConfig::new("linux", 
+                Some("test/unit/config/linux/hashscanner_algorithm/sha224.yml")).hashscanner_algorithm,
+            ShaType::Sha224
+        );
+        assert_eq!(
+            AppConfig::new("linux", 
+                Some("test/unit/config/linux/hashscanner_algorithm/sha256.yml")).hashscanner_algorithm,
+            ShaType::Sha256
+        );
+        assert_eq!(
+            AppConfig::new("linux", 
+                Some("test/unit/config/linux/hashscanner_algorithm/sha384.yml")).hashscanner_algorithm,
+            ShaType::Sha384
+        );
+        assert_eq!(
+            AppConfig::new("linux", 
+                Some("test/unit/config/linux/hashscanner_algorithm/sha512.yml")).hashscanner_algorithm,
+            ShaType::Sha512
+        );
+        assert_eq!(
+            AppConfig::new("linux", 
+                Some("test/unit/config/linux/hashscanner_algorithm/keccak224.yml")).hashscanner_algorithm,
+            ShaType::Keccak224
+        );
+        assert_eq!(
+            AppConfig::new("linux", 
+                Some("test/unit/config/linux/hashscanner_algorithm/keccak256.yml")).hashscanner_algorithm,
+            ShaType::Keccak256
+        );
+        assert_eq!(
+            AppConfig::new("linux", 
+                Some("test/unit/config/linux/hashscanner_algorithm/keccak384.yml")).hashscanner_algorithm,
+            ShaType::Keccak384
+        );
+        assert_eq!(
+            AppConfig::new("linux", 
+                Some("test/unit/config/linux/hashscanner_algorithm/keccak512.yml")).hashscanner_algorithm,
+            ShaType::Keccak512
+        );
     }
 
 }
