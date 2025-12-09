@@ -8,7 +8,7 @@ use log::{debug, error, info};
 use std::sync::Mutex;
 use std::sync::Arc;
 
-use crate::appconfig::*;
+use crate::config::*;
 use crate::utils;
 
 // ----------------------------------------------------------------------------
@@ -154,7 +154,7 @@ fn rotate_file(iteration: u32, lock: Arc<Mutex<String>>){
 // ----------------------------------------------------------------------------
 
 #[cfg(not(tarpaulin_include))]
-pub fn rotator(cfg: AppConfig){
+pub fn rotator(cfg: Config){
     loop{
         let log_size = if Path::new(cfg.clone().log_file.as_str()).exists() {
             metadata(cfg.clone().log_file).unwrap().len() as usize

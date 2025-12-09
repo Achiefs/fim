@@ -1,46 +1,41 @@
 // Copyright (C) 2021, Achiefs.
 
-// To read and write directories and files
+#[cfg(test)]
+mod tests;
+
+mod setup;
+
 use std::fs;
-// To get file system changes
-use notify::RecursiveMode;
 use std::sync::mpsc;
-// To log the program process
-use log::{info, error, debug, warn};
-// To manage paths
+use log::{info, error, debug};
 use std::path::Path;
-// To use intersperse()
-use itertools::Itertools;
-// Event handling
 use notify::event::{EventKind, AccessKind};
 
-
-// Utils functions
-use crate::utils;
-// Hashing functions
 use crate::hash;
-use crate::appconfig;
-use crate::appconfig::*;
-// Index management functions
+use crate::config;
+use crate::config::*;
 use crate::index;
-// Event data management
 use crate::events;
 use crate::events::Event;
 use crate::events::MonitorEvent;
 use crate::ruleset::*;
-// File reading continuously
 use crate::logreader;
-// integrations checker
 use crate::launcher;
 use crate::multiwatcher::MultiWatcher;
+use crate::utils::{
+    get_file_end, 
+    get_current_time_millis, 
+    get_uuid, 
+    get_hostname, 
+    get_file_size, 
+    get_pid
+};
 
-// ----------------------------------------------------------------------------
-
-fn setup_events(destination: &str, cfg: AppConfig){
+fn setup_events(destination: &str, cfg: Config){
     // Perform actions depending on destination
     info!("Events destination selected: {}", destination);
     match destination {
-        appconfig::NETWORK_MODE => {
+        config::NETWORK_MODE => {
             debug!("Events folder not created in network mode");
         },
         _ => {
@@ -52,10 +47,10 @@ fn setup_events(destination: &str, cfg: AppConfig){
 
 // ----------------------------------------------------------------------------
 
-async fn push_template(destination: &str, cfg: AppConfig){
+async fn push_template(destination: &str, cfg: Config){
     // Perform actions depending on destination
     match destination {
-        appconfig::NETWORK_MODE|appconfig::BOTH_MODE => {
+        config::NETWORK_MODE|config::BOTH_MODE => {
             // On start push template (Include check if events won't be ingested by http)
             index::push_template(cfg).await;
         },
@@ -67,22 +62,11 @@ async fn push_template(destination: &str, cfg: AppConfig){
 
 // ----------------------------------------------------------------------------
 
-fn clean_audit_rules(cfg: &AppConfig){
-    for element in cfg.audit.clone() {
-        let path = element["path"].as_str().unwrap();
-        let rule = utils::get_audit_rule_permissions(element["rule"].as_str());
-        utils::run_auditctl(&["-W", path, "-k", "fim", "-p", &rule]);
-    }
-    std::process::exit(0);
-}
-
-// ----------------------------------------------------------------------------
-
 // Function that monitorize files in loop
 pub async fn monitor(
     tx: mpsc::Sender<Result<notify::Event, notify::Error>>,
     rx: mpsc::Receiver<Result<notify::Event, notify::Error>>, 
-    cfg: AppConfig,
+    cfg: Config,
     ruleset: Ruleset){
 
     let destination = cfg.clone().get_events_destination();
@@ -92,94 +76,9 @@ pub async fn monitor(
     push_template(destination.as_str(), cfg.clone()).await;
 
     let mut watcher = MultiWatcher::new(cfg.clone().events_watcher.as_str(), tx);
-    
-    // Iterating over monitor paths and set watcher on each folder to watch.
-    if ! cfg.clone().monitor.is_empty() {
-        for element in cfg.clone().monitor {
-            let path = element["path"].as_str().unwrap();
-            info!("Monitoring path: {}", path);
-
-            match element["ignore"].as_vec() {
-                Some(ig) => {
-                    let ignore_vec  = ig.iter().map(|e| e.as_str().unwrap() );
-                    let ignore_list : String = Itertools::intersperse(ignore_vec, ", ").collect();
-                    info!("Ignoring files with: '{}' inside '{}' path.", ignore_list, path);
-                },
-                None => debug!("Ignore for '{}' path not set.", path)
-            };
-
-            match element["exclude"].as_vec() {
-                Some(ex) => {
-                    let exclude_vec  = ex.iter().map(|e| e.as_str().unwrap() );
-                    let exclude_list : String = Itertools::intersperse(exclude_vec, ", ").collect();
-                    info!("Excluding folders: '{}' inside '{}' path.", exclude_list, path);
-                },
-                None => debug!("Exclude folders for '{}' path not set.", path)
-            };
-
-            match element["allowed"].as_vec(){
-                Some(allowed) => {
-                    let allowed_vec = allowed.iter().map(|e| e.as_str().unwrap());
-                    let allowed_list : String = Itertools::intersperse(allowed_vec, ", ").collect();
-                    info!("Only files with '{}' will trigger event inside '{}' path.", allowed_list, path)
-                },
-                None => debug!("Monitoring files under '{}' path.", path)
-            }
-
-            match watcher.watch(Path::new(path), RecursiveMode::Recursive) {
-                Ok(_d) => debug!("Monitoring '{}' path.", path),
-                Err(e) => warn!("Could not monitor given path '{}', description: {}", path, e)
-            };
-        }
-    }
-    let mut last_position = 0;
-    if ! cfg.clone().audit.is_empty() && utils::get_os() == "linux" && utils::check_auditd() {
-        for element in cfg.clone().audit {
-            let path = element["path"].as_str().unwrap();
-            let rule = utils::get_audit_rule_permissions(element["rule"].as_str());
-            utils::run_auditctl(&["-w", path, "-k", "fim", "-p", &rule]);
-            info!("Checking audit path: {}", path);
-
-            match element["allowed"].as_vec() {
-                Some(allowed) => {
-                    let allowed_vec  = allowed.iter().map(|e| e.as_str().unwrap() );
-                    let allowed_list : String = Itertools::intersperse(allowed_vec, ", ").collect();
-                    info!("Only files with '{}' will trigger event inside '{}' path.", allowed_list, path)
-                },
-                None => debug!("Monitoring files under '{}' path.", path)
-            };
-
-            match element["exclude"].as_vec() {
-                Some(ex) => {
-                    let exclude_vec  = ex.iter().map(|e| e.as_str().unwrap() );
-                    let exclude_list : String = Itertools::intersperse(exclude_vec, ", ").collect();
-                    info!("Excluding folders: '{}' inside '{}' path.", exclude_list, path);
-                },
-                None => debug!("Exclude folders for '{}' path not set.", path)
-            };
-
-            match element["ignore"].as_vec() {
-                Some(ig) => {
-                    let ignore_list_vec  = ig.iter().map(|e| e.as_str().unwrap() );
-                    let ignore_list : String = Itertools::intersperse(ignore_list_vec, ", ").collect();
-                    info!("Ignoring files with: '{}' inside '{}' path", ignore_list, path);
-                },
-                None => info!("Ignore for '{}' pat not set", path)
-            };
-        }
-        // Detect if Audit file is moved or renamed (rotation)
-        watcher.watch(Path::new(logreader::AUDIT_PATH), RecursiveMode::NonRecursive).unwrap();
-        last_position = utils::get_file_end(logreader::AUDIT_LOG_PATH, 0);
-       
-        // Remove auditd rules introduced by FIM
-        // Setting ctrl + C handler
-        let cloned_cfg = cfg.clone();
-        match ctrlc::set_handler(move || clean_audit_rules(&cloned_cfg)) {
-            Ok(_v) => debug!("Handler Ctrl-C set and listening"),
-            Err(e) => error!("Error setting Ctrl-C handler, the process will continue without signal handling, Error: '{}'", e)
-        }
-    }
-
+    setup::set_monitor_watchers(&mut watcher, &cfg);
+    setup::set_audit_watchers(&mut watcher, &cfg);
+    let mut last_position = get_file_end(logreader::AUDIT_LOG_PATH, 0);
 
     // Main loop, receive any produced event and write it into the events log.
     'processor: loop {
@@ -200,7 +99,7 @@ pub async fn monitor(
 
                     let event_path = Path::new(plain_path);
                     let event_filename = event_path.file_name().unwrap();
-                    let current_timestamp = utils::get_current_time_millis();
+                    let current_timestamp = get_current_time_millis();
                     let kind: notify::EventKind = event.kind;
                     let path = event.paths[0].clone();
 
@@ -217,7 +116,7 @@ pub async fn monitor(
                         if log_event.get_audit_event().id != "0" { events.push(log_event); };
                         let mut ctr = 0;
                         last_position = position;
-                        while last_position < utils::get_file_end(logreader::AUDIT_LOG_PATH, 0) {
+                        while last_position < get_file_end(logreader::AUDIT_LOG_PATH, 0) {
                             debug!("Reading events, iteration: {}", ctr);
                             let original_position = last_position;
                             ctr += 1;
@@ -267,19 +166,19 @@ pub async fn monitor(
                                 ! cfg.match_exclude(index, parent, cfg.clone().monitor) &&
                                 cfg.match_allowed(index, event_filename.to_str().unwrap(), cfg.clone().monitor) {
                                 let event = Event::Monitor(MonitorEvent {
-                                    id: utils::get_uuid(),
+                                    id: get_uuid(),
                                     timestamp: current_timestamp,
-                                    hostname: utils::get_hostname(),
+                                    hostname: get_hostname(),
                                     node: cfg.clone().node,
-                                    version: String::from(appconfig::VERSION),
+                                    version: String::from(config::VERSION),
                                     kind,
                                     path: path.clone(),
-                                    size: utils::get_file_size(path.clone().to_str().unwrap()),
+                                    size: get_file_size(path.clone().to_str().unwrap()),
                                     labels,
                                     operation: events::get_operation(kind),
                                     detailed_operation: events::get_detailed_operation(kind),
                                     checksum: hash::get_checksum( String::from(path.to_str().unwrap()), cfg.clone().events_max_file_checksum, cfg.clone().checksum_algorithm),
-                                    fpid: utils::get_pid(),
+                                    fpid: get_pid(),
                                     system: cfg.clone().system
                                 });
 
@@ -299,33 +198,5 @@ pub async fn monitor(
                 }
             }
         }
-    }
-}
-
-// ----------------------------------------------------------------------------
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use tokio_test::block_on;
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    fn test_push_template() {
-        let cfg = AppConfig::new(&utils::get_os(), None);
-        fs::create_dir_all(Path::new(&cfg.log_file).parent().unwrap().to_str().unwrap()).unwrap();
-        block_on(push_template("file", cfg.clone()));
-        block_on(push_template("network", cfg.clone()));
-    }
-
-    // ------------------------------------------------------------------------
-
-    #[test]
-    fn test_setup_events() {
-        let cfg = AppConfig::new(&utils::get_os(), None);
-        fs::create_dir_all(Path::new(&cfg.log_file).parent().unwrap().to_str().unwrap()).unwrap();
-        setup_events("file", cfg.clone());
-        setup_events("network", cfg.clone());
     }
 }

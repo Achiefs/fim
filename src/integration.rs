@@ -52,7 +52,7 @@ pub fn get_event_integration(event: MonitorEvent, integrations: Vec<Integration>
 mod tests {
     use super::*;
     use notify::event::*;
-    use crate::appconfig::*;
+    use crate::config::*;
     use std::path::PathBuf;
     use crate::events::MonitorEvent;
 
@@ -103,7 +103,7 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn test_get_event_integration_windows() {
-        let cfg = AppConfig::new("windows", Some("test/unit/config/windows/monitor_integration.yml"));
+        let cfg = Config::new("windows", Some("test/unit/config/windows/monitor_integration.yml"));
 
         let integrations = cfg.get_integrations(2, cfg.monitor.clone());
         let event = create_dummy_event_windows("tmp", "CREATE");
@@ -136,7 +136,7 @@ mod tests {
     #[test]
     fn test_get_event_integration_unix() {
         let os = utils::get_os();
-        let cfg = AppConfig::new(&os, Some(format!("test/unit/config/{}/monitor_integration.yml", os).as_str()));
+        let cfg = Config::new(&os, Some(format!("test/unit/config/{}/monitor_integration.yml", os).as_str()));
 
         let event = create_dummy_event_unix("etc", "CREATE");
         let integrations = cfg.get_integrations(2, cfg.monitor.clone());

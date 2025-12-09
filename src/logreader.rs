@@ -11,13 +11,13 @@ use log::{debug, error};
 use crate::events::Event;
 use crate::events::AuditEvent;
 use crate::utils;
-use crate::appconfig::*;
+use crate::config::*;
 
 // Defined type to simplify syntax
 type SHashMap = HashMap<String, String>;
 
 // Read file to extract last data until the Audit ID changes
-pub fn read_log(file: String, cfg: AppConfig, position: u64, itx: u64) -> (Event, u64) {
+pub fn read_log(file: String, cfg: Config, position: u64, itx: u64) -> (Event, u64) {
     let mut event: Event = Event::Audit(Box::new(AuditEvent::new()));
     let mut current_position = position;
     let log = utils::open_file(&file, 0);
@@ -136,7 +136,7 @@ mod tests {
     #[test]
     fn test_read_log() {
         if utils::get_os() == "linux" {
-            let cfg = AppConfig::new("linux", Some("test/system/audit_config.yml"));
+            let cfg = Config::new("linux", Some("test/system/audit_config.yml"));
             let (event, position) = read_log(String::from("test/unit/audit.log"),
                 cfg, 0, 0);
             let audit_event = event.get_audit_event();

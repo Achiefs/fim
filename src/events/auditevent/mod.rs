@@ -15,8 +15,8 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use crate::events::Event;
-use crate::appconfig;
-use crate::appconfig::*;
+use crate::config;
+use crate::config::*;
 use crate::ruleset::*;
 use crate::utils;
 use crate::hash;
@@ -112,7 +112,7 @@ impl AuditEvent {
     pub fn from(syscall: HashMap<String, String>,
         cwd: HashMap<String, String>, proctitle: HashMap<String, String>,
         paths: Vec<HashMap<String, String>>,
-        cfg: AppConfig) -> Event {
+        cfg: Config) -> Event {
 
         let parent = get_parent(paths.clone(),  cwd["cwd"].as_str(), cfg.clone());
         let path = get_item_path(paths.clone(), cwd["cwd"].as_str(), cfg.clone());
@@ -141,7 +141,7 @@ impl AuditEvent {
             timestamp: clean_timestamp,
             hostname: utils::get_hostname(),
             node: cfg.node,
-            version: String::from(appconfig::VERSION),
+            version: String::from(config::VERSION),
             labels,
             operation: utils::get_field(path.clone(), "nametype"),
             path: utils::clean_path(&event_path),
@@ -212,7 +212,7 @@ impl AuditEvent {
     // ------------------------------------------------------------------------
 
     // Function to write the received events to file
-    pub fn log(&self, cfg: AppConfig){
+    pub fn log(&self, cfg: Config){
         let file = cfg.events_lock.lock().unwrap();
         let mut events_file = OpenOptions::new()
             .create(true)
@@ -229,7 +229,7 @@ impl AuditEvent {
     // ------------------------------------------------------------------------
 
     // Function to send events through network
-    pub async fn send(&self, cfg: AppConfig) {
+    pub async fn send(&self, cfg: Config) {
         use time::OffsetDateTime;
         let current_date = OffsetDateTime::now_utc();
         let index = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
@@ -282,7 +282,7 @@ impl AuditEvent {
     // ------------------------------------------------------------------------
 
     // Function to manage event destination
-    pub async fn process(&self, cfg: AppConfig, ruleset: Ruleset){
+    pub async fn process(&self, cfg: Config, ruleset: Ruleset){
         route(self, cfg.clone()).await;
         let filepath = PathBuf::from(self.path.clone());
         ruleset.match_rule(cfg, filepath.join(self.file.clone()), self.id.clone()).await;
@@ -300,7 +300,7 @@ fn get_field(map: HashMap<String, String>,field: &str) -> String {
 
 // ----------------------------------------------------------------------------
 
-pub fn get_parent(paths: Vec<HashMap<String, String>>, cwd: &str, cfg: AppConfig) -> HashMap<String, String> {
+pub fn get_parent(paths: Vec<HashMap<String, String>>, cwd: &str, cfg: Config) -> HashMap<String, String> {
     match paths.iter().find(|p|{
         utils::get_field((*p).clone(), "nametype") == "PARENT" &&
         cfg.path_in(p["name"].as_str(), cwd, cfg.audit.clone())
@@ -312,7 +312,7 @@ pub fn get_parent(paths: Vec<HashMap<String, String>>, cwd: &str, cfg: AppConfig
 
 // ----------------------------------------------------------------------------
 
-pub fn get_item_path(paths: Vec<HashMap<String, String>>, cwd: &str, cfg: AppConfig) -> HashMap<String, String> {
+pub fn get_item_path(paths: Vec<HashMap<String, String>>, cwd: &str, cfg: Config) -> HashMap<String, String> {
     match paths.iter().rfind(|p|{
         utils::get_field((*p).clone(), "nametype") != "PARENT" &&
         utils::get_field((*p).clone(), "nametype") != "UNKNOWN" &&
@@ -325,13 +325,13 @@ pub fn get_item_path(paths: Vec<HashMap<String, String>>, cwd: &str, cfg: AppCon
 
 // ----------------------------------------------------------------------------
 
-pub async fn route(event: &AuditEvent, cfg: AppConfig) {
+pub async fn route(event: &AuditEvent, cfg: Config) {
     match cfg.get_events_destination().as_str() {
-        appconfig::BOTH_MODE => {
+        config::BOTH_MODE => {
             event.log(cfg.clone());
             event.send(cfg).await;
         },
-        appconfig::NETWORK_MODE => {
+        config::NETWORK_MODE => {
             event.send(cfg).await;
         },
         _ => event.log(cfg.clone())

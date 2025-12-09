@@ -6,7 +6,7 @@ use std::env;
 use std::fs::{File, metadata};
 use std::io::{Read, SeekFrom};
 use std::io::prelude::*;
-use crate::appconfig;
+use crate::config;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use log::{warn, debug, error};
@@ -63,7 +63,7 @@ pub fn read_file(path: &str) -> String {
 
 // (Only supported in Linux) Function to get machine id of the host
 pub fn get_machine_id() -> String {
-    read_file(appconfig::MACHINE_ID_PATH)
+    read_file(config::MACHINE_ID_PATH)
 }
 
 // ----------------------------------------------------------------------------

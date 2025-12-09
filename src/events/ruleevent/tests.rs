@@ -63,7 +63,7 @@ fn test_new() {
 #[test]
 fn test_send() {
     let evt = create_test_event();
-    let cfg = AppConfig::new(&utils::get_os(), None);
+    let cfg = Config::new(&utils::get_os(), None);
     block_on( evt.send(cfg) );
 }
 
@@ -72,7 +72,7 @@ fn test_send() {
 #[test]
 fn test_send_splunk() {
     let evt = create_test_event();
-    let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml"));
+    let cfg = Config::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml"));
     block_on( evt.send(cfg) );
 }
 
@@ -81,7 +81,7 @@ fn test_send_splunk() {
 #[test]
 fn test_process() {
     let event = create_test_event();
-    let cfg = AppConfig::new(&utils::get_os(), None);
+    let cfg = Config::new(&utils::get_os(), None);
 
     block_on(event.process(cfg));
 }
@@ -109,7 +109,7 @@ fn test_to_json() {
 
 #[test]
 fn test_log() {
-    let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_log_ruleevent.yml"));
+    let cfg = Config::new(&utils::get_os(), Some("test/unit/config/common/test_log_ruleevent.yml"));
     let filename = String::from("test_ruleevent.json");
     let evt = create_test_event();
 

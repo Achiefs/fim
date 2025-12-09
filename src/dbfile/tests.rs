@@ -5,7 +5,7 @@ use super::*;
 #[test]
 /// Check new instance attributes
 fn test_new() {
-    let cfg = AppConfig::new(&utils::get_os(), None);
+    let cfg = Config::new(&utils::get_os(), None);
     let dbfile_no_id = DBFile::new(cfg.clone(), "LICENSE", None);
     let dbfile = DBFile::new(cfg.clone(), "./LICENSE", Some(String::from("0")));
 
@@ -29,7 +29,7 @@ fn test_new() {
 #[test]
 /// Check match of file hashing function
 fn test_get_file_hash() {
-    let cfg = AppConfig::new(&utils::get_os(), None);
+    let cfg = Config::new(&utils::get_os(), None);
     let dbfile = DBFile::new(cfg.clone(), "LICENSE", None);
     let hash = dbfile.get_file_hash(cfg.clone());
 
@@ -41,7 +41,7 @@ fn test_get_file_hash() {
 #[test]
 /// Check the dbfile stdout formatter
 fn test_fmt() {
-    let cfg = AppConfig::new(&utils::get_os(), None);
+    let cfg = Config::new(&utils::get_os(), None);
     let mut dbfile = DBFile::new(cfg.clone(), "LICENSE", None);
     dbfile.id = String::from("FIXED_ID");
     dbfile.timestamp = String::from("FIXED_TIMESTAMP");

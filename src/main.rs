@@ -10,7 +10,7 @@ use crate::init::init;
 
 mod utils;
 mod hash;
-mod appconfig;
+mod config;
 mod ruleset;
 mod index;
 mod logreader;

@@ -5,7 +5,7 @@ mod tests;
 
 use crate::utils;
 use crate::hash;
-use crate::appconfig::*;
+use crate::config::*;
 
 use std::fmt;
 use std::path::Path;
@@ -80,7 +80,7 @@ impl fmt::Display for DBFile {
 // ----------------------------------------------------------------------------
 
 impl DBFile {
-    pub fn new(cfg: AppConfig, path: &str, id: Option<String>) -> Self {
+    pub fn new(cfg: Config, path: &str, id: Option<String>) -> Self {
         let metadata = Path::new(path).metadata().unwrap();
         let permissions = utils::get_unix_permissions(path);
         let size = metadata.clone().len();
@@ -106,7 +106,7 @@ impl DBFile {
 
     // ------------------------------------------------------------------------
 
-    pub fn get_file_hash(&self, cfg: AppConfig) -> String {
+    pub fn get_file_hash(&self, cfg: Config) -> String {
         hash::get_checksum(
             String::from(&self.path),
             cfg.clone().events_max_file_checksum,

@@ -80,7 +80,7 @@ fn test_create_event() {
 #[test]
 fn test_send() {
     let evt = create_test_event();
-    let cfg = AppConfig::new(&utils::get_os(), None);
+    let cfg = Config::new(&utils::get_os(), None);
     block_on( evt.send(cfg) );
 }
 
@@ -89,7 +89,7 @@ fn test_send() {
 #[test]
 fn test_send_splunk() {
     let evt = create_test_event();
-    let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml"));
+    let cfg = Config::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml"));
     block_on( evt.send(cfg) );
 }
 
@@ -206,13 +206,13 @@ fn test_get_detailed_operation(){
 #[test]
 fn test_process() {
     let event = create_test_event();
-    let cfg = AppConfig::new(&utils::get_os(), None);
+    let cfg = Config::new(&utils::get_os(), None);
     let ruleset = Ruleset::new(&utils::get_os(), None);  
 
     block_on(event.process(cfg, ruleset));
-    //block_on(event.process(appconfig::NETWORK_MODE, String::from("test"), cfg.clone()));
-    //block_on(event.process(appconfig::FILE_MODE, String::from("test2"), cfg.clone()));
-    //block_on(event.process(appconfig::BOTH_MODE, String::from("test3"), cfg.clone()));
+    //block_on(event.process(config::NETWORK_MODE, String::from("test"), cfg.clone()));
+    //block_on(event.process(config::FILE_MODE, String::from("test2"), cfg.clone()));
+    //block_on(event.process(config::BOTH_MODE, String::from("test3"), cfg.clone()));
 }
 
 // ------------------------------------------------------------------------
@@ -246,7 +246,7 @@ fn test_to_json() {
 
 #[test]
 fn test_log() {
-    let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_log.yml"));
+    let cfg = Config::new(&utils::get_os(), Some("test/unit/config/common/test_log.yml"));
     let filename = String::from("test_log.json");
     let evt = create_test_event();
 

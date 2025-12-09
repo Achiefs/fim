@@ -184,8 +184,8 @@ fn test_get_file_size() {
 #[cfg(target_os = "linux")]
 #[test]
 fn test_get_audit_rule_permissions() {
-    use crate::appconfig::*;
-    let cfg = AppConfig::new(&get_os(), Some("test/unit/config/linux/audit_rule.yml"));
+    use crate::config::*;
+    let cfg = Config::new(&get_os(), Some("test/unit/config/linux/audit_rule.yml"));
     assert_eq!(get_audit_rule_permissions(cfg.audit[0]["rule"].as_str()), "rwax");
 }
 
@@ -194,8 +194,8 @@ fn test_get_audit_rule_permissions() {
 #[cfg(target_os = "linux")]
 #[test]
 fn test_run_auditctl() {
-    use crate::appconfig::*;
-    let cfg = AppConfig::new(&get_os(), Some("test/unit/config/linux/audit_rule.yml"));
+    use crate::config::*;
+    let cfg = Config::new(&get_os(), Some("test/unit/config/linux/audit_rule.yml"));
     let path = cfg.audit[0]["path"].as_str().unwrap();
     let rule = cfg.audit[0]["rule"].as_str().unwrap();
     run_auditctl(&["-w", path, "-k", "fim", "-p", rule]);

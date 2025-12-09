@@ -36,7 +36,7 @@ fn get_dbfile() -> DBFile {
 #[serial]
 /// Check new instance creation, the instance should match the expected DB path.
 fn test_new() {
-    let cfg = AppConfig::new(&utils::get_os(), None);
+    let cfg = Config::new(&utils::get_os(), None);
     let tdb = DB::new(&cfg.hashscanner_file);
 
     assert_eq!(tdb.path, cfg.hashscanner_file);
@@ -224,7 +224,7 @@ fn test_get_file_list() {
 /// Check present DBFile update.
 /// It should differ in calculated fields (timestamp, hash, size, permissions)
 fn test_update_file() {
-    let cfg = AppConfig::new(&utils::get_os(), None);
+    let cfg = Config::new(&utils::get_os(), None);
     let tdb = DB::new(&cfg.hashscanner_file);
     let original_dbfile = get_dbfile();
     let new_dbfile = DBFile {

@@ -1,7 +1,7 @@
 // Copyright (C) 2024, Achiefs.
 
 use crate::dbfile::*;
-use crate::appconfig::AppConfig;
+use crate::config::Config;
 
 use rusqlite::{Connection, Error, params};
 use rusqlite::Error::QueryReturnedNoRows;
@@ -176,7 +176,7 @@ impl DB {
     // ------------------------------------------------------------------------
 
     /// Update db information of the given DBFile information
-    pub fn update_file(&self, cfg: AppConfig, dbfile: DBFile) -> Option<DBFile>{
+    pub fn update_file(&self, cfg: Config, dbfile: DBFile) -> Option<DBFile>{
         let connection = self.open();
         let current_dbfile = DBFile::new(cfg, &dbfile.path, Some(dbfile.id));
         let query = "UPDATE files SET timestamp = ?1, hash = ?2, size = ?3, permissions = ?4 WHERE id = ?5";

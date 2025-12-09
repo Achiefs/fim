@@ -3,8 +3,8 @@
 #[cfg(test)]
 mod tests;
 
-use crate::appconfig;
-use crate::appconfig::*;
+use crate::config;
+use crate::config::*;
 
 use log::*;
 use serde::Serialize;
@@ -39,7 +39,7 @@ impl RuleEvent {
     // ------------------------------------------------------------------------
 
     // Function to write the received events to file
-    pub fn log(&self, cfg: AppConfig) {
+    pub fn log(&self, cfg: Config) {
         let file = cfg.events_lock.lock().unwrap();
         let mut events_file = OpenOptions::new()
             .create(true)
@@ -56,7 +56,7 @@ impl RuleEvent {
     // ------------------------------------------------------------------------
 
     // Function to send events through network
-    async fn send(&self, cfg: AppConfig) {
+    async fn send(&self, cfg: Config) {
         use time::OffsetDateTime;
         let current_date = OffsetDateTime::now_utc();
         let index = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
@@ -128,13 +128,13 @@ impl RuleEvent {
     // ------------------------------------------------------------------------
 
     // Function to manage event destination
-    pub async fn process(&self, cfg: AppConfig) {
+    pub async fn process(&self, cfg: Config) {
         match cfg.get_events_destination().as_str() {
-            appconfig::BOTH_MODE => {
+            config::BOTH_MODE => {
                 self.log(cfg.clone());
                 self.send(cfg).await;
             },
-            appconfig::NETWORK_MODE => {
+            config::NETWORK_MODE => {
                 self.send(cfg).await;
             },
             _ => self.log(cfg.clone())

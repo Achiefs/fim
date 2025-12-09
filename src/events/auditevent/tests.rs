@@ -134,7 +134,7 @@ fn create_test_event() -> AuditEvent {
 #[test]
 fn test_from() {
     if utils::get_os() == "linux" {
-        let cfg = AppConfig::new(&utils::get_os(),
+        let cfg = Config::new(&utils::get_os(),
             Some("test/unit/config/linux/audit_from_test.yml"));
         let syscall = HashMap::<String, String>::from([
             (String::from("syscall"), String::from("syscall")),
@@ -222,7 +222,7 @@ fn test_from() {
         assert_eq!(String::from("1659026449689"), event.timestamp);
         assert_eq!(utils::get_hostname(), event.hostname);
         assert_eq!(String::from("FIM"), event.node);
-        assert_eq!(String::from(appconfig::VERSION), event.version);
+        assert_eq!(String::from(config::VERSION), event.version);
         assert_eq!(String::from("/tmp"), event.path);
         assert_eq!(String::from("test.txt"), event.file);
         assert_eq!(0, event.size);
@@ -426,7 +426,7 @@ fn test_to_json() {
 
 #[test]
 fn test_log() {
-    let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_log_auditevent.yml"));
+    let cfg = Config::new(&utils::get_os(), Some("test/unit/config/common/test_log_auditevent.yml"));
     let filename = "test_auditevent.json";
     let event = create_test_event();
     event.log(cfg.clone());
@@ -500,7 +500,7 @@ fn test_log() {
 #[test]
 fn test_send() {
     let event = create_test_event();
-    let cfg = AppConfig::new(&utils::get_os(), None);
+    let cfg = Config::new(&utils::get_os(), None);
     block_on( event.send(cfg) );
 }
 
@@ -509,7 +509,7 @@ fn test_send() {
 #[test]
 fn test_send_splunk() {
     let event = create_test_event();
-    let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml"));
+    let cfg = Config::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml"));
     block_on( event.send(cfg) );
 }
 
@@ -517,7 +517,7 @@ fn test_send_splunk() {
 
 #[test]
 fn test_process() {
-    let cfg = AppConfig::new(&utils::get_os(), None);
+    let cfg = Config::new(&utils::get_os(), None);
     let ruleset = Ruleset::new(&utils::get_os(), None);  
     let event = create_test_event();
 

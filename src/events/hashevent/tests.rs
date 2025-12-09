@@ -31,7 +31,7 @@ fn create_test_event() -> HashEvent {
 #[test]
 /// Check new instance creation, the instance should match the given values
 fn test_new() {
-    let cfg = AppConfig::new(&utils::get_os(), None);
+    let cfg = Config::new(&utils::get_os(), None);
     let previous_dbfile = DBFile::new(cfg.clone(), "LICENSE", None);
     let dbfile = DBFile::new(cfg.clone(), "README.md", None);
     let event = HashEvent::new(Some(previous_dbfile.clone()), dbfile.clone(), String::from("NEW"));
@@ -62,7 +62,7 @@ fn test_new() {
 #[test]
 /// Check the hashEvent JSON log write, it should match with expected one
 fn test_log() {
-    let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_log_hashevent.yml"));
+    let cfg = Config::new(&utils::get_os(), Some("test/unit/config/common/test_log_hashevent.yml"));
     let filename = String::from("test_hashevent.json");
     let event = create_test_event();
 
@@ -103,7 +103,7 @@ fn test_log() {
 /// Check event sending to ElasticSearch, it should not fail
 fn test_send() {
     let evt = create_test_event();
-    let cfg = AppConfig::new(&utils::get_os(), None);
+    let cfg = Config::new(&utils::get_os(), None);
     block_on( evt.send(cfg) );
 }
 
@@ -113,7 +113,7 @@ fn test_send() {
 /// Check event sending to Splunk, it should not fail
 fn test_send_splunk() {
     let evt = create_test_event();
-    let cfg = AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml"));
+    let cfg = Config::new(&utils::get_os(), Some("test/unit/config/common/test_send_splunk.yml"));
     block_on( evt.send(cfg) );
 }
 
@@ -123,7 +123,7 @@ fn test_send_splunk() {
 /// Check default event process, it should not fail
 fn test_process() {
     let event = create_test_event();
-    let cfg = AppConfig::new(&utils::get_os(), None); 
+    let cfg = Config::new(&utils::get_os(), None); 
 
     block_on(event.process(cfg));
 }

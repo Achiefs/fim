@@ -3,8 +3,8 @@
 #[cfg(test)]
 mod tests;
 
-use crate::appconfig;
-use crate::appconfig::*;
+use crate::config;
+use crate::config::*;
 use crate::ruleset::*;
 
 use log::*;
@@ -44,7 +44,7 @@ impl MonitorEvent {
     // ------------------------------------------------------------------------
 
     // Function to write the received events to file
-    pub fn log(&self, cfg: AppConfig) {
+    pub fn log(&self, cfg: Config) {
         let file = cfg.events_lock.lock().unwrap();
         let mut events_file = OpenOptions::new()
             .create(true)
@@ -61,7 +61,7 @@ impl MonitorEvent {
     // ------------------------------------------------------------------------
 
     // Function to send events through network
-    async fn send(&self, cfg: AppConfig) {
+    async fn send(&self, cfg: Config) {
         use time::OffsetDateTime;
         let current_date = OffsetDateTime::now_utc();
         let index = format!("fim-{}-{}-{}", current_date.year(), current_date.month() as u8, current_date.day() );
@@ -140,7 +140,7 @@ impl MonitorEvent {
     // ------------------------------------------------------------------------
 
     // Function to manage event destination
-    pub async fn process(&self, cfg: AppConfig, _ruleset: Ruleset) {
+    pub async fn process(&self, cfg: Config, _ruleset: Ruleset) {
         route(self, cfg.clone()).await;
         _ruleset.match_rule(cfg, self.path.clone(), self.id.clone()).await;
     }
@@ -165,13 +165,13 @@ impl MonitorEvent {
 
 // ----------------------------------------------------------------------------
 
-pub async fn route(event: &MonitorEvent, cfg: AppConfig) {
+pub async fn route(event: &MonitorEvent, cfg: Config) {
     match cfg.get_events_destination().as_str() {
-        appconfig::BOTH_MODE => {
+        config::BOTH_MODE => {
             event.log(cfg.clone());
             event.send(cfg).await;
         },
-        appconfig::NETWORK_MODE => {
+        config::NETWORK_MODE => {
             event.send(cfg).await;
         },
         _ => event.log(cfg.clone())

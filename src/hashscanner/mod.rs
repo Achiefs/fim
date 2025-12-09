@@ -2,7 +2,7 @@
 
 use crate::db;
 use crate::dbfile::*;
-use crate::appconfig::AppConfig;
+use crate::config::Config;
 use crate::events::Event;
 use crate::events::HashEvent;
 use crate::events::hashevent::{WRITE, REMOVE, CREATE};
@@ -19,7 +19,7 @@ use tokio::runtime::Runtime;
 #[cfg(test)]
 mod tests;
 
-pub fn scan_path(cfg: AppConfig, root: String) {
+pub fn scan_path(cfg: Config, root: String) {
     let db = db::DB::new(&cfg.hashscanner_file);
     for res in WalkDir::new(root) {
         let entry = res.unwrap();
@@ -38,7 +38,7 @@ pub fn scan_path(cfg: AppConfig, root: String) {
 /// If hash or permissions of a file change it should trigger a HashEvent
 /// Just in case the first scan after reboot or a hash change between scans
 /// It also updates the DBFile definition in the DB
-pub async fn check_path(cfg: AppConfig, root: String, first_scan: bool) {
+pub async fn check_path(cfg: Config, root: String, first_scan: bool) {
     let db = db::DB::new(&cfg.hashscanner_file);
     for res in WalkDir::new(root) {
         let entry = res.unwrap();
@@ -96,7 +96,7 @@ pub async fn check_path(cfg: AppConfig, root: String, first_scan: bool) {
 
 /// This function update the DB in case files were removed from given path
 /// In case changes were detected, it trigger hashEvents on first scan after reboot
-pub async fn update_db(cfg: AppConfig, root: String, first_scan: bool) {
+pub async fn update_db(cfg: Config, root: String, first_scan: bool) {
     let db = db::DB::new(&cfg.hashscanner_file);
 
     let db_list = db.get_file_list(root.clone());
@@ -132,7 +132,7 @@ pub async fn update_db(cfg: AppConfig, root: String, first_scan: bool) {
 // ----------------------------------------------------------------------------
 
 #[cfg(not(tarpaulin_include))]
-pub fn scan(cfg: AppConfig) {
+pub fn scan(cfg: Config) {
     let db = db::DB::new(&cfg.hashscanner_file);
     let rt = Runtime::new().unwrap();
     let interval = cfg.clone().hashscanner_interval;

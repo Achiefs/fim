@@ -8,7 +8,7 @@ pub mod ruleevent;
 pub mod hashevent;
 pub mod auditevent;
 
-use crate::appconfig::AppConfig;
+use crate::config::Config;
 use crate::ruleset::Ruleset;
 use notify::event::*;
 use std::fmt;
@@ -52,7 +52,7 @@ impl Event {
         }
     }
 
-    pub async fn process(&self, cfg: AppConfig, ruleset: Ruleset) {
+    pub async fn process(&self, cfg: Config, ruleset: Ruleset) {
         match self {
             Event::Monitor(event) => &event.process(cfg, ruleset).await,
             Event::Rule(event) => &event.process(cfg).await,

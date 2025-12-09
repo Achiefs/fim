@@ -9,7 +9,7 @@ use std::path::Path;
 use std::time::Duration;
 use std::env;
 
-use crate::appconfig::*;
+use crate::config::*;
 use crate::utils;
 
 fn get_template_path() -> String {
@@ -35,7 +35,7 @@ fn get_template_path() -> String {
 
 // ----------------------------------------------------------------------------
 
-pub async fn push_template(cfg: AppConfig){
+pub async fn push_template(cfg: Config){
     let template_path = get_template_path();
     info!("Loaded index template from: {}", template_path);
     let file = File::open(template_path).await.unwrap();
@@ -72,7 +72,7 @@ mod tests {
     #[test]
     fn test_push_template() {
         tokio_test::block_on( push_template(
-            AppConfig::new(&utils::get_os(), Some("test/unit/config/common/test_push_template.yml"))));
+            Config::new(&utils::get_os(), Some("test/unit/config/common/test_push_template.yml"))));
     }
 
     #[test]

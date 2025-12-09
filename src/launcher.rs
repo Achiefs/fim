@@ -1,13 +1,13 @@
 // Copyright (C) 2023, Achiefs.
 
-use crate::appconfig::*;
+use crate::config::*;
 use crate::events::Event;
 use crate::integration;
 use log::debug;
 
 // ----------------------------------------------------------------------------
 
-pub fn check_integrations(event: Event, cfg: AppConfig) {
+pub fn check_integrations(event: Event, cfg: Config) {
     let index = cfg.get_index(event.get_monitor_event().path.to_str().unwrap(), "", cfg.monitor.clone());
     if index != usize::MAX {
         let integrations = cfg.get_integrations(index, cfg.monitor.clone());
@@ -27,7 +27,7 @@ mod tests {
 
     use crate::events::Event;
     use crate::events::MonitorEvent;
-    use crate::appconfig::AppConfig;
+    use crate::config::Config;
 
     use std::path::PathBuf;
     use notify::event::*;
@@ -59,7 +59,7 @@ mod tests {
     #[test]
     fn test_check_integrations() {
         let event = create_test_event();
-        let cfg = AppConfig::new("windows", Some("test/unit/config/windows/monitor_integration.yml"));
+        let cfg = Config::new("windows", Some("test/unit/config/windows/monitor_integration.yml"));
         check_integrations(Event::Monitor(event), cfg);
     }
 
@@ -69,7 +69,7 @@ mod tests {
     #[test]
     fn test_check_integrations_linux() {
         let event = create_test_event();
-        let cfg = AppConfig::new("linux", Some("test/unit/config/linux/monitor_integration.yml"));
+        let cfg = Config::new("linux", Some("test/unit/config/linux/monitor_integration.yml"));
         check_integrations(Event::Monitor(event), cfg);
     }
 
@@ -79,7 +79,7 @@ mod tests {
     #[test]
     fn test_check_integrations_linux() {
         let event = create_test_event();
-        let cfg = AppConfig::new("macos", Some("test/unit/config/macos/monitor_integration.yml"));
+        let cfg = Config::new("macos", Some("test/unit/config/macos/monitor_integration.yml"));
         check_integrations(Event::Monitor(event), cfg);
     }
 

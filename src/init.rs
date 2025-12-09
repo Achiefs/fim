@@ -5,14 +5,14 @@ use simplelog::{ WriteLogger, ConfigBuilder, format_description };
 use std::fs;
 
 use crate::ruleset::Ruleset;
-use crate::appconfig::*;
+use crate::config::*;
 use crate::utils;
 use crate::db;
 
-pub fn init() -> (AppConfig, Ruleset) {
+pub fn init() -> (Config, Ruleset) {
     println!("[INFO] Achiefs File Integrity Monitoring software starting!");
     println!("[INFO] Reading config...");
-    let cfg = AppConfig::new(utils::get_os(), None);
+    let cfg = Config::new(utils::get_os(), None);
 
     // Create folder to store events based on config.yml
     fs::create_dir_all(
