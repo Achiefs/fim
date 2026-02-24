@@ -265,7 +265,12 @@ mod tests {
 
         let mut current_path = env::current_dir().unwrap();
         current_path.push("LICENSE.bk");
+        let filename = current_path.file_name().unwrap().to_str().unwrap();
         let copy_path = current_path.to_str().unwrap();
+
+        let mut archive_path = env::current_dir().unwrap();
+        archive_path.push("archive");
+        create_dir(archive_path.clone()).unwrap();
 
         copy(license_path, copy_path).unwrap();
 
@@ -273,12 +278,19 @@ mod tests {
         let iteration = 0;
         let extension = if utils::get_os() == "windows" { "zip"
         }else{ "tar.gz" };
-        let compressed_file = format!("{}.{}.{}", copy_path, iteration, extension);
+        let mut file_path = archive_path.clone();
+        file_path.push(filename);
+        let compressed_file = format!(
+            "{}.{}.{}",
+            file_path.to_str().unwrap(),
+            iteration,
+            extension);
         rotate_file(iteration, lock);
         assert_eq!(metadata(copy_path).unwrap().len(), 0);
         assert_ne!(metadata(compressed_file.clone()).unwrap().len(), 0);
         remove_file(copy_path).unwrap();
         remove_file(compressed_file).unwrap();
+        remove_dir(archive_path).unwrap();
     }
 
 }
