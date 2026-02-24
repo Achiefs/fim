@@ -103,6 +103,7 @@ fn rotate_file(iteration: u32, lock: Arc<Mutex<String>>){
     thread::sleep(Duration::new(15, 0));
     let path = Path::new(filepath.as_str());
     let mut parent_path = path.parent().unwrap().to_path_buf();
+    parent_path.push("archive");
     parent_path.push(Path::new(path.file_name().unwrap()));
 
     let file_rotated = format!("{}.{}",
