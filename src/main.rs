@@ -21,6 +21,7 @@ mod index;
 // Single event data management
 mod event;
 mod monitorevent;
+mod appevent;
 mod ruleevent;
 // File reading continuously
 mod logreader;
