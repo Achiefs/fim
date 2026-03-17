@@ -28,6 +28,7 @@ use crate::index;
 use crate::event;
 use event::Event;
 use crate::monitorevent::MonitorEvent;
+use crate::appevent::AppEvent;
 use crate::ruleset::*;
 // File reading continuously
 use crate::logreader;
@@ -129,7 +130,7 @@ pub async fn monitor(
 
             match watcher.watch(Path::new(path), RecursiveMode::Recursive) {
                 Ok(_d) => debug!("Monitoring '{}' path.", path),
-                Err(e) => warn!("Could not monitor given path '{}', description: {}", path, e)
+                Err(e) => warn!("[Monitor] Could not monitor given path '{}', description: {}", path, e)
             };
         }
     }
@@ -269,10 +270,10 @@ pub async fn monitor(
                             let labels = cfg.get_labels(index, cfg.clone().monitor);
                             if ! cfg.match_ignore(index, event_filename.to_str().unwrap(), cfg.clone().monitor) &&
                                 ! cfg.match_exclude(index, parent, cfg.clone().monitor) &&
-                                cfg.match_allowed(index, event_filename.to_str().unwrap(), cfg.clone().monitor) {
+                                cfg.match_allowed(index, event_filename.to_str().unwrap(), cfg.clone().monitor) { 
                                 let event = MonitorEvent {
                                     id: utils::get_uuid(),
-                                    timestamp: current_timestamp,
+                                    timestamp: current_timestamp.clone(),
                                     hostname: utils::get_hostname(),
                                     node: cfg.clone().node,
                                     version: String::from(appconfig::VERSION),
@@ -290,6 +291,29 @@ pub async fn monitor(
                                 debug!("Event processed: {:?}", event);
                                 event.process(cfg.clone(), ruleset.clone()).await;
                                 launcher::check_integrations(event.clone(), cfg.clone());
+                                // Check if main monitor path is renamed
+                                use yaml_rust::Yaml;
+                                let monitor_path = cfg.monitor[index]
+                                    .as_hash()
+                                    .unwrap()
+                                    .get(&Yaml::from_str("path"))
+                                    .and_then(|v| v.as_str())
+                                    .unwrap();
+                                if event.path.to_str().unwrap() == monitor_path && event.detailed_operation == "MODIFY_RENAME_ANY" {
+                                    let message = format!("Monitored path '{:?}' renamed to continue monitoring the path you need to update config and restart FIM", event.path);
+                                    warn!("{}", &message);
+                                    let appevent = AppEvent {
+                                        id: utils::get_uuid(),
+                                        timestamp: current_timestamp,
+                                        hostname: utils::get_hostname(),
+                                        node: cfg.clone().node,
+                                        version: String::from(appconfig::VERSION),
+                                        message,
+                                        fpid: utils::get_pid(),
+                                        system: cfg.clone().system
+                                    };
+                                    appevent.process(cfg.clone(), ruleset.clone()).await;
+                                }
                             }else{
                                 debug!("Event ignored/excluded not stored in alerts");
                             }
