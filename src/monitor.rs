@@ -14,7 +14,6 @@ use time::OffsetDateTime;
 use itertools::Itertools;
 // Event handling
 use notify::event::{EventKind, AccessKind};
-use std::path::PathBuf;
 
 
 // Utils functions
@@ -300,7 +299,7 @@ pub async fn monitor(
                                     .get(&Yaml::from_str("path"))
                                     .and_then(|v| v.as_str())
                                     .unwrap();
-                                if event.path == PathBuf::from(monitor_path) && event.detailed_operation == String::from("MODIFY_RENAME_ANY") {
+                                if event.path.to_str().unwrap() == monitor_path && event.detailed_operation == "MODIFY_RENAME_ANY" {
                                     let message = format!("Monitored path '{:?}' renamed to continue monitoring the path you need to update config and restart FIM", event.path);
                                     warn!("{}", &message);
                                     let appevent = AppEvent {
@@ -309,7 +308,7 @@ pub async fn monitor(
                                         hostname: utils::get_hostname(),
                                         node: cfg.clone().node,
                                         version: String::from(appconfig::VERSION),
-                                        message: message,
+                                        message,
                                         fpid: utils::get_pid(),
                                         system: cfg.clone().system
                                     };
