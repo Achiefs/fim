@@ -17,8 +17,16 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v2
+
+      - name: Create required directories
+        run: mkdir -p /tmp/${{ github.sha }}
+
       - name: CentOS 7 - Package build
         run: sudo docker run --rm docker.io/okynos/fim-builder:centos7 ${{ github.ref_name }}
+
+      - name: Clean test output
+        if: always()
+        run: sudo rm -rf /tmp/${{ github.sha }}
 
   Pkg-build-macos:
     runs-on: macos-latest

@@ -8,6 +8,9 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
+      - name: Create required directories
+        run: mkdir -p /tmp/${{ github.sha }}
+
       - name: Ubuntu 16.04 - Package build
         run: sudo docker run -v /tmp/${{ github.sha }}:/tmp/output --rm docker.io/okynos/fim-builder:xenial ${{ github.ref_name }}
 
@@ -17,6 +20,10 @@ jobs:
           name: fim_${{ github.sha }}_amd64.deb
           path: /tmp/${{ github.sha }}/fim*.deb
           retention-days: 5
+
+      - name: Clean test output
+        if: always()
+        run: sudo rm -rf /tmp/${{ github.sha }}
   
   Audit_tests:
     needs: Package_build
