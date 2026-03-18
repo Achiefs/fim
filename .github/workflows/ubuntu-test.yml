@@ -9,7 +9,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Ubuntu 16.04 - Package build
-        run: sudo docker run -v /tmp/${{ github.sha }}:/tmp/output --rm okynos/fim-builder:xenial ${{ github.ref_name }}
+        run: sudo docker run -v /tmp/${{ github.sha }}:/tmp/output --rm docker.io/okynos/fim-builder:xenial ${{ github.ref_name }}
 
       - name: Archive output package
         uses: actions/upload-artifact@v4
