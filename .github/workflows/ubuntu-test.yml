@@ -21,8 +21,8 @@ jobs:
   Audit_tests:
     needs: Package_build
     runs-on:
-      group: Default
-      labels: ubuntu18
+      group: Ubuntu
+      labels: ubuntu20
 
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'

@@ -28,8 +28,8 @@ jobs:
 
   Build-install-ubuntu:
     runs-on:
-      group: Default
-      labels: ubuntu18
+      group: Ubuntu
+      labels: ubuntu20
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
         uses: actions/checkout@v2
