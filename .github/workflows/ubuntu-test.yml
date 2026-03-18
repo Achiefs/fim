@@ -28,7 +28,7 @@ jobs:
   Audit_tests:
     needs: Package_build
     runs-on:
-      group: Ubuntu
+      group: Default
       labels: ubuntu20
 
     steps:

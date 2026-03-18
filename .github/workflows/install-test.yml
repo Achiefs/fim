@@ -28,7 +28,7 @@ jobs:
 
   Build-install-ubuntu:
     runs-on:
-      group: Ubuntu
+      group: Default
       labels: ubuntu20
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
