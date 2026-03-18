@@ -13,6 +13,7 @@ use std::collections::HashSet;
 use std::time::Duration;
 use std::thread;
 use tokio::runtime::Runtime;
+use std::path::Path;
 
 #[cfg(test)]
 mod test;
@@ -148,14 +149,19 @@ pub fn scan(cfg: AppConfig) {
 
         for element in config_paths.clone() {
             let path = String::from(element["path"].as_str().unwrap());
-            if db.is_empty() {
-                scan_path(cfg.clone(), path.clone());
-            } else {
-                rt.block_on(check_path(cfg.clone(), path.clone(), first_scan));
-                rt.block_on(update_db(cfg.clone(), path.clone(), first_scan));
-                first_scan = false;
+            match Path::new(&path).exists() {
+                true => {
+                    if db.is_empty() {
+                        scan_path(cfg.clone(), path.clone());
+                    } else {
+                        rt.block_on(check_path(cfg.clone(), path.clone(), first_scan));
+                        rt.block_on(update_db(cfg.clone(), path.clone(), first_scan));
+                        first_scan = false;
+                    }
+                    debug!("Path '{}' scanned all files are hashed in DB.", path.clone());
+                },
+                false => warn!("[HashScanner] Could not scan '{}' path, folder does not exists.", path)
             }
-            debug!("Path '{}' scanned all files are hashed in DB.", path.clone());
         }
 
         debug!("Sleeping HashScanner thread for {} minutes", interval.clone());
