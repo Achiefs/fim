@@ -43,7 +43,7 @@ jobs:
           name: fim_${{ github.sha }}_x86_64.rpm
 
       - name: Installing FIM package
-        run: sudo dnf install ./fim*.rpm
+        run: sudo dnf install -y ./fim*.rpm
 
       - name: Copy configuration
         run: cp -f test/system/audit_config.yml config/linux/config.yml
