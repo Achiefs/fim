@@ -46,37 +46,26 @@ jobs:
         run: sudo dnf install -y ./fim*.rpm
 
       - name: Copy configuration
-        run: cp -f test/system/audit_config.yml config/linux/config.yml
-        working-directory: ${{ github.run_id }}
-
-      - name: Copy FIM binary to main folder
-        run: cp ./target/release/fim ./
-        working-directory: ${{ github.run_id }}
+        run: sudo cp -f test/system/audit_config.yml /etc/fim/config.yml
 
       - name: Create required directories
         run: mkdir -p /tmp/test
 
-      - name: Create events file and folder
-        run: sudo mkdir -p /var/lib/fim/ && sudo touch /var/lib/fim/events.json && sudo chown -R okynos:okynos /var/lib/fim
+      - name: Restart Audit daemon
+        run: sudo systemctl start auditd
 
-      - name: Create log file and folder
-        run: sudo mkdir -p /var/log/fim/ && sudo touch /var/log/fim/fim.log && sudo chown -R okynos:okynos /var/log/fim
-
-      - name: Start FIM process
-        run: sudo setsid ./fim &
-        working-directory: ${{ github.run_id }}
+      - name: Restart FIM process to load new configuration
+        run: sudo systemctl restart fim
 
       - name: Check FIM running
-        run: sleep 5 && ps a | grep fim | grep -v grep
+        run: sudo systemctl status fim | grep running
 
       - name: Launch test suite
         run: sudo python3 -m pytest test/system/audit.py -v
-        working-directory: ${{ github.run_id }}
 
       - name: Print config file
         if: always()
-        run: cat ./config/linux/config.yml || true
-        working-directory: ${{ github.run_id }}
+        run: cat /etc/fim/config.yml || true
 
       - name: Print log file
         if: always()
@@ -84,7 +73,11 @@ jobs:
 
       - name: Stop FIM process
         if: always()
-        run: sudo pkill fim || true
+        run: sudo systemctl stop fim
+
+      - name: Remove FIM package installation
+        if: always()
+        run: sudo dnf remove -y fim
 
       - name: Clean temporal folder
         if: always()
@@ -100,16 +93,10 @@ jobs:
 
       - name: Clean workspace
         if: always()
-        run: sudo rm -rf ./test/system/__pycache__/ ./test/system/.pytest_cache ./.pytest_cache
-        working-directory: ${{ github.run_id }}
+        run: sudo rm -rf ${{ github.workspace }}/test/system/__pycache__/ ${{ github.workspace }}/test/system/.pytest_cache ${{ github.workspace }}/.pytest_cache
 
       - name: Clean test output
         if: always()
-        run: sudo rm -rf ./test_*
-        working-directory: ${{ github.run_id }}
-
-      - name: Remove repository
-        if: always()
-        run: sudo rm -rf $repodir
+        run: sudo rm -rf ${{ github.workspace }}/test_*
 
       - run: echo "Job's status is ${{ job.status }}."
