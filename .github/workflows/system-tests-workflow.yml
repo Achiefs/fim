@@ -79,7 +79,7 @@ jobs:
         run: sudo mkdir -p /var/log/fim/ && sudo touch /var/log/fim/fim.log && sudo chown -R okynos:okynos /var/log/fim
 
       - name: Start FIM process
-        run: sudo ./fim &
+        run: sudo setsid ./fim &
         working-directory: ${{ github.run_id }}
 
       - name: Check FIM running
