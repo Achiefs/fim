@@ -1,7 +1,7 @@
 name: Ubuntu tests
 on: [push]
 jobs:
-  Package_build:
+  package-build:
     runs-on:
       group: Default
     steps:
@@ -25,7 +25,7 @@ jobs:
         if: always()
         run: sudo rm -rf /tmp/${{ github.sha }}
   
-  Audit_tests:
+  audit-tests:
     needs: Package_build
     runs-on:
       group: Default

@@ -1,0 +1,114 @@
+name: RHEL tests
+on: [push]
+jobs:
+  package-build:
+    runs-on:
+      group: Default
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Create required directories
+        run: mkdir -p /tmp/${{ github.sha }}
+
+      - name: RHEL 8 - Package build
+        run: sudo docker run -v /tmp/${{ github.sha }}:/tmp/output --rm docker.io/okynos/fim-builder:rhel8 ${{ github.ref_name }}
+
+      - name: Archive output package
+        uses: actions/upload-artifact@v4
+        with:
+          name: fim_${{ github.sha }}_x86_64.rpm
+          path: /tmp/${{ github.sha }}/fim*.rpm
+          retention-days: 5
+
+      - name: Clean test output
+        if: always()
+        run: sudo rm -rf /tmp/${{ github.sha }}
+  
+  audit-tests:
+    runs-on:
+      group: Default
+      labels: rhel8
+    env:
+      repodir: ${{ github.workspace }}/${{ github.run_id }}
+
+    steps:
+      - name: Check out repository code, branch='${{ github.ref }}'
+        uses: actions/checkout@v2
+
+      - name: Download pre-build FIM package
+        uses: actions/download-artifact@v4
+        with:
+          name: fim_${{ github.sha }}_x86_64.rpm
+
+      - name: Installing FIM package
+        run: sudo dnf install ./fim*.rpm
+
+      - name: Copy configuration
+        run: cp -f test/system/audit_config.yml config/linux/config.yml
+        working-directory: ${{ github.run_id }}
+
+      - name: Copy FIM binary to main folder
+        run: cp ./target/release/fim ./
+        working-directory: ${{ github.run_id }}
+
+      - name: Create required directories
+        run: mkdir -p /tmp/test
+
+      - name: Create events file and folder
+        run: sudo mkdir -p /var/lib/fim/ && sudo touch /var/lib/fim/events.json && sudo chown -R okynos:okynos /var/lib/fim
+
+      - name: Create log file and folder
+        run: sudo mkdir -p /var/log/fim/ && sudo touch /var/log/fim/fim.log && sudo chown -R okynos:okynos /var/log/fim
+
+      - name: Start FIM process
+        run: sudo setsid ./fim &
+        working-directory: ${{ github.run_id }}
+
+      - name: Check FIM running
+        run: sleep 5 && ps a | grep fim | grep -v grep
+
+      - name: Launch test suite
+        run: sudo python3 -m pytest test/system/audit.py -v
+        working-directory: ${{ github.run_id }}
+
+      - name: Print config file
+        if: always()
+        run: cat ./config/linux/config.yml || true
+        working-directory: ${{ github.run_id }}
+
+      - name: Print log file
+        if: always()
+        run: cat /var/log/fim/fim.log || true
+
+      - name: Stop FIM process
+        if: always()
+        run: sudo pkill fim || true
+
+      - name: Clean temporal folder
+        if: always()
+        run: sudo rm -rf /tmp/test
+
+      - name: Clean log folder
+        if: always()
+        run: sudo rm -rf /var/log/fim/
+
+      - name: Clean lib folder
+        if: always()
+        run: sudo rm -rf /var/lib/fim/
+
+      - name: Clean workspace
+        if: always()
+        run: sudo rm -rf ./test/system/__pycache__/ ./test/system/.pytest_cache ./.pytest_cache
+        working-directory: ${{ github.run_id }}
+
+      - name: Clean test output
+        if: always()
+        run: sudo rm -rf ./test_*
+        working-directory: ${{ github.run_id }}
+
+      - name: Remove repository
+        if: always()
+        run: sudo rm -rf $repodir
+
+      - run: echo "Job's status is ${{ job.status }}."

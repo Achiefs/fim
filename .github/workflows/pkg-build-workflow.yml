@@ -11,23 +11,6 @@ jobs:
         working-directory: ./pkg/msi
       - run: echo "Job's status is ${{ job.status }}."
 
-  Pkg-build-rhel8:
-    runs-on:
-      group: Default
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: Create required directories
-        run: mkdir -p /tmp/${{ github.sha }}
-
-      - name: RHEL 8 - Package build
-        run: sudo docker run --rm docker.io/okynos/fim-builder:rhel8 ${{ github.ref_name }}
-
-      - name: Clean test output
-        if: always()
-        run: sudo rm -rf /tmp/${{ github.sha }}
-
   Pkg-build-macos:
     runs-on: macos-latest
     steps:
