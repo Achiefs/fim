@@ -26,7 +26,7 @@ jobs:
         run: sudo rm -rf /tmp/${{ github.sha }}
   
   audit-tests:
-    needs: Package_build
+    needs: package-build
     runs-on:
       group: Default
       labels: ubuntu20

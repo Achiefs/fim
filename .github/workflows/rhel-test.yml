@@ -26,6 +26,7 @@ jobs:
         run: sudo rm -rf /tmp/${{ github.sha }}
   
   audit-tests:
+    needs: package-build
     runs-on:
       group: Default
       labels: rhel8
