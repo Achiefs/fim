@@ -1,4 +1,4 @@
-name: Ubuntu tests
+name: RHEL tests
 on: [push]
 jobs:
   package-build:
@@ -11,14 +11,14 @@ jobs:
       - name: Create required directories
         run: mkdir -p /tmp/${{ github.sha }}
 
-      - name: Ubuntu 16.04 - Package build
-        run: sudo docker run -v /tmp/${{ github.sha }}:/tmp/output --rm docker.io/okynos/fim-builder:xenial ${{ github.ref_name }}
+      - name: RHEL 8 - Package build
+        run: sudo docker run -v /tmp/${{ github.sha }}:/tmp/output --rm docker.io/okynos/fim-builder:rhel8 ${{ github.ref_name }}
 
       - name: Archive output package
         uses: actions/upload-artifact@v4
         with:
-          name: fim_${{ github.sha }}_amd64.deb
-          path: /tmp/${{ github.sha }}/fim*.deb
+          name: fim_${{ github.sha }}_x86_64.rpm
+          path: /tmp/${{ github.sha }}/fim*.rpm
           retention-days: 5
 
       - name: Clean test output
@@ -29,7 +29,9 @@ jobs:
     needs: package-build
     runs-on:
       group: Default
-      labels: ubuntu20
+      labels: rhel8
+    env:
+      repodir: ${{ github.workspace }}/${{ github.run_id }}
 
     steps:
       - name: Check out repository code, branch='${{ github.ref }}'
@@ -38,10 +40,10 @@ jobs:
       - name: Download pre-build FIM package
         uses: actions/download-artifact@v4
         with:
-          name: fim_${{ github.sha }}_amd64.deb
-      
+          name: fim_${{ github.sha }}_x86_64.rpm
+
       - name: Installing FIM package
-        run: sudo dpkg --install ./fim*.deb
+        run: sudo dnf install -y ./fim*.rpm
 
       - name: Copy configuration
         run: sudo cp -f test/system/audit_config.yml /etc/fim/config.yml
@@ -51,7 +53,7 @@ jobs:
 
       - name: Restart Audit daemon
         run: sudo systemctl start auditd
-        
+
       - name: Restart FIM process to load new configuration
         run: sudo systemctl restart fim
 
@@ -75,7 +77,7 @@ jobs:
 
       - name: Remove FIM package installation
         if: always()
-        run: sudo dpkg --purge fim
+        run: sudo dnf remove -y fim
 
       - name: Clean temporal folder
         if: always()
