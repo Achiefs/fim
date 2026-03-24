@@ -53,9 +53,10 @@ jobs:
         run: sudo dpkg --purge fim
 
 
-  Build-install-centos:
+  Build-install-rhel:
     runs-on:
-      group: centos7
+      group: Default
+      labels: rhel8
     env:
       repodir: ${{ github.workspace }}/${{ github.run_id }}
     steps:
