@@ -101,6 +101,9 @@ rm -fr %{buildroot}
 # -----------------------------------------------------------------------------
 
 %changelog
+* Sun Apr 12 2026 support <support@achiefs.com> - 0.6.4
+- More info: https://github.com/Achiefs/fim/releases/tag/v0.6.4
+
 * Tue Mar 03 2026 support <support@achiefs.com> - 0.6.3
 - More info: https://github.com/Achiefs/fim/releases/tag/v0.6.3
 
