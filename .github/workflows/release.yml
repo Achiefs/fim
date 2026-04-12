@@ -16,7 +16,7 @@ jobs:
   build_macos_x86_64:
     name: Build macOS x86_64
     runs-on:
-      group: release
+      group: Release
       labels: [self-hosted, macOS, catalina]
 
     steps:
@@ -39,7 +39,7 @@ jobs:
   build_deb_arm64:
     name: Build DEB ARM64
     runs-on:
-      group: release
+      group: Release
       labels: [self-hosted, ARM64]
 
     steps:
@@ -112,7 +112,7 @@ jobs:
   build_rpm_aarch64:
     name: Build RPM aarch64
     runs-on:
-      group: release
+      group: Release
       labels: [self-hosted, ARM64]
 
     steps:
