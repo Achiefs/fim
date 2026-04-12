@@ -135,8 +135,8 @@ jobs:
     name: Create draft release
     needs:
       - build_macos_x86_64
-      - build_linux_arm64
-      - build_linux_amd64
+      - build_deb_arm64
+      - build_deb_amd64
       - build_rpm_x86_64
       - build_rpm_aarch64
     runs-on: ubuntu-latest
