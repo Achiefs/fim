@@ -29,9 +29,10 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release/fim-${{ github.ref_name }}-x86_64.pkg
+          name: fim-${{ github.ref_name }}-x86_64.pkg
           path: pkg/macos/
           retention-days: 1
+          overwrite: true
 
 # ---------------------------------------------------------
 # DEB ARM64 (self-hosted: group release, label ARM64)
@@ -54,9 +55,10 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release/fim-${{ github.ref_name }}-1_arm64.deb
+          name: fim-${{ github.ref_name }}-1_arm64.deb
           path: /tmp/${{ github.ref_name }}/
           retention-days: 1
+          overwrite: true
 
 # ---------------------------------------------------------
 # DEB AMD64 (default group)
@@ -78,9 +80,10 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release/fim-${{ github.ref_name }}-1_amd64.deb
+          name: fim-${{ github.ref_name }}-1_amd64.deb
           path: /tmp/${{ github.ref_name }}/
           retention-days: 1
+          overwrite: true
 
 # ---------------------------------------------------------
 # RPM x86_64 (default group)
@@ -102,9 +105,10 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release/fim-${{ github.ref_name }}-1.x86_64.rpm
+          name: fim-${{ github.ref_name }}-1.x86_64.rpm
           path: /tmp/${{ github.ref_name }}/
           retention-days: 1
+          overwrite: true
 
 # ---------------------------------------------------------
 # RPM aarch64 (self-hosted ARM64)
@@ -130,6 +134,7 @@ jobs:
           name: release/fim-${{ github.ref_name }}-1.aarch64.rpm
           path: /tmp/${{ github.ref_name }}/
           retention-days: 1
+          overwrite: true
 
   release:
     name: Create draft release
@@ -145,7 +150,18 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: release
+
+      - name: Rename release files
+        run: |
+          for pkg in release/*; do
+            raw_version=$(echo "$pkg" | grep -o 'v[0-9]\+\.[0-9]\+\.[0-9]\+')
+            [ -z "$raw_version" ] && continue
+            clean_version=${raw_version#v}
+            new_pkg="${pkg/$raw_version/$clean_version}"
+            echo "Renaming $pkg to $new_pkg"
+            mv "$pkg" "$new_pkg"
+          done
 
       - name: Create draft release
         id: create_release
@@ -154,6 +170,6 @@ jobs:
           draft: true
           tag_name: ${{ github.ref_name }}
           name: "${{ github.ref_name }}"
-          files: artifacts/release/**/*
+          files: release/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
