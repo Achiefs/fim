@@ -50,7 +50,7 @@ jobs:
         run: mkdir -p /tmp/${{ github.ref_name }}
 
       - name: Build DEB ARM64 package
-        run: sudo docker run -v /tmp/${{ github.ref_name }}:/tmp/output --rm docker.io/okynos/fim-builder:xenial ${{ github.ref_name }}
+        run: sudo docker run -v /tmp/${{ github.ref_name }}:/tmp/output --rm docker.io/okynos/fim-builder:xenial-arm ${{ github.ref_name }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -126,7 +126,7 @@ jobs:
         run: mkdir -p /tmp/${{ github.ref_name }}
 
       - name: Build RPM aarch64 package
-        run: sudo docker run -v /tmp/${{ github.ref_name }}:/tmp/output --rm docker.io/okynos/fim-builder:rhel8 ${{ github.ref_name }}
+        run: sudo docker run -v /tmp/${{ github.ref_name }}:/tmp/output --rm docker.io/okynos/fim-builder:rhel8-arm ${{ github.ref_name }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
