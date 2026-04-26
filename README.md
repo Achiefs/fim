@@ -1,4 +1,4 @@
-# FIM
+# FIM v2
 [![Join us on Slack](https://img.shields.io/badge/Chat-Join%20us%20on%20Slack-blue)](https://join.slack.com/t/filemonitor/shared_invite/zt-1au9t0hf4-yOsW6D3pGPqzzYsAJt9Dvg)
 [![GitHub](https://img.shields.io/github/license/Achiefs/fim)](https://github.com/Achiefs/fim/blob/main/LICENSE)
 [![Coverage Status](https://coveralls.io/repos/github/Achiefs/fim/badge.svg)](https://coveralls.io/github/Achiefs/fim)
