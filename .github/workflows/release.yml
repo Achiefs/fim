@@ -20,6 +20,12 @@ jobs:
       labels: [self-hosted, macOS, catalina]
 
     steps:
+      - name: Add cargo to PATH
+        run: echo "/Users/okynos/.cargo/bin/" >> $GITHUB_PATH
+
+      - name: Clean workspace
+        run: sudo rm -rf "${{ github.workspace }}"/*
+
       - uses: actions/checkout@v4
 
       - name: Build macOS package
@@ -131,7 +137,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release/fim-${{ github.ref_name }}-1.aarch64.rpm
+          name: fim-${{ github.ref_name }}-1.aarch64.rpm
           path: /tmp/${{ github.ref_name }}/
           retention-days: 1
           overwrite: true
