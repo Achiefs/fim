@@ -160,13 +160,15 @@ jobs:
 
       - name: Rename release files
         run: |
+          ls ./release/*
           for pkg in release/*; do
             raw_version=$(echo "$pkg" | grep -o 'v[0-9]\+\.[0-9]\+\.[0-9]\+')
-            [ -z "$raw_version" ] && continue
-            clean_version=${raw_version#v}
-            new_pkg="${pkg/$raw_version/$clean_version}"
-            echo "Renaming $pkg to $new_pkg"
-            mv "$pkg" "$new_pkg"
+            if [ -n "$raw_version" ]; then
+              clean_version=${raw_version#v}
+              new_pkg="${pkg/$raw_version/$clean_version}"
+              echo "Renaming $pkg to $new_pkg"
+              mv "$pkg" "$new_pkg"
+            fi
           done
 
       - name: Create draft release
