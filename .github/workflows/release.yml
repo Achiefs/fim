@@ -11,7 +11,31 @@ permissions:
 
 jobs:
 # ---------------------------------------------------------
-# macOS x86_64 (self-hosted: group release, labels macOS/catalina)
+# Windows x86_64
+# ---------------------------------------------------------
+  build_windows_x86_64:
+    name: Build Windows x86_64
+    runs-on:
+      group: Release
+      labels: [self-hosted, Windows]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Windows package
+        run: ./builder.ps1
+        working-directory: ./pkg/msi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fim-${{ github.ref_name }}-1-x64.msi
+          path: pkg/msi/fim*.msi
+          retention-days: 1
+          overwrite: true
+
+# ---------------------------------------------------------
+# macOS x86_64
 # ---------------------------------------------------------
   build_macos_x86_64:
     name: Build macOS x86_64
@@ -41,7 +65,7 @@ jobs:
           overwrite: true
 
 # ---------------------------------------------------------
-# DEB ARM64 (self-hosted: group release, label ARM64)
+# DEB ARM64
 # ---------------------------------------------------------
   build_deb_arm64:
     name: Build DEB ARM64
@@ -67,7 +91,7 @@ jobs:
           overwrite: true
 
 # ---------------------------------------------------------
-# DEB AMD64 (default group)
+# DEB AMD64
 # ---------------------------------------------------------
   build_deb_amd64:
     name: Build DEB AMD64
@@ -92,7 +116,7 @@ jobs:
           overwrite: true
 
 # ---------------------------------------------------------
-# RPM x86_64 (default group)
+# RPM x86_64
 # ---------------------------------------------------------
   build_rpm_x86_64:
     name: Build RPM x86_64
@@ -117,7 +141,7 @@ jobs:
           overwrite: true
 
 # ---------------------------------------------------------
-# RPM aarch64 (self-hosted ARM64)
+# RPM aarch64
 # ---------------------------------------------------------
   build_rpm_aarch64:
     name: Build RPM aarch64
@@ -154,6 +178,7 @@ jobs:
       - build_deb_amd64
       - build_rpm_x86_64
       - build_rpm_aarch64
+      - build_windows_x86_64
     runs-on: ubuntu-latest
 
     steps:
