@@ -11,15 +11,45 @@ permissions:
 
 jobs:
 # ---------------------------------------------------------
-# macOS x86_64 (self-hosted: group release, labels macOS/catalina)
+# Windows x86_64
+# ---------------------------------------------------------
+  build_windows_x86_64:
+    name: Build Windows x86_64
+    runs-on:
+      group: Release
+      labels: [self-hosted, Windows]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Windows package
+        run: ./builder.ps1
+        working-directory: ./pkg/msi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fim-${{ github.ref_name }}-1-x64.msi
+          path: pkg/msi/fim*.msi
+          retention-days: 1
+          overwrite: true
+
+# ---------------------------------------------------------
+# macOS x86_64
 # ---------------------------------------------------------
   build_macos_x86_64:
     name: Build macOS x86_64
     runs-on:
-      group: release
+      group: Release
       labels: [self-hosted, macOS, catalina]
 
     steps:
+      - name: Add cargo to PATH
+        run: echo "/Users/okynos/.cargo/bin/" >> $GITHUB_PATH
+
+      - name: Clean workspace
+        run: sudo rm -rf "${{ github.workspace }}"/*
+
       - uses: actions/checkout@v4
 
       - name: Build macOS package
@@ -29,17 +59,18 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release/fim-${{ github.ref_name }}-x86_64.pkg
-          path: pkg/macos/
+          name: fim-${{ github.ref_name }}-x86_64.pkg
+          path: pkg/macos/fim*.pkg
           retention-days: 1
+          overwrite: true
 
 # ---------------------------------------------------------
-# DEB ARM64 (self-hosted: group release, label ARM64)
+# DEB ARM64
 # ---------------------------------------------------------
   build_deb_arm64:
     name: Build DEB ARM64
     runs-on:
-      group: release
+      group: Release
       labels: [self-hosted, ARM64]
 
     steps:
@@ -49,17 +80,18 @@ jobs:
         run: mkdir -p /tmp/${{ github.ref_name }}
 
       - name: Build DEB ARM64 package
-        run: sudo docker run -v /tmp/${{ github.ref_name }}:/tmp/output --rm docker.io/okynos/fim-builder:xenial ${{ github.ref_name }}
+        run: sudo docker run -v /tmp/${{ github.ref_name }}:/tmp/output --rm docker.io/okynos/fim-builder:xenial-arm ${{ github.ref_name }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release/fim-${{ github.ref_name }}-1_arm64.deb
-          path: /tmp/${{ github.ref_name }}/
+          name: fim-${{ github.ref_name }}-1_arm64.deb
+          path: /tmp/${{ github.ref_name }}/fim*.deb
           retention-days: 1
+          overwrite: true
 
 # ---------------------------------------------------------
-# DEB AMD64 (default group)
+# DEB AMD64
 # ---------------------------------------------------------
   build_deb_amd64:
     name: Build DEB AMD64
@@ -78,12 +110,13 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release/fim-${{ github.ref_name }}-1_amd64.deb
-          path: /tmp/${{ github.ref_name }}/
+          name: fim-${{ github.ref_name }}-1_amd64.deb
+          path: /tmp/${{ github.ref_name }}/fim*.deb
           retention-days: 1
+          overwrite: true
 
 # ---------------------------------------------------------
-# RPM x86_64 (default group)
+# RPM x86_64
 # ---------------------------------------------------------
   build_rpm_x86_64:
     name: Build RPM x86_64
@@ -102,17 +135,18 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release/fim-${{ github.ref_name }}-1.x86_64.rpm
-          path: /tmp/${{ github.ref_name }}/
+          name: fim-${{ github.ref_name }}-1.x86_64.rpm
+          path: /tmp/${{ github.ref_name }}/fim*.rpm
           retention-days: 1
+          overwrite: true
 
 # ---------------------------------------------------------
-# RPM aarch64 (self-hosted ARM64)
+# RPM aarch64
 # ---------------------------------------------------------
   build_rpm_aarch64:
     name: Build RPM aarch64
     runs-on:
-      group: release
+      group: Release
       labels: [self-hosted, ARM64]
 
     steps:
@@ -122,14 +156,19 @@ jobs:
         run: mkdir -p /tmp/${{ github.ref_name }}
 
       - name: Build RPM aarch64 package
-        run: sudo docker run -v /tmp/${{ github.ref_name }}:/tmp/output --rm docker.io/okynos/fim-builder:rhel8 ${{ github.ref_name }}
+        run: sudo docker run -v /tmp/${{ github.ref_name }}:/tmp/output --rm docker.io/okynos/fim-builder:rhel8-arm ${{ github.ref_name }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release/fim-${{ github.ref_name }}-1.aarch64.rpm
-          path: /tmp/${{ github.ref_name }}/
+          name: fim-${{ github.ref_name }}-1.aarch64.rpm
+          path: /tmp/${{ github.ref_name }}/fim*.rpm
           retention-days: 1
+          overwrite: true
+
+# ---------------------------------------------------------
+# Release (draft) - Create GitHub release with all built packages
+# ---------------------------------------------------------
 
   release:
     name: Create draft release
@@ -139,13 +178,14 @@ jobs:
       - build_deb_amd64
       - build_rpm_x86_64
       - build_rpm_aarch64
+      - build_windows_x86_64
     runs-on: ubuntu-latest
 
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: release
 
       - name: Create draft release
         id: create_release
@@ -154,6 +194,6 @@ jobs:
           draft: true
           tag_name: ${{ github.ref_name }}
           name: "${{ github.ref_name }}"
-          files: artifacts/release/**/*
+          files: release/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
